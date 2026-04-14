@@ -180,6 +180,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
             <option value="RM">Rocky Mountain</option>
             <option value="SW">Southwest</option>
             <option value="SE">Southeast</option>
+            <option value="NE">New England</option>
             <option value="National">National</option>
             <option value="Survey">Survey</option>
           </select>
