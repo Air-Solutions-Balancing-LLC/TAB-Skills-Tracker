@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAB Skills Tracker — Airadigm</title>
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+.page{display:none}.page.active{display:block}
+/* LOGIN */
+.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:#fff;border-radius:14px;border:0.5px solid #e0e0d8;padding:2rem;width:100%;max-width:380px}
+.login-logo{font-size:22px;font-weight:600;margin-bottom:4px}
+.login-logo span{color:#1D9E75}
+.login-sub{font-size:13px;color:#888;margin-bottom:1.5rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:12px;color:#666;margin-bottom:5px;font-weight:500}
+.field input,.field select{width:100%;padding:9px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;outline:none}
+.field input:focus,.field select:focus{border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,0.1)}
+.btn{width:100%;padding:10px;background:#1D9E75;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;margin-top:0.5rem}
+.btn:hover{background:#0F6E56}
+.err{font-size:12px;color:#c0392b;margin-top:8px;display:none;padding:8px 10px;background:#FCEBEB;border-radius:6px}
+.login-hint{font-size:11px;color:#aaa;text-align:center;margin-top:1rem}
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#fff;border-bottom:0.5px solid #e8e8e0;position:sticky;top:0;z-index:10}
+.tb-left{display:flex;align-items:center;gap:10px}
+.tb-logo{font-size:15px;font-weight:600}
+.tb-logo span{color:#1D9E75}
+.region-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:#E1F5EE;color:#0F6E56;font-weight:500}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-user{font-size:12px;color:#888}
+.tb-logout{font-size:12px;color:#666;padding:5px 10px;border:0.5px solid #ddd;border-radius:7px;cursor:pointer;background:#fff}
+.tb-logout:hover{background:#f5f5f0}
+/* MAIN */
+.main{padding:16px 20px;max-width:1100px;margin:0 auto}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.metric{background:#fff;border:0.5px solid #e8e8e0;border-radius:10px;padding:12px 14px}
+.metric-label{font-size:11px;color:#888;margin-bottom:4px}
+.metric-val{font-size:24px;font-weight:600}
+/* ALERT */
+.alert-stalled{background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.alert-title{font-size:12px;font-weight:600;color:#633806;margin-bottom:6px}
+.alert-pills{display:flex;flex-wrap:wrap;gap:6px}
+.alert-pill{font-size:11px;background:#fff;border:0.5px solid #EF9F27;border-radius:20px;padding:3px 10px;color:#854F0B}
+/* SECTION */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:13px;font-weight:600}
+.view-tabs{display:flex;gap:4px}
+.vtab{font-size:11px;padding:5px 11px;border-radius:7px;border:0.5px solid #ddd;cursor:pointer;color:#666;background:#fff}
+.vtab.on{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
+/* TECH GRID */
+.tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:700px){.tech-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+.tcard{background:#fff;border:0.5px solid #e8e8e0;border-radius:12px;padding:12px;cursor:pointer;transition:border-color .15s}
+.tcard:hover{border-color:#1D9E75}
+.tcard-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.tcard-name{font-size:13px;font-weight:600}
+.tcard-sub{font-size:11px;color:#888}
+.bars{display:flex;flex-direction:column;gap:5px}
+.brow{display:flex;align-items:center;gap:6px}
+.blabel{font-size:10px;color:#888;width:52px;flex-shrink:0}
+.btrack{flex:1;height:5px;background:#f0f0eb;border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px}
+.bval{font-size:10px;font-weight:600;min-width:22px;text-align:right}
+.flag{font-size:9px;padding:1px 4px;border-radius:3px;background:#FCEBEB;color:#A32D2D;font-weight:600;margin-left:2px}
+.trend-up{color:#0F6E56;font-size:10px;font-weight:600}
+.trend-dn{color:#c0392b;font-size:10px;font-weight:600}
+.trend-eq{color:#aaa;font-size:10px}
+/* DETAIL */
+.back-btn{font-size:12px;color:#1D9E75;cursor:pointer;margin-bottom:12px;display:inline-flex;align-items:center;gap:4px}
+.back-btn:hover{text-decoration:underline}
+.detail-card{background:#fff;border:0.5px solid #e8e8e0;border-radius:12px;padding:14px;margin-bottom:12px}
+.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.detail-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600}
+.detail-name{font-size:16px;font-weight:600}
+.detail-sub{font-size:12px;color:#888;margin-top:2px}
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{text-align:left;padding:7px 8px;color:#888;border-bottom:0.5px solid #eee;font-size:11px;font-weight:500}
+.hist-table td{padding:7px 8px;border-bottom:0.5px solid #f0f0eb;vertical-align:middle}
+.hist-table tr:last-child td{border-bottom:none}
+.score-pill{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600}
+.sg{background:#E1F5EE;color:#0F6E56}
+.sa{background:#FAEEDA;color:#854F0B}
+.sr{background:#FCEBEB;color:#A32D2D}
+.sn{background:#f0f0eb;color:#888}
+/* STALLED */
+.stalled-box{background:#FCEBEB;border:0.5px solid #F09595;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.stalled-title{font-size:12px;font-weight:600;color:#791F1F;margin-bottom:6px}
+.skill-alert-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #F7C1C1;font-size:12px}
+.skill-alert-row:last-child{border-bottom:none}
+/* COMMENTS */
+.comment-entry{margin-bottom:10px}
+.comment-date{font-size:10px;color:#aaa;margin-bottom:3px}
+.comment-text{background:#f8f8f3;border-radius:7px;padding:8px 10px;font-size:12px;color:#555;font-style:italic}
+.no-comment{font-size:12px;color:#bbb;font-style:italic}
+/* TECH OWN VIEW */
+.my-scores{background:#fff;border:0.5px solid #e8e8e0;border-radius:12px;padding:14px;margin-bottom:12px}
+.my-bars{display:flex;flex-direction:column;gap:9px}
+.my-brow{display:flex;align-items:center;gap:10px}
+.my-label{font-size:12px;color:#888;width:120px;flex-shrink:0}
+.my-track{flex:1;height:8px;background:#f0f0eb;border-radius:4px;overflow:hidden}
+.my-fill{height:100%;border-radius:4px}
+.my-val{font-size:12px;font-weight:600;min-width:40px;text-align:right}
+/* COMPARE */
+.compare-wrap{background:#fff;border:0.5px solid #e8e8e0;border-radius:12px;padding:14px}
+/* LOADING */
+.loading{text-align:center;padding:2rem;color:#888;font-size:13px}
+/* NEBB BADGE */
+.nebb-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.nebb-cp{background:#EEEDFE;color:#534AB7}
+.nebb-ct{background:#E1F5EE;color:#0F6E56}
+.nebb-tr{background:#f0f0eb;color:#666}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="pg-login" class="page active">
+  <div class="login-bg">
+    <div class="login-box">
+      <div class="login-logo">Airadigm <span>Skills</span></div>
+      <div class="login-sub">TAB Skills Self-Assessment Tracker</div>
+      <div class="field">
+        <label>Role</label>
+        <select id="role-sel" onchange="toggleRoleFields()">
+          <option value="pm">Project Manager</option>
+          <option value="tech">Technician</option>
+        </select>
+      </div>
+      <div id="pm-fields">
+        <div class="field">
+          <label>Region</label>
+          <select id="region-sel">
+            <option value="RM">Rocky Mountain</option>
+            <option value="SW">Southwest</option>
+            <option value="SE">Southeast</option>
+            <option value="National">National</option>
+            <option value="Survey">Survey</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="pm-pass" placeholder="Enter your password">
+        </div>
+      </div>
+      <div id="tech-fields" style="display:none">
+        <div class="field">
+          <label>First name</label>
+          <input type="text" id="tech-name" placeholder="e.g. Richard">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="tech-pass" placeholder="Enter your password">
+        </div>
+      </div>
+      <div class="err" id="login-err">Incorrect credentials. Please try again.</div>
+      <button class="btn" onclick="doLogin()">Sign in</button>
+      <div class="login-hint">Contact your Project Manager if you need help with your password.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PM PAGE -->
+<div id="pg-pm" class="page">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-logo">Airadigm <span>Skills</span></div>
+      <div class="region-pill" id="pm-region-pill"></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-user" id="pm-user-label"></div>
+      <div class="tb-logout" onclick="doLogout()">Sign out</div>
+    </div>
+  </div>
+  <div class="main">
+    <div id="pm-overview">
+      <div class="metrics" id="pm-metrics">
+        <div class="loading">Loading...</div>
+      </div>
+      <div id="pm-alert-box"></div>
+      <div class="section-head">
+        <div class="section-title">Team</div>
+        <div class="view-tabs">
+          <div class="vtab on" id="tab-cards" onclick="setView('cards')">Cards</div>
+          <div class="vtab" id="tab-compare" onclick="setView('compare')">Compare</div>
+        </div>
+      </div>
+      <div id="view-cards">
+        <div class="tech-grid" id="tech-grid">
+          <div class="loading">Loading technicians...</div>
+        </div>
+      </div>
+      <div id="view-compare" style="display:none">
+        <div class="compare-wrap">
+          <div class="section-title" style="margin-bottom:12px">Team skill averages</div>
+          <canvas id="compare-chart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+    <div id="pm-detail" style="display:none">
+      <div class="back-btn" onclick="backToOverview()">&#8592; Back to team</div>
+      <div id="pm-detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TECH PAGE -->
+<div id="pg-tech" class="page">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-logo">Airadigm <span>Skills</span></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-user" id="tech-user-label"></div>
+      <div class="tb-logout" onclick="doLogout()">Sign out</div>
+    </div>
+  </div>
+  <div class="main">
+    <div id="tech-content">
+      <div class="loading">Loading your profile...</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let currentRole = null;
+let currentRegion = null;
+let currentTechId = null;
+let currentTechName = null;
+let regionTechs = [];
+let compareChartInst = null;
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function scoreColor(v) {
+  if (v === null) return '#aaa';
+  if (v >= 4) return '#1D9E75';
+  if (v >= 3) return '#378ADD';
+  if (v >= 2) return '#EF9F27';
+  return '#E24B4A';
+}
+
+function scorePillClass(v) {
+  if (v === null) return 'sn';
+  if (v >= 3) return 'sg';
+  if (v >= 2) return 'sa';
+  return 'sr';
+}
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function avatarColors(name) {
+  const palette = [
+    {bg:'#E1F5EE',tc:'#0F6E56'},
+    {bg:'#E6F1FB',tc:'#185FA5'},
+    {bg:'#EEEDFE',tc:'#534AB7'},
+    {bg:'#FAEEDA',tc:'#854F0B'},
+    {bg:'#FBEAF0',tc:'#993556'},
+    {bg:'#EAF3DE',tc:'#3B6D11'}
+  ];
+  const idx = name.charCodeAt(0) % palette.length;
+  return palette[idx];
+}
+
+function nebbBadge(status) {
+  if (!status) return '';
+  if (status.includes('CP')) return `<span class="nebb-badge nebb-cp">NEBB CP</span>`;
+  if (status.includes('CT')) return `<span class="nebb-badge nebb-ct">NEBB CT</span>`;
+  return `<span class="nebb-badge nebb-tr">In Training</span>`;
+}
+
+// ─── SUPABASE FETCH ──────────────────────────────────────────────────────────
+async function sbFetch(path, options = {}) {
+  const url = SUPABASE_URL + '/rest/v1/' + path;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  const res = await fetch(url, { ...options, headers });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  return res.json();
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+function toggleRoleFields() {
+  const role = document.getElementById('role-sel').value;
+  document.getElementById('pm-fields').style.display = role === 'pm' ? 'block' : 'none';
+  document.getElementById('tech-fields').style.display = role === 'tech' ? 'block' : 'none';
+  document.getElementById('login-err').style.display = 'none';
+}
+
+async function doLogin() {
+  const role = document.getElementById('role-sel').value;
+  const errEl = document.getElementById('login-err');
+  errEl.style.display = 'none';
+
+  try {
+    if (role === 'pm') {
+      const region = document.getElementById('region-sel').value;
+      const pass = document.getElementById('pm-pass').value.trim();
+      const rows = await sbFetch(`users?role=eq.pm&region=eq.${region}&password=eq.${encodeURIComponent(pass)}&select=id`);
+      if (!rows.length) { errEl.style.display = 'block'; return; }
+      currentRole = 'pm';
+      currentRegion = region;
+      document.getElementById('pm-region-pill').textContent = REGION_LABELS[region];
+      document.getElementById('pm-user-label').textContent = 'Project Manager';
+      await loadPMDashboard(region);
+      show('pg-pm');
+    } else {
+      const name = document.getElementById('tech-name').value.trim();
+      const pass = document.getElementById('tech-pass').value.trim();
+      const rows = await sbFetch(`users?role=eq.technician&password=eq.${encodeURIComponent(pass)}&select=id,tech_id`);
+      const matched = [];
+      for (const r of rows) {
+        if (r.tech_id) {
+          const techs = await sbFetch(`technicians?id=eq.${r.tech_id}&select=id,name`);
+          if (techs.length && techs[0].name.toLowerCase().startsWith(name.toLowerCase())) {
+            matched.push({ userId: r.id, techId: r.tech_id, techName: techs[0].name });
+          }
+        }
+      }
+      if (!matched.length) { errEl.style.display = 'block'; return; }
+      currentRole = 'tech';
+      currentTechId = matched[0].techId;
+      currentTechName = matched[0].techName;
+      document.getElementById('tech-user-label').textContent = currentTechName;
+      await loadTechView(currentTechId);
+      show('pg-tech');
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+    console.error(e);
+  }
+}
+
+function doLogout() {
+  currentRole = null; currentRegion = null; currentTechId = null;
+  document.getElementById('pm-pass').value = '';
+  document.getElementById('tech-pass').value = '';
+  document.getElementById('tech-name').value = '';
+  document.getElementById('login-err').style.display = 'none';
+  show('pg-login');
+}
+
+// ─── PM DASHBOARD ────────────────────────────────────────────────────────────
+async function loadPMDashboard(region) {
+  document.getElementById('pm-metrics').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('tech-grid').innerHTML = '<div class="loading">Loading technicians...</div>';
+
+  const techs = await sbFetch(`technicians?region=eq.${region}&select=id,name,nebb_status,lead_tech`);
+  regionTechs = techs;
+
+  const assessPromises = techs.map(t =>
+    sbFetch(`assessments?technician_id=eq.${t.id}&select=*&order=date.asc`)
+  );
+  const allAssessments = await Promise.all(assessPromises);
+  techs.forEach((t, i) => { t.assessments = allAssessments[i]; });
+
+  renderMetrics(techs);
+  renderAlerts(techs);
+  renderTechGrid(techs);
+}
+
+function renderMetrics(techs) {
+  const totalAssess = techs.reduce((s, t) => s + t.assessments.length, 0);
+  const avgs = techs.filter(t => t.assessments.length).map(t => {
+    const last = t.assessments[t.assessments.length - 1];
+    const vals = SKILL_CATEGORIES.map(c => last[c.key]).filter(v => v !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  });
+  const teamAvg = avgs.length ? (avgs.reduce((a, b) => a + b, 0) / avgs.length).toFixed(1) : '—';
+  const alerts = countStalled(techs);
+
+  document.getElementById('pm-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Technicians</div><div class="metric-val">${techs.length}</div></div>
+    <div class="metric"><div class="metric-label">Team avg score</div><div class="metric-val">${teamAvg}</div></div>
+    <div class="metric"><div class="metric-label">Total assessments</div><div class="metric-val">${totalAssess}</div></div>
+    <div class="metric"><div class="metric-label">Stalled alerts</div><div class="metric-val" style="color:#c0392b">${alerts}</div></div>
+  `;
+}
+
+function countStalled(techs) {
+  let n = 0;
+  techs.forEach(t => {
+    if (t.assessments.length >= 2) {
+      const last = t.assessments[t.assessments.length - 1];
+      const prev = t.assessments[t.assessments.length - 2];
+      SKILL_CATEGORIES.forEach(c => {
+        if (last[c.key] !== null && prev[c.key] !== null && last[c.key] <= 2 && last[c.key] <= prev[c.key]) n++;
+      });
+    }
+  });
+  return n;
+}
+
+function renderAlerts(techs) {
+  const issues = [];
+  techs.forEach(t => {
+    if (t.assessments.length >= 2) {
+      const last = t.assessments[t.assessments.length - 1];
+      const prev = t.assessments[t.assessments.length - 2];
+      SKILL_CATEGORIES.forEach(c => {
+        if (last[c.key] !== null && prev[c.key] !== null && last[c.key] <= 2 && last[c.key] <= prev[c.key]) {
+          issues.push(`${t.name.split(' ')[0]} — ${c.label}`);
+        }
+      });
+    }
+  });
+  const box = document.getElementById('pm-alert-box');
+  if (!issues.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="alert-stalled">
+      <div class="alert-title">Stalled skills — score ≤ 2, no improvement</div>
+      <div class="alert-pills">${issues.map(i => `<span class="alert-pill">${i}</span>`).join('')}</div>
+    </div>`;
+}
+
+function renderTechGrid(techs) {
+  if (!techs.length) {
+    document.getElementById('tech-grid').innerHTML = '<div class="loading">No technicians found for this region.</div>';
+    return;
+  }
+  document.getElementById('tech-grid').innerHTML = techs.map((t, idx) => {
+    const last = t.assessments.length ? t.assessments[t.assessments.length - 1] : null;
+    const prev = t.assessments.length > 1 ? t.assessments[t.assessments.length - 2] : null;
+    const ac = avatarColors(t.name);
+    const bars = SKILL_CATEGORIES.map(c => {
+      if (!last || last[c.key] === null) return '';
+      const v = last[c.key];
+      const pct = Math.round((v / 5) * 100);
+      const col = scoreColor(v);
+      const stalled = prev && prev[c.key] !== null && v <= 2 && v <= prev[c.key];
+      const trendHtml = prev && prev[c.key] !== null
+        ? (v > prev[c.key] ? '<span class="trend-up">+</span>' : v < prev[c.key] ? '<span class="trend-dn">-</span>' : '<span class="trend-eq">=</span>')
+        : '';
+      const shortLabel = c.label.length > 9 ? c.label.slice(0, 9) + '…' : c.label;
+      return `<div class="brow">
+        <span class="blabel">${shortLabel}</span>
+        <div class="btrack"><div class="bfill" style="width:${pct}%;background:${col}"></div></div>
+        <span class="bval" style="color:${col}">${v.toFixed(1)}</span>
+        ${trendHtml}
+        ${stalled ? '<span class="flag">!</span>' : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="tcard" onclick="openTech(${idx})">
+      <div class="tcard-top">
+        <div class="avatar" style="background:${ac.bg};color:${ac.tc}">${initials(t.name)}</div>
+        <div>
+          <div class="tcard-name">${t.name}</div>
+          <div class="tcard-sub">${nebbBadge(t.nebb_status)} ${t.lead_tech ? '· ' + t.lead_tech.split(' ')[0] : ''}</div>
+        </div>
+      </div>
+      <div class="bars">${bars || '<div style="font-size:11px;color:#aaa">No assessments yet</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function openTech(idx) {
+  const t = regionTechs[idx];
+  document.getElementById('pm-overview').style.display = 'none';
+  document.getElementById('pm-detail').style.display = 'block';
+  renderDetailView(t, document.getElementById('pm-detail-content'));
+}
+
+function backToOverview() {
+  document.getElementById('pm-overview').style.display = 'block';
+  document.getElementById('pm-detail').style.display = 'none';
+}
+
+function renderDetailView(t, container) {
+  const ac = avatarColors(t.name);
+  const assessments = t.assessments || [];
+  const last = assessments.length ? assessments[assessments.length - 1] : null;
+  const prev = assessments.length > 1 ? assessments[assessments.length - 2] : null;
+
+  // stalled skills
+  const stalled = [];
+  if (last && prev) {
+    SKILL_CATEGORIES.forEach(c => {
+      if (last[c.key] !== null && prev[c.key] !== null && last[c.key] <= 2 && last[c.key] <= prev[c.key]) {
+        stalled.push({ label: c.label, val: last[c.key] });
+      }
+    });
+  }
+
+  // history table
+  const visibleCats = SKILL_CATEGORIES.filter(c => assessments.some(a => a[c.key] !== null));
+  const histRows = [...assessments].reverse().map((a, ri, arr) => {
+    const prevA = arr[ri + 1];
+    const cells = visibleCats.map(c => {
+      const v = a[c.key];
+      if (v === null) return '<td>—</td>';
+      const pv = prevA ? prevA[c.key] : null;
+      const trend = pv !== null
+        ? (v > pv ? `<span class="trend-up"> +${(v - pv).toFixed(1)}</span>`
+          : v < pv ? `<span class="trend-dn"> ${(v - pv).toFixed(1)}</span>`
+          : `<span class="trend-eq"> =</span>`)
+        : '';
+      return `<td><span class="score-pill ${scorePillClass(v)}">${v.toFixed(1)}</span>${trend}</td>`;
+    }).join('');
+    const dateStr = a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
+    return `<tr><td style="color:#888">${dateStr}</td>${cells}</tr>`;
+  }).join('');
+
+  // comments
+  const comments = [...assessments].reverse().map(a => {
+    const dateStr = a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
+    return `<div class="comment-entry">
+      <div class="comment-date">${dateStr}</div>
+      ${a.comment ? `<div class="comment-text">"${a.comment}"</div>` : '<div class="no-comment">No comment submitted.</div>'}
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="detail-card">
+      <div class="detail-header">
+        <div class="detail-avatar" style="background:${ac.bg};color:${ac.tc}">${initials(t.name)}</div>
+        <div>
+          <div class="detail-name">${t.name}</div>
+          <div class="detail-sub">${t.nebb_status || 'In Training'}${t.lead_tech ? ' · Lead: ' + t.lead_tech : ''}</div>
+        </div>
+      </div>
+      ${assessments.length ? `
+        <div class="section-title" style="font-size:12px;margin-bottom:8px">Assessment history</div>
+        <div style="overflow-x:auto">
+          <table class="hist-table">
+            <thead><tr><th>Date</th>${visibleCats.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>
+            <tbody>${histRows}</tbody>
+          </table>
+        </div>` : '<div class="no-comment">No assessments recorded yet.</div>'}
+    </div>
+    ${stalled.length ? `
+      <div class="stalled-box">
+        <div class="stalled-title">Skills needing attention — stalled at or below 2</div>
+        ${stalled.map(s => `<div class="skill-alert-row"><span>${s.label}</span><span class="score-pill sr">${s.val.toFixed(1)}</span></div>`).join('')}
+      </div>` : ''}
+    <div class="detail-card">
+      <div class="section-title" style="font-size:12px;margin-bottom:10px">Technician comments</div>
+      ${comments || '<div class="no-comment">No comments yet.</div>'}
+    </div>`;
+}
+
+// ─── COMPARE VIEW ─────────────────────────────────────────────────────────────
+function setView(v) {
+  document.getElementById('tab-cards').classList.toggle('on', v === 'cards');
+  document.getElementById('tab-compare').classList.toggle('on', v === 'compare');
+  document.getElementById('view-cards').style.display = v === 'cards' ? 'block' : 'none';
+  document.getElementById('view-compare').style.display = v === 'compare' ? 'block' : 'none';
+  if (v === 'compare') renderCompareChart(regionTechs);
+}
+
+function renderCompareChart(techs) {
+  if (compareChartInst) { compareChartInst.destroy(); compareChartInst = null; }
+  const labels = techs.map(t => t.name.split(' ')[0]);
+  const colors = ['#1D9E75', '#378ADD', '#7F77DD', '#EF9F27', '#D4537E'];
+  const datasets = SKILL_CATEGORIES.map((c, i) => ({
+    label: c.label,
+    data: techs.map(t => {
+      if (!t.assessments.length) return null;
+      const v = t.assessments[t.assessments.length - 1][c.key];
+      return v !== null ? parseFloat(v.toFixed(1)) : null;
+    }),
+    backgroundColor: colors[i] + '33',
+    borderColor: colors[i],
+    borderWidth: 1.5,
+    spanGaps: true
+  }));
+  const ctx = document.getElementById('compare-chart');
+  compareChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 10 } } },
+      scales: {
+        y: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ─── TECH OWN VIEW ────────────────────────────────────────────────────────────
+async function loadTechView(techId) {
+  const container = document.getElementById('tech-content');
+  container.innerHTML = '<div class="loading">Loading your profile...</div>';
+
+  const [techArr, assessments] = await Promise.all([
+    sbFetch(`technicians?id=eq.${techId}&select=*`),
+    sbFetch(`assessments?technician_id=eq.${techId}&select=*&order=date.asc`)
+  ]);
+  const t = techArr[0];
+  t.assessments = assessments;
+
+  const ac = avatarColors(t.name);
+  const last = assessments.length ? assessments[assessments.length - 1] : null;
+  const prev = assessments.length > 1 ? assessments[assessments.length - 2] : null;
+
+  const myBars = SKILL_CATEGORIES.map(c => {
+    if (!last || last[c.key] === null) return '';
+    const v = last[c.key];
+    const pct = Math.round((v / 5) * 100);
+    const col = scoreColor(v);
+    return `<div class="my-brow">
+      <span class="my-label">${c.label}</span>
+      <div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span>
+    </div>`;
+  }).join('');
+
+  // stalled
+  const stalled = [];
+  if (last && prev) {
+    SKILL_CATEGORIES.forEach(c => {
+      if (last[c.key] !== null && prev[c.key] !== null && last[c.key] <= 2 && last[c.key] <= prev[c.key]) {
+        stalled.push({ label: c.label, val: last[c.key] });
+      }
+    });
+  }
+
+  // history
+  const visibleCats = SKILL_CATEGORIES.filter(c => assessments.some(a => a[c.key] !== null));
+  const histRows = [...assessments].reverse().map((a, ri, arr) => {
+    const prevA = arr[ri + 1];
+    const cells = visibleCats.map(c => {
+      const v = a[c.key];
+      if (v === null) return '<td>—</td>';
+      const pv = prevA ? prevA[c.key] : null;
+      const trend = pv !== null
+        ? (v > pv ? `<span class="trend-up"> +${(v - pv).toFixed(1)}</span>`
+          : v < pv ? `<span class="trend-dn"> ${(v - pv).toFixed(1)}</span>`
+          : `<span class="trend-eq"> =</span>`)
+        : '';
+      return `<td><span class="score-pill ${scorePillClass(v)}">${v.toFixed(1)}</span>${trend}</td>`;
+    }).join('');
+    const dateStr = a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
+    return `<tr><td style="color:#888">${dateStr}</td>${cells}</tr>`;
+  }).join('');
+
+  const comments = [...assessments].reverse().map(a => {
+    const dateStr = a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
+    return `<div class="comment-entry">
+      <div class="comment-date">${dateStr}</div>
+      ${a.comment ? `<div class="comment-text">"${a.comment}"</div>` : '<div class="no-comment">No comment submitted.</div>'}
+    </div>`;
+  }).join('');
+
+  const lastDate = last ? new Date(last.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—';
+
+  container.innerHTML = `
+    <div class="my-scores">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="detail-avatar" style="background:${ac.bg};color:${ac.tc}">${initials(t.name)}</div>
+        <div>
+          <div class="detail-name">${t.name}</div>
+          <div class="detail-sub">${t.nebb_status || 'In Training'}${t.lead_tech ? ' · Lead: ' + t.lead_tech : ''} · ${t.region}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px">Latest scores — ${lastDate}</div>
+      <div class="my-bars">${myBars || '<div class="no-comment">No scores yet.</div>'}</div>
+    </div>
+
+    ${stalled.length ? `
+      <div class="stalled-box">
+        <div class="stalled-title">Skills needing your attention</div>
+        ${stalled.map(s => `<div class="skill-alert-row"><span>${s.label}</span><span class="score-pill sr">${s.val.toFixed(1)}</span></div>`).join('')}
+      </div>` : ''}
+
+    ${assessments.length > 0 ? `
+      <div class="detail-card">
+        <div class="section-title" style="font-size:12px;margin-bottom:8px">My assessment history</div>
+        <div style="overflow-x:auto">
+          <table class="hist-table">
+            <thead><tr><th>Date</th>${visibleCats.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>
+            <tbody>${histRows}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+    <div class="detail-card">
+      <div class="section-title" style="font-size:12px;margin-bottom:10px">My comments</div>
+      ${comments || '<div class="no-comment">No comments yet.</div>'}
+    </div>`;
+}
+</script>
+</body>
+</html>
