@@ -192,8 +192,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       </div>
       <div id="tech-fields" style="display:none">
         <div class="field">
-          <label>First name</label>
-          <input type="text" id="tech-name" placeholder="e.g. Richard">
+          <label>Name and Last Name</label>
+          <input type="text" id="tech-name" placeholder="e.g. John Smith">
         </div>
         <div class="field">
           <label>Password</label>
@@ -202,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       </div>
       <div class="err" id="login-err">Incorrect credentials. Please try again.</div>
       <button class="btn btn-full" style="margin-top:0.5rem" onclick="doLogin()">Sign in</button>
-      <div class="login-hint">Contact your Project Manager if you need help with your password.</div>
+      <div class="login-hint">Example — Name and Last Name: <em>John Smith</em> &nbsp;·&nbsp; Password: <em>John#ne47</em></div>
     </div>
   </div>
 </div>
@@ -497,7 +497,13 @@ async function doLogin(){
       for(const r of rows){
         if(r.tech_id){
           const techs=await sbFetch(`technicians?id=eq.${r.tech_id}&select=id,name`);
-          if(techs.length&&techs[0].name.toLowerCase().startsWith(name.toLowerCase())){found={techId:r.tech_id,techName:techs[0].name};break;}
+          if(techs.length){
+            const techName=techs[0].name.toLowerCase();
+            const inputName=name.toLowerCase().trim();
+            if(techName===inputName||techName.startsWith(inputName)||inputName.startsWith(techName.split(' ')[0])){
+              found={techId:r.tech_id,techName:techs[0].name};break;
+            }
+          }
         }
       }
       if(!found){errEl.style.display='block';return;}
