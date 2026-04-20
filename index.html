@@ -12,22 +12,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 /* LOGIN */
 .login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:#0a0d14}
-.login-box{background:#0d1829;border-radius:14px;border:1px solid rgba(27,58,107,0.4);padding:2rem;width:100%;max-width:380px}
+.login-box{background:#f0f0ee;border-radius:14px;border:1px solid #ddd;padding:2rem;width:100%;max-width:480px}
 .login-logo{font-size:22px;font-weight:700;margin-bottom:4px;color:#fff}
 .login-logo span{color:#4A90D9}
-.login-sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:1.5rem}
+.login-sub{font-size:13px;color:#666;margin-bottom:1.5rem}
 .field{margin-bottom:1rem}
-.field label{display:block;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:5px;font-weight:500}
-.field input,.field select{width:100%;padding:9px 12px;border:1px solid rgba(27,58,107,0.5);border-radius:8px;font-size:14px;background:rgba(27,58,107,0.15);color:#fff;outline:none}
-.field input::placeholder{color:rgba(255,255,255,0.25)}
+.field label{display:block;font-size:12px;color:#555;margin-bottom:5px;font-weight:500}
+.field input,.field select{width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;outline:none}
+.field input::placeholder{color:#aaa}
 .field input:focus,.field select:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.15)}
-.field select option{background:#0d1829;color:#fff}
+.field select option{background:#fff;color:#1a1a1a}
 .btn{padding:10px 20px;background:#1B3A6B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
 .btn:hover{background:#4A90D9}
 .btn-full{width:100%;margin-top:0.5rem}
-.err{font-size:12px;color:#8888b8;margin-top:8px;display:none;padding:8px 10px;background:rgba(80,80,120,0.2);border-radius:6px;border:1px solid rgba(80,80,120,0.3)}
-.login-hint{font-size:11px;color:rgba(255,255,255,0.25);text-align:center;margin-top:1rem}
-.login-hint em{color:rgba(255,255,255,0.4);font-style:normal}
+.err{font-size:12px;color:#c0392b;margin-top:8px;display:none;padding:8px 10px;background:#FCEBEB;border-radius:6px;border:1px solid #F09595}
+.login-hint{font-size:11px;color:#999;text-align:center;margin-top:1rem}
+.login-hint em{color:#555;font-style:normal}
 
 /* APP SHELL */
 .app-shell{display:flex;min-height:100vh}
@@ -225,9 +225,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 <div id="pg-login" class="page active">
   <div class="login-bg">
     <div class="login-box">
-      <img src="logo.png" style="max-height:40px;margin-bottom:12px;object-fit:contain;object-position:left;display:block;filter:invert(1) brightness(2)" onerror="this.style.display='none'">
-      <div class="login-logo" style="display:none">Airadigm <span>Skills</span></div>
-      <div class="login-sub">TAB Skills Self-Assessment Tracker</div>
+      <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" id="login-img" style="max-height:50px;max-width:220px;margin-bottom:14px;object-fit:contain;object-position:left;display:block" onerror="this.style.display='none';document.getElementById('login-txt').style.display='block'">
+      <div class="login-logo" id="login-txt" style="display:none;font-size:28px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Airadigm <span style="color:#4A90D9">Solutions</span></div>
+      <div class="login-sub" style="color:#666">TAB Skills Self-Assessment Tracker</div>
       <div class="field">
         <label>Role</label>
         <select id="role-sel" onchange="toggleRoleFields()">
@@ -274,8 +274,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <div class="app-shell">
     <div class="sidebar">
       <div class="sb-brand">
-        <img src="logo.png" alt="Airadigm" class="sb-logo-img" style="filter:invert(1) brightness(2)" onerror="this.style.display='none';document.getElementById('sb-fb').style.display='block'">
-        <div id="sb-fb" class="sb-logo-fallback">Airadigm <span>Skills</span></div>
+        <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" id="login-img" style="max-height:50px;max-width:220px;margin-bottom:14px;object-fit:contain;object-position:left;display:block" onerror="this.style.display='none';document.getElementById('sb-fb').style.display='block'">
+        <div class="sb-logo-fallback" style="display:block!important;font-size:13px;font-weight:700;color:#fff">Airadigm <span style="color:#4A90D9">Skills</span></div>
       </div>
       <div class="sb-region-info">🗺️ <strong id="sb-region-label">Region</strong></div>
       <div class="sb-nav-wrap">
@@ -324,7 +324,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <div class="app-shell">
     <div class="sidebar">
       <div class="sb-brand">
-        <img src="logo.png" alt="Airadigm" class="sb-logo-img" style="filter:invert(1) brightness(2)" onerror="this.style.display='none'">
+        <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" id="login-img" style="max-height:50px;max-width:220px;margin-bottom:14px;object-fit:contain;object-position:left;display:block" onerror="this.style.display='none'">
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div class="sb-nav-wrap">
@@ -763,9 +763,9 @@ function renderDetailView(t){
     const warn=avg!==null&&avg<=2?' ⚠️':'';
 
     const skillRows=sec.skills.map(sk=>{
-      const v=rawScores[sk.id]||null;
-      const pv=prevRawScores[sk.id]||null;
-      if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.2)">—</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
+      const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
+      const pv=prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
+      if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
       const trend=pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
       const prevLabel=pv!==null?`was ${pv}`:'';
       return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
@@ -804,14 +804,26 @@ function renderDetailView(t){
     ${assessments.length>=2?`<div class="comp-box"><div class="comp-title">📊 Last 2 months comparison — ${fmtDate(prev.date)} vs ${fmtDate(last.date)}</div>${compRows}</div>`:''}
     ${moduleHTML}
     <div class="hist-box">
-      <div class="hist-title">📅 Full assessment history</div>
-      <div style="overflow-x:auto">
+      <div class="hist-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleHist()">
+        <span>📅 Full assessment history</span>
+        <span id="hist-tog" style="font-size:11px;color:rgba(255,255,255,0.3)">▶ Show</span>
+      </div>
+      <div id="hist-content" style="display:none;overflow-x:auto">
         <table class="hist-table">
           <thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead>
           <tbody>${histRows||`<tr><td colspan="${visCats.length+2}" style="color:rgba(255,255,255,0.3);font-style:italic">No assessments yet.</td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
+}
+
+function toggleHist(){
+  const el=document.getElementById('hist-content');
+  const tog=document.getElementById('hist-tog');
+  if(!el||!tog)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  tog.textContent=open?'▶ Show':'▼ Hide';
 }
 
 function toggleMod(id){
