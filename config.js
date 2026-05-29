@@ -13,11 +13,3 @@ const REGION_LABELS = {
   National: 'National',
   Survey: 'Survey'
 };
-
-const SKILL_CATEGORIES = [
-  { key: 'safety_avg',        label: 'Safety / Core Values' },
-  { key: 'basic_avg',         label: 'Basic'                },
-  { key: 'intermediate_avg',  label: 'Intermediate'         },
-  { key: 'advanced_avg',      label: 'Advanced'             },
-  { key: 'survey_avg',        label: 'TAB Survey'           }
-];

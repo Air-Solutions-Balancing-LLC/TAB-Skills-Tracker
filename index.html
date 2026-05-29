@@ -351,7 +351,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const SKILL_CATS=[
   {key:'safety_avg',label:'Safety / Core Values',emoji:'🛡️'},
@@ -508,7 +507,7 @@ const QUESTIONNAIRE=[
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
 
-let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null;
+let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
 let regionTechs=[],qAnswers={};
 
 function scoreColor(v){
@@ -543,12 +542,14 @@ function nebbBadge(s){
 }
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
-async function sbFetch(path,opts={}){
-  const url=SUPABASE_URL+'/rest/v1/'+path;
-  const hdrs={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...(opts.headers||{})};
-  const res=await fetch(url,{...opts,headers:hdrs});
+async function rpc(fn,args={}){
+  const res=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{
+    method:'POST',
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(args)
+  });
   if(!res.ok){const e=await res.text();throw new Error(e);}
-  const t=await res.text();return t?JSON.parse(t):[];
+  const t=await res.text();return t?JSON.parse(t):null;
 }
 
 function toggleRoleFields(){
@@ -566,40 +567,29 @@ async function doLogin(){
     if(role==='pm'){
       const region=document.getElementById('region-sel').value;
       const pass=document.getElementById('pm-pass').value.trim();
-      const rows=await sbFetch(`users?role=eq.pm&region=eq.${region}&password=eq.${encodeURIComponent(pass)}&select=id`);
-      if(!rows.length){err.style.display='block';return;}
-      currentRole='pm';currentRegion=region;
+      const token=await rpc('app_pm_login',{p_region:region,p_pass:pass});
+      if(!token){err.textContent='Incorrect credentials. Please try again.';err.style.display='block';return;}
+      currentRole='pm';currentRegion=region;currentToken=token;
       document.getElementById('sb-region-label').textContent=REGION_LABELS[region]||region;
       document.getElementById('pm-region-badge').textContent=region;
       document.getElementById('pm-dash-title').textContent=(REGION_LABELS[region]||region)+' — Dashboard';
       document.getElementById('compare-sub').textContent='Latest scores — '+(REGION_LABELS[region]||region);
-      await loadPMDashboard(region);
+      await loadPMDashboard();
       showPage('pg-pm');
     } else {
       const name=document.getElementById('tech-name').value.trim();
       const pass=document.getElementById('tech-pass').value.trim();
-      const rows=await sbFetch(`users?role=eq.technician&password=eq.${encodeURIComponent(pass)}&select=id,tech_id`);
-      let found=null;
-      for(const r of rows){
-        if(r.tech_id){
-          const techs=await sbFetch(`technicians?id=eq.${r.tech_id}&select=id,name`);
-          if(techs.length){
-            const tn=techs[0].name.toLowerCase(),inp=name.toLowerCase().trim();
-            if(tn===inp||tn.startsWith(inp)||inp.startsWith(tn.split(' ')[0])){found={techId:r.tech_id,techName:techs[0].name};break;}
-          }
-        }
-      }
-      if(!found){err.style.display='block';return;}
-      currentRole='tech';currentTechId=found.techId;currentTechName=found.techName;
-      document.getElementById('tech-name-label').textContent=found.techName;
-      await loadTechHome(found.techId);
+      const token=await rpc('app_tech_login',{p_name:name,p_pass:pass});
+      if(!token){err.textContent='Incorrect credentials. Please try again.';err.style.display='block';return;}
+      currentRole='tech';currentToken=token;
+      await loadTechHome();
       showPage('pg-tech');
     }
   }catch(e){err.textContent='Connection error. Please try again.';err.style.display='block';console.error(e);}
 }
 
 function doLogout(){
-  currentRole=null;currentRegion=null;currentTechId=null;
+  currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;
   document.getElementById('pm-pass').value='';
   document.getElementById('tech-pass').value='';
   document.getElementById('tech-name').value='';
@@ -607,12 +597,10 @@ function doLogout(){
   showPage('pg-login');
 }
 
-async function loadPMDashboard(region){
+async function loadPMDashboard(){
   document.getElementById('tech-grid').innerHTML='<div class="loading">Loading team...</div>';
-  const techs=await sbFetch(`technicians?region=eq.${region}&select=id,name,nebb_status,lead_tech`);
+  const techs=await rpc('app_pm_dashboard',{p_token:currentToken});
   regionTechs=techs;
-  const all=await Promise.all(techs.map(t=>sbFetch(`assessments?technician_id=eq.${t.id}&select=*&order=date.asc`)));
-  techs.forEach((t,i)=>{t.assessments=all[i];});
   renderMetrics(techs);
   renderAlertBox(techs);
   renderTechGrid(techs);
@@ -840,14 +828,15 @@ function toggleMod(id){
 }
 
 // TECH VIEW
-async function loadTechHome(techId){
+async function loadTechHome(){
   const container=document.getElementById('tech-home-body');
   container.innerHTML='<div class="loading">Loading your profile...</div>';
-  const [techArr,assessments]=await Promise.all([
-    sbFetch(`technicians?id=eq.${techId}&select=*`),
-    sbFetch(`assessments?technician_id=eq.${techId}&select=*&order=date.asc`)
-  ]);
-  const t=techArr[0];t.assessments=assessments;
+  const data=await rpc('app_tech_home',{p_token:currentToken});
+  const t=data.tech;
+  const assessments=data.assessments||[];
+  t.assessments=assessments;
+  currentTechId=t.id;currentTechName=t.name;
+  document.getElementById('tech-name-label').textContent=t.name;
   document.getElementById('tech-region-label').textContent=(REGION_LABELS[t.region]||t.region)+' · '+t.region;
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
@@ -977,7 +966,6 @@ async function submitAssessment(){
   if(done<total&&!confirm(`You have ${total-done} skill(s) not rated. Submit anyway?`))return;
   const comment=document.getElementById('q-comment').value.trim();
   const payload={
-    technician_id:currentTechId,
     date:new Date().toISOString().split('T')[0],
     safety_avg:sectionAvg('safety'),
     basic_avg:sectionAvg('basic'),
@@ -988,15 +976,20 @@ async function submitAssessment(){
     raw_scores:qAnswers
   };
   try{
-    await sbFetch('assessments',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
     qAnswers={};
-    await loadTechHome(currentTechId);
+    await loadTechHome();
     showTechHome();
     window.scrollTo(0,0);
     const body=document.getElementById('tech-home-body');
     body.insertAdjacentHTML('afterbegin','<div class="success-box">✅ Assessment submitted successfully! Your scores have been updated.</div>');
     setTimeout(()=>{const s=document.querySelector('.success-box');if(s)s.remove();},4000);
-  }catch(e){alert('Error submitting. Please try again.\n'+e.message);}
+  }catch(e){
+    const msg=(e.message||'').includes('ALREADY_SUBMITTED')
+      ?'You have already submitted an assessment this month.'
+      :'Error submitting. Please try again.';
+    alert(msg);
+  }
 }
 </script>
 </body>
