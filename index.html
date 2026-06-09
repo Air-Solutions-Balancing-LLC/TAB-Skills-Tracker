@@ -866,8 +866,8 @@ async function loadTechHome(){
   const prevA=arr[ri+1];
   const monthId='month-'+ri;
   const catSections=QUESTIONNAIRE.map(sec=>{
-    const raw=a.raw_scores||{};
-    const prevRaw=prevA&&prevA.raw_scores?prevA.raw_scores:{};
+    const raw=a.raw_scores?(typeof a.raw_scores==='string'?JSON.parse(a.raw_scores):a.raw_scores):{};
+    const prevRaw=prevA&&prevA.raw_scores?(typeof prevA.raw_scores==='string'?JSON.parse(prevA.raw_scores):prevA.raw_scores):{};
     const skillRows=sec.skills.map(sk=>{
       const v=raw[sk.id]!==undefined?raw[sk.id]:null;
       const pv=prevRaw[sk.id]!==undefined?prevRaw[sk.id]:null;
