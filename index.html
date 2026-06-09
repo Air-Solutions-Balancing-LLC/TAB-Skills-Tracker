@@ -875,7 +875,7 @@ async function loadTechHome(){
       const tr=pv!==null?(v>pv?`<span class="trend-up" style="font-size:10px"> ↑</span>`:v<pv?`<span class="trend-dn" style="font-size:10px"> ↓</span>`:''):'';
       return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span>${tr}</td>`;
     }).join('');
-    return`<tr><td style="color:#fff;white-space:nowrap">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
+    return`<tr><td style="color:#1B3A6B;white-space:nowrap;font-weight:700">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
   }).join('');
 
   const assessBtn=alreadyThisMonth
