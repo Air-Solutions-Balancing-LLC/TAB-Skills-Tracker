@@ -852,7 +852,19 @@ async function loadTechHome(){
   }).join('');
 
   const stalled=[];
-  if(last&&prev)SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push({label:c.label,val:last[c.key]});});
+  if(last&&prev){
+    const lastRaw=last.raw_scores?(typeof last.raw_scores==='string'?JSON.parse(last.raw_scores):last.raw_scores):null;
+    const prevRaw=prev.raw_scores?(typeof prev.raw_scores==='string'?JSON.parse(prev.raw_scores):prev.raw_scores):null;
+    if(lastRaw&&Object.keys(lastRaw).length>0){
+      QUESTIONNAIRE.forEach(sec=>{sec.skills.forEach(sk=>{
+        const v=lastRaw[sk.id]!==undefined?lastRaw[sk.id]:null;
+        const pv=prevRaw&&prevRaw[sk.id]!==undefined?prevRaw[sk.id]:null;
+        if(v!==null&&v<=2&&(pv===null||v<=pv))stalled.push({label:sk.name,section:sec.section,val:v});
+      });});
+    } else {
+      SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push({label:c.label,val:last[c.key]});});
+    }
+  }
 
   const visCats=SKILL_CATS.filter(c=>assessments.some(a=>a[c.key]!==null));
   const histRows=[...assessments].reverse().map((a,ri,arr)=>{
@@ -880,7 +892,7 @@ async function loadTechHome(){
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:rgba(255,255,255,0.3)">No scores yet — complete your first assessment below.</div>'}</div>
     </div>
     <div style="margin-bottom:14px">${assessBtn}</div>
-    ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span>${s.label}</span><span class="sp sp4">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
+    ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
 }
 
