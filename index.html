@@ -871,15 +871,14 @@ async function loadTechHome(){
     const skillRows=sec.skills.map(sk=>{
       const v=raw[sk.id]!==undefined?raw[sk.id]:null;
       const pv=prevRaw[sk.id]!==undefined?prevRaw[sk.id]:null;
-      if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(0,0,0,0.05);color:#bbb;font-size:9px">N/R</div><span class="skill-prev"></span></div>`;
+      if(v===null)return'';
       const trend=pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
       const prevLabel=pv!==null?`<span class="skill-prev">was ${pv}</span>`:'<span class="skill-prev"></span>';
       return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div>${prevLabel}${trend}</div>`;
     }).join('');
-    const catAvgKey=SKILL_CATS.find(c=>c.key.startsWith(sec.key));
-    const catAvg=catAvgKey&&a[catAvgKey.key]!==null?` — avg ${a[catAvgKey.key].toFixed(1)}`:'';
+    if(!skillRows)return'';
     return`<div style="margin-bottom:10px">
-      <div style="font-size:11px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;padding:6px 0 4px">${sec.emoji} ${sec.section}${catAvg}</div>
+      <div style="font-size:11px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;padding:6px 0 4px">${sec.emoji} ${sec.section}</div>
       ${skillRows}
     </div>`;
   }).join('');
