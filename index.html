@@ -862,7 +862,7 @@ async function loadTechHome(){
   const stalled=[];
   if(last&&prev)SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push({label:c.label,val:last[c.key]});});
 
-  const monthBlocks=[...assessments].reverse().map((a,ri,arr)=>{
+  const monthBlocks=[...assessments].reverse().slice(0,3).map((a,ri,arr)=>{
   const prevA=arr[ri+1];
   const monthId='month-'+ri;
   const catSections=QUESTIONNAIRE.map(sec=>{
