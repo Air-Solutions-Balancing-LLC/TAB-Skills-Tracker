@@ -817,6 +817,15 @@ function toggleHist(){
   tog.textContent=open?'▶ Show':'▼ Hide';
 }
 
+function toggleMonthBlock(id){
+  const el=document.getElementById(id);
+  const tog=document.getElementById('tog-'+id);
+  if(!el||!tog)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  tog.textContent=open?'▶ Show details':'▼ Hide details';
+}
+
 function toggleMod(id){
   const el=document.getElementById('mod-'+id);
   const tog=document.getElementById('tog-'+id);
@@ -853,17 +862,39 @@ async function loadTechHome(){
   const stalled=[];
   if(last&&prev)SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push({label:c.label,val:last[c.key]});});
 
-  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>a[c.key]!==null));
-  const histRows=[...assessments].reverse().map((a,ri,arr)=>{
-    const prevA=arr[ri+1];
-    const cells=visCats.map(c=>{
-      const v=a[c.key];if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
-      const pv=prevA?prevA[c.key]:null;
-      const tr=pv!==null?(v>pv?`<span class="trend-up" style="font-size:10px"> ↑</span>`:v<pv?`<span class="trend-dn" style="font-size:10px"> ↓</span>`:''):'';
-      return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span>${tr}</td>`;
+  const monthBlocks=[...assessments].reverse().map((a,ri,arr)=>{
+  const prevA=arr[ri+1];
+  const monthId='month-'+ri;
+  const catSections=QUESTIONNAIRE.map(sec=>{
+    const raw=a.raw_scores||{};
+    const prevRaw=prevA&&prevA.raw_scores?prevA.raw_scores:{};
+    const skillRows=sec.skills.map(sk=>{
+      const v=raw[sk.id]!==undefined?raw[sk.id]:null;
+      const pv=prevRaw[sk.id]!==undefined?prevRaw[sk.id]:null;
+      if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(0,0,0,0.05);color:#bbb;font-size:9px">N/R</div><span class="skill-prev"></span></div>`;
+      const trend=pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
+      const prevLabel=pv!==null?`<span class="skill-prev">was ${pv}</span>`:'<span class="skill-prev"></span>';
+      return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div>${prevLabel}${trend}</div>`;
     }).join('');
-    return`<tr><td style="color:#fff;white-space:nowrap">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
+    const catAvgKey=SKILL_CATS.find(c=>c.key.startsWith(sec.key));
+    const catAvg=catAvgKey&&a[catAvgKey.key]!==null?` — avg ${a[catAvgKey.key].toFixed(1)}`:'';
+    return`<div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;padding:6px 0 4px">${sec.emoji} ${sec.section}${catAvg}</div>
+      ${skillRows}
+    </div>`;
   }).join('');
+  const comment=a.comment?`<div class="comment-text" style="margin-top:10px">"${a.comment}"</div>`:'';
+  return`<div style="margin-bottom:8px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div onclick="toggleMonthBlock('${monthId}')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#1B3A6B;cursor:pointer;user-select:none">
+      <span style="font-size:13px;font-weight:700;color:#fff">📅 ${fmtDateFull(a.date)}</span>
+      <span id="tog-${monthId}" style="font-size:11px;color:rgba(255,255,255,0.5)">▶ Show details</span>
+    </div>
+    <div id="${monthId}" style="display:none;background:#fff;padding:14px 16px">
+      ${catSections}
+      ${comment}
+    </div>
+  </div>`;
+}).join('');
 
   const assessBtn=alreadyThisMonth
     ?`<div style="background:rgba(27,58,107,0.15);border:1px solid rgba(27,58,107,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.4);text-align:center">✅ Assessment submitted for ${fmtDateFull(last.date)}. Next submission available next month.</div>`
@@ -880,7 +911,7 @@ async function loadTechHome(){
     </div>
     <div style="margin-bottom:14px">${assessBtn}</div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span>${s.label}</span><span class="sp sp4">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
-    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
+    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="margin-top:10px">${monthBlocks}</div></div>`:''}`;
 }
 
 function showTechHome(){
