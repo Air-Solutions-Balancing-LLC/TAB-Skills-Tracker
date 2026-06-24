@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TAB Skills Tracker — Airadigm</title>
-<script src="config.js"></script>
+<script src="config.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
@@ -28,6 +29,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .err{font-size:12px;color:#c0392b;margin-top:8px;display:none;padding:10px 12px;background:#fff5f5;border-radius:8px;border-left:3px solid #e74c3c}
 .login-hint{font-size:11px;color:#bbb;text-align:center;margin-top:1.2rem;line-height:1.6}
 .login-hint em{color:#888;font-style:normal}
+.btn-azure{background:none;border:none;padding:0;cursor:pointer;width:100%;margin-top:.75rem;display:block}
+.btn-azure img{width:100%;max-width:320px;display:block;margin:0 auto;transition:opacity .2s}
+.btn-azure:hover img{opacity:.88}
+.btn-azure:disabled{opacity:.55;cursor:not-allowed}
+.btn-ms{width:100%;max-width:320px;margin:.75rem auto 0;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 16px;background:#fff;border:1px solid #8c8c8c;border-radius:2px;font-size:15px;font-weight:600;color:#5e5e5e;cursor:pointer;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;transition:background .15s,border-color .15s}
+.btn-ms:hover{background:#f3f3f3;border-color:#666}
+.btn-ms:disabled{opacity:.55;cursor:not-allowed}
+.btn-ms svg{flex-shrink:0}
 
 /* APP SHELL */
 .app-shell{display:flex;min-height:100vh}
@@ -231,43 +240,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" id="login-img" style="max-height:50px;max-width:220px;margin-bottom:14px;object-fit:contain;object-position:left;display:block" onerror="this.style.display='none';document.getElementById('login-txt').style.display='block'">
       <div class="login-logo" id="login-txt" style="display:none;font-size:28px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Airadigm <span style="color:#4A90D9">Solutions</span></div>
       <div class="login-sub" style="color:#666">TAB Skills Self-Assessment Tracker</div>
+      <div class="err" id="login-err">Sign-in failed. Please try again.</div>
+      <button type="button" class="btn-ms" id="azure-sign-btn" onclick="doAzureLogin()" aria-label="Sign in with Microsoft" disabled>
+        <svg width="21" height="21" viewBox="0 0 21 21" aria-hidden="true">
+          <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+          <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+          <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+        </svg>
+        Sign in with Microsoft
+      </button>
+      <div class="login-hint">Use your Airadigm Microsoft account and Authenticator</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE PICKER (after Microsoft sign-in) -->
+<div id="pg-role" class="page">
+  <div class="login-bg">
+    <div class="login-box">
+      <div class="login-logo">Welcome</div>
+      <div class="login-sub" style="color:#666">Signed in as <strong id="role-email">…</strong></div>
+      <div class="field"><label>Continue as</label></div>
+      <button type="button" class="btn btn-full" onclick="chooseRole('pm')">📊 Project Manager</button>
+      <button type="button" class="btn btn-full" style="background:#4A90D9" onclick="chooseRole('tech')">👷 Technician</button>
+      <div class="err" id="role-err">Something went wrong. Please try again.</div>
+      <div class="login-hint"><a href="#" onclick="doLogout();return false;" style="color:#888">Sign out</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- REGION PICKER (Project Managers only) -->
+<div id="pg-region" class="page">
+  <div class="login-bg">
+    <div class="login-box">
+      <div class="login-logo">Select Region</div>
+      <div class="login-sub" style="color:#666">Choose the region you want to view</div>
       <div class="field">
-        <label>Role</label>
-        <select id="role-sel" onchange="toggleRoleFields()">
-          <option value="pm">Project Manager</option>
-          <option value="tech">Technician</option>
+        <label>Region</label>
+        <select id="region-sel">
+          <option value="RM">Rocky Mountain</option>
+          <option value="SW">Southwest</option>
+          <option value="SE">Southeast</option>
+          <option value="NE">New England</option>
+          <option value="National">National</option>
+          <option value="Survey">Survey</option>
         </select>
       </div>
-      <div id="pm-fields">
-        <div class="field">
-          <label>Region</label>
-          <select id="region-sel">
-            <option value="RM">Rocky Mountain</option>
-            <option value="SW">Southwest</option>
-            <option value="SE">Southeast</option>
-            <option value="NE">New England</option>
-            <option value="National">National</option>
-            <option value="Survey">Survey</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="pm-pass" placeholder="Enter your password">
-        </div>
-      </div>
-      <div id="tech-fields" style="display:none">
-        <div class="field">
-          <label>Name and Last Name</label>
-          <input type="text" id="tech-name" placeholder="e.g. John Smith">
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="tech-pass" placeholder="Enter your password">
-        </div>
-      </div>
-      <div class="err" id="login-err">Incorrect credentials. Please try again.</div>
-      <button class="btn btn-full" onclick="doLogin()">Sign in</button>
-      <div class="login-hint">Example — Name: <em>John Smith</em> · Password: <em>John#ne47</em></div>
+      <button type="button" class="btn btn-full" id="region-continue-btn" onclick="submitRegion()">Continue</button>
+      <div class="err" id="region-err">Could not load that region. Please try again.</div>
+      <div class="login-hint"><a href="#" onclick="doLogout();return false;" style="color:#888">Sign out</a></div>
     </div>
   </div>
 </div>
@@ -508,7 +530,159 @@ const QUESTIONNAIRE=[
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
-let regionTechs=[],qAnswers={};
+let regionTechs=[],qAnswers={},azureEmailAddr=null;
+let sbClient=null,sbAccessToken=null;
+
+// Company Microsoft domains allowed to sign in
+const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com'];
+function isAllowedEmail(email){
+  const d=(email||'').trim().toLowerCase().split('@')[1]||'';
+  return ALLOWED_EMAIL_DOMAINS.includes(d);
+}
+
+function redirectUri(){
+  const path=window.location.pathname.replace(/\/$/,'');
+  if(!path)return window.location.origin;
+  return window.location.origin+path;
+}
+
+// Boot Supabase Auth. The signed session (JWT) is the source of truth for who you are.
+async function initAuth(){
+  const errEl=document.getElementById('login-err');
+  const btn=document.getElementById('azure-sign-btn');
+  try{
+    if(typeof SUPABASE_URL==='undefined'||typeof SUPABASE_KEY==='undefined'||!SUPABASE_URL||!SUPABASE_KEY){
+      if(errEl){errEl.textContent='Supabase is not configured in config.js.';errEl.style.display='block';}
+      return;
+    }
+    if(!window.supabase||typeof window.supabase.createClient!=='function'){
+      if(errEl){errEl.textContent='Sign-in library failed to load. Check your internet connection.';errEl.style.display='block';}
+      return;
+    }
+    sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+    });
+    if(errEl)errEl.style.display='none';
+    if(btn)btn.disabled=false;
+
+    sbClient.auth.onAuthStateChange((event,session)=>{
+      if(event==='SIGNED_OUT'){sbAccessToken=null;showPage('pg-login');return;}
+      if(session)handleSession(session);
+    });
+
+    const {data:{session}}=await sbClient.auth.getSession();
+    if(session)await handleSession(session);
+  }catch(e){
+    if(errEl){errEl.textContent='Sign-in failed to start: '+(e.message||e);errEl.style.display='block';}
+    console.error('initAuth',e);
+  }
+}
+
+async function doAzureLogin(){
+  const err=document.getElementById('login-err');
+  const btn=document.getElementById('azure-sign-btn');
+  err.style.display='none';
+  if(!sbClient){
+    err.textContent='Sign-in is still loading. Wait a moment, hard-refresh (Cmd+Shift+R), then try again.';
+    err.style.display='block';
+    return;
+  }
+  btn.disabled=true;
+  try{
+    const {error}=await sbClient.auth.signInWithOAuth({
+      provider:'azure',
+      options:{redirectTo:redirectUri(),scopes:'openid profile email'}
+    });
+    if(error)throw error;
+  }catch(e){
+    err.textContent='Sign-in failed. Please try again.';
+    err.style.display='block';
+    console.error(e);
+    btn.disabled=false;
+  }
+}
+
+// Microsoft sign-in succeeded — the email comes from the signed token, not the browser.
+async function handleSession(session){
+  const err=document.getElementById('login-err');
+  sbAccessToken=session.access_token||null;
+  const email=(session.user?.email||'').trim().toLowerCase();
+  if(!email){err.textContent='Could not read your Microsoft account email.';err.style.display='block';return;}
+  if(!isAllowedEmail(email)){
+    err.textContent='Only Airadigm or Kitchen Energy Solutions company accounts can sign in.';
+    err.style.display='block';
+    try{await sbClient.auth.signOut();}catch(e){console.warn(e);}
+    return;
+  }
+  // Already past the login screen? Don't bounce the user back to the role picker.
+  if(currentToken)return;
+  err.style.display='none';
+  azureEmailAddr=email;
+  document.getElementById('role-email').textContent=email;
+  document.getElementById('role-err').style.display='none';
+  document.getElementById('region-err').style.display='none';
+  showPage('pg-role');
+}
+
+// Step 2: user picked a role.
+async function chooseRole(role){
+  if(role==='pm'){
+    document.getElementById('region-err').style.display='none';
+    showPage('pg-region');
+    return;
+  }
+  const err=document.getElementById('role-err');
+  err.style.display='none';
+  try{
+    const token=await rpc('app_tech_azure_login',{});
+    if(!token){err.textContent='No technician record found for '+azureEmailAddr+'. Contact your project manager to get set up.';err.style.display='block';return;}
+    currentRole='tech';currentToken=token;
+    await loadTechHome();
+    showPage('pg-tech');
+  }catch(e){
+    err.textContent=azureSetupError(e);
+    err.style.display='block';
+    console.error(e);
+  }
+}
+
+// Step 3 (PM only): user picked a region.
+async function submitRegion(){
+  const err=document.getElementById('region-err');
+  const btn=document.getElementById('region-continue-btn');
+  const region=document.getElementById('region-sel').value;
+  err.style.display='none';
+  btn.disabled=true;
+  try{
+    const token=await rpc('app_pm_azure_login',{p_region:region});
+    if(!token){err.textContent='No access for this region. Contact your admin.';err.style.display='block';return;}
+    currentRole='pm';currentRegion=region;currentToken=token;
+    document.getElementById('sb-region-label').textContent=REGION_LABELS[region]||region;
+    document.getElementById('pm-region-badge').textContent=region;
+    document.getElementById('pm-dash-title').textContent=(REGION_LABELS[region]||region)+' — Dashboard';
+    document.getElementById('compare-sub').textContent='Latest scores — '+(REGION_LABELS[region]||region);
+    await loadPMDashboard();
+    showPage('pg-pm');
+  }catch(e){
+    err.textContent=azureSetupError(e);
+    err.style.display='block';
+    console.error(e);
+  }finally{btn.disabled=false;}
+}
+
+function azureSetupError(e){
+  const msg=e.message||'';
+  return msg.includes('app_pm_azure_login')||msg.includes('app_tech_azure_login')||msg.includes('PGRST202')
+    ?'Azure login is not set up in Supabase yet. Run supabase/azure-login.sql.'
+    :'Connection error. Please try again.';
+}
+
+async function doLogout(){
+  currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;azureEmailAddr=null;
+  document.getElementById('login-err').style.display='none';
+  try{if(sbClient)await sbClient.auth.signOut();}catch(e){console.warn('sign out',e);}
+  showPage('pg-login');
+}
 
 function scoreColor(v){
   if(v===null)return'rgba(255,255,255,0.2)';
@@ -543,58 +717,16 @@ function nebbBadge(s){
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
 async function rpc(fn,args={}){
+  // Send the signed user token when we have one so the DB can read the verified
+  // email from auth.jwt(); fall back to the anon/publishable key otherwise.
+  const bearer=sbAccessToken||SUPABASE_KEY;
   const res=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{
     method:'POST',
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+bearer,'Content-Type':'application/json'},
     body:JSON.stringify(args)
   });
   if(!res.ok){const e=await res.text();throw new Error(e);}
   const t=await res.text();return t?JSON.parse(t):null;
-}
-
-function toggleRoleFields(){
-  const r=document.getElementById('role-sel').value;
-  document.getElementById('pm-fields').style.display=r==='pm'?'block':'none';
-  document.getElementById('tech-fields').style.display=r==='tech'?'block':'none';
-  document.getElementById('login-err').style.display='none';
-}
-
-async function doLogin(){
-  const role=document.getElementById('role-sel').value;
-  const err=document.getElementById('login-err');
-  err.style.display='none';
-  try{
-    if(role==='pm'){
-      const region=document.getElementById('region-sel').value;
-      const pass=document.getElementById('pm-pass').value.trim();
-      const token=await rpc('app_pm_login',{p_region:region,p_pass:pass});
-      if(!token){err.textContent='Incorrect credentials. Please try again.';err.style.display='block';return;}
-      currentRole='pm';currentRegion=region;currentToken=token;
-      document.getElementById('sb-region-label').textContent=REGION_LABELS[region]||region;
-      document.getElementById('pm-region-badge').textContent=region;
-      document.getElementById('pm-dash-title').textContent=(REGION_LABELS[region]||region)+' — Dashboard';
-      document.getElementById('compare-sub').textContent='Latest scores — '+(REGION_LABELS[region]||region);
-      await loadPMDashboard();
-      showPage('pg-pm');
-    } else {
-      const name=document.getElementById('tech-name').value.trim();
-      const pass=document.getElementById('tech-pass').value.trim();
-      const token=await rpc('app_tech_login',{p_name:name,p_pass:pass});
-      if(!token){err.textContent='Incorrect credentials. Please try again.';err.style.display='block';return;}
-      currentRole='tech';currentToken=token;
-      await loadTechHome();
-      showPage('pg-tech');
-    }
-  }catch(e){err.textContent='Connection error. Please try again.';err.style.display='block';console.error(e);}
-}
-
-function doLogout(){
-  currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;
-  document.getElementById('pm-pass').value='';
-  document.getElementById('tech-pass').value='';
-  document.getElementById('tech-name').value='';
-  document.getElementById('login-err').style.display='none';
-  showPage('pg-login');
 }
 
 async function loadPMDashboard(){
@@ -1004,6 +1136,7 @@ async function submitAssessment(){
     alert(msg);
   }
 }
+initAuth().catch(console.error);
 </script>
 </body>
 </html>

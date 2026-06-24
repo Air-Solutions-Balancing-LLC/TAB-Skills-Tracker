@@ -1,0 +1,12 @@
+{
+  "name": "tab-skills-tracker",
+  "private": true,
+  "scripts": {
+    "dev": "serve . -p 3000",
+    "postinstall": "mkdir -p vendor && cp node_modules/@azure/msal-browser/lib/msal-browser.min.js vendor/"
+  },
+  "devDependencies": {
+    "@azure/msal-browser": "^3.30.0",
+    "serve": "^14.2.4"
+  }
+}
