@@ -39,13 +39,20 @@ $$;
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS email text;
 CREATE INDEX IF NOT EXISTS technicians_email_lower_idx ON public.technicians (lower(email));
 
+-- ── Ephemeral login sessions ─────────────────────────────────────────────────
+-- Sessions live in the pre-existing `public.sessions` table that the rest of the
+-- app reads from (app_pm_dashboard / app_tech_home / app_submit_assessment all
+-- look up the token there). The login functions below INSERT into the same table
+-- so a token minted at sign-in is immediately valid for those reads.
+
 -- ── PM login: allowed company account + chosen region → session ──────────────
 -- Note: no email parameter. The email is taken from the signed-in user's token.
 CREATE OR REPLACE FUNCTION public.app_pm_azure_login(p_region text)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO public
+-- `extensions` is on the path so gen_random_bytes() (pgcrypto) resolves.
+SET search_path TO public, extensions
 AS $$
 DECLARE
   v_email text := app_current_email();
@@ -57,7 +64,7 @@ BEGIN
 
   v_token := encode(gen_random_bytes(32), 'hex');
 
-  INSERT INTO app_sessions (token, role, region, tech_id, expires_at)
+  INSERT INTO sessions (token, role, region, tech_id, expires_at)
   VALUES (v_token, 'pm', p_region, NULL, now() + interval '12 hours');
 
   RETURN v_token;
@@ -69,7 +76,8 @@ CREATE OR REPLACE FUNCTION public.app_tech_azure_login()
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO public
+-- `extensions` is on the path so gen_random_bytes() (pgcrypto) resolves.
+SET search_path TO public, extensions
 AS $$
 DECLARE
   v_email text := app_current_email();
@@ -91,7 +99,7 @@ BEGIN
 
   v_token := encode(gen_random_bytes(32), 'hex');
 
-  INSERT INTO app_sessions (token, role, region, tech_id, expires_at)
+  INSERT INTO sessions (token, role, region, tech_id, expires_at)
   VALUES (v_token, 'technician', NULL, v_tech_id, now() + interval '12 hours');
 
   RETURN v_token;
