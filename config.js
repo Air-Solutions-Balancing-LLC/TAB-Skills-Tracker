@@ -10,11 +10,15 @@ const SUPABASE_KEY = 'sb_publishable_hh7_CD_TuH0X3YugPn_Z6w_VWSAAvlb';
 
 const REGION_LABELS = {
   RM: 'Rocky Mountain',
+  IM: 'Intermountain',
+  PC: 'Pacific Coast',
   SW: 'Southwest',
+  MW: 'Midwest',
   SE: 'Southeast',
+  MA: 'Mid-Atlantic',
   NE: 'New England',
   National: 'National',
-  Survey: 'Survey'
+  KES: 'KES'
 };
 
 // ============================================
