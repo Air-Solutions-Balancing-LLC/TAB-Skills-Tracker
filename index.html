@@ -317,8 +317,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <div class="login-sub" style="color:#666">Signed in as <strong id="role-email">…</strong></div>
       <div class="field"><label>Continue as</label></div>
       <button type="button" class="btn btn-full" id="role-admin-btn" style="background:#0F6E56;display:none" onclick="chooseRole('admin')">🛠️ Admin</button>
-      <button type="button" class="btn btn-full" onclick="chooseRole('pm')">📊 Project Manager</button>
-      <button type="button" class="btn btn-full" style="background:#4A90D9" onclick="chooseRole('tech')">👷 Technician</button>
+      <button type="button" class="btn btn-full" id="role-pm-btn" style="display:none" onclick="chooseRole('pm')">📊 Project Manager</button>
+      <button type="button" class="btn btn-full" id="role-tech-btn" style="background:#4A90D9;display:none" onclick="chooseRole('tech')">👷 Technician</button>
       <div class="err" id="role-err">Something went wrong. Please try again.</div>
       <div class="login-hint"><a href="#" onclick="doLogout();return false;" style="color:#888">Sign out</a></div>
     </div>
@@ -359,7 +359,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
     <div class="login-box" style="max-width:840px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
         <div class="login-logo">User Management</div>
-        <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">📊 PM Login</button>
+          <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
+        </div>
       </div>
       <div class="login-sub" style="color:#666">Add or remove Admins, Project Managers, and Technicians</div>
       <button type="button" class="btn btn-full" style="background:#0F6E56;margin-bottom:4px" onclick="openSkills()">🧩 Manage Skills &amp; Categories</button>
@@ -810,14 +813,25 @@ async function handleSession(session){
   document.getElementById('role-err').style.display='none';
   document.getElementById('region-err').style.display='none';
   document.getElementById('role-admin-btn').style.display='none';
+  document.getElementById('role-pm-btn').style.display='none';
+  document.getElementById('role-tech-btn').style.display='none';
   showPage('pg-role');
-  // Reveal the Admin entry only for registered admins (verified server-side).
-  // Admins inherently get Project Manager access (no separate PM listing needed).
+  // Reveal role buttons based on the server-verified role:
+  //   admin -> Admin + Project Manager, pm -> Project Manager only,
+  //   everyone else -> Technician only.
   try{
     const role=await rpc('app_my_role',{});
-    userIsAdmin=(role==='admin');
-    if(userIsAdmin)document.getElementById('role-admin-btn').style.display='';
-  }catch(e){console.warn('role check',e);}
+    applyRoleButtons(role);
+  }catch(e){console.warn('role check',e);applyRoleButtons(null);}
+}
+
+function applyRoleButtons(role){
+  const isAdmin=(role==='admin');
+  const isPm=(role==='pm');
+  userIsAdmin=isAdmin;
+  document.getElementById('role-admin-btn').style.display=isAdmin?'':'none';
+  document.getElementById('role-pm-btn').style.display=(isAdmin||isPm)?'':'none';
+  document.getElementById('role-tech-btn').style.display=(isAdmin||isPm)?'none':'';
 }
 
 // Step 2: user picked a role.
