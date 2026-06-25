@@ -464,6 +464,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
           <div class="back-btn" onclick="setPMView('dashboard',document.getElementById('nav-dashboard'))">← Back</div>
           <div class="detail-av" id="detail-av-initials">--</div>
           <div><div class="detail-name" id="detail-tech-name">--</div><div class="detail-sub" id="detail-tech-sub">--</div></div>
+          <button type="button" class="back-btn" id="detail-view-as" style="margin-left:auto;display:none;background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="viewTechAsAdmin()">👁 View as Technician</button>
         </div>
         <div class="detail-body" id="detail-body"><div class="loading">Loading...</div></div>
       </div>
@@ -693,6 +694,7 @@ function sectionScore(a,cat){
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
 let regionTechs=[],qAnswers={},azureEmailAddr=null;
+let userIsAdmin=false,currentDetailIdx=null;
 let sbClient=null,sbAccessToken=null;
 
 // Company Microsoft domains allowed to sign in
@@ -786,9 +788,11 @@ async function handleSession(session){
   document.getElementById('role-admin-btn').style.display='none';
   showPage('pg-role');
   // Reveal the Admin entry only for registered admins (verified server-side).
+  // Admins inherently get Project Manager access (no separate PM listing needed).
   try{
     const role=await rpc('app_my_role',{});
-    if(role==='admin')document.getElementById('role-admin-btn').style.display='';
+    userIsAdmin=(role==='admin');
+    if(userIsAdmin)document.getElementById('role-admin-btn').style.display='';
   }catch(e){console.warn('role check',e);}
 }
 
@@ -1287,13 +1291,31 @@ function setPMView(v,el){
 }
 
 function openTech(idx){
+  currentDetailIdx=idx;
   const t=regionTechs[idx];
   document.getElementById('detail-av-initials').textContent=initials(t.name);
   document.getElementById('detail-tech-name').textContent=t.name;
   document.getElementById('detail-tech-sub').textContent=(t.nebb_status||'In Training')+(t.lead_tech?' · Lead: '+t.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
+  const vb=document.getElementById('detail-view-as');if(vb)vb.style.display=userIsAdmin?'':'none';
   renderDetailView(t);
   setPMView('tech',null);
   document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));
+}
+
+// Admin: open the selected technician's own "My Progress" view, read-only.
+function viewTechAsAdmin(){
+  if(currentDetailIdx===null)return;
+  const t=Object.assign({},regionTechs[currentDetailIdx]);
+  if(!t.region)t.region=currentRegion;
+  showPage('pg-tech');
+  document.getElementById('tech-view-home').classList.add('active');
+  document.getElementById('tech-view-questionnaire').classList.remove('active');
+  renderTechHome(t,{readOnly:true});
+  window.scrollTo(0,0);
+}
+function exitTechView(){
+  showPage('pg-pm');
+  setPMView('tech',null);
 }
 
 function renderDetailView(t){
@@ -1412,11 +1434,19 @@ async function loadTechHome(){
   await ensureSkills();
   const data=await rpc('app_tech_home',{p_token:currentToken});
   const t=data.tech;
-  const assessments=data.assessments||[];
-  t.assessments=assessments;
+  t.assessments=data.assessments||[];
   currentTechId=t.id;currentTechName=t.name;
+  renderTechHome(t,{});
+}
+
+function renderTechHome(t,opts){
+  opts=opts||{};
+  const readOnly=!!opts.readOnly;
+  const container=document.getElementById('tech-home-body');
+  const assessments=t.assessments||[];
   document.getElementById('tech-name-label').textContent=t.name;
-  document.getElementById('tech-region-label').textContent=(REGION_LABELS[t.region]||t.region)+' · '+t.region;
+  const reg=t.region||'';
+  document.getElementById('tech-region-label').textContent=reg?((REGION_LABELS[reg]||reg)+' · '+reg):'TAB Skills Self-Assessment';
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
@@ -1456,11 +1486,14 @@ async function loadTechHome(){
     return`<tr><td style="color:#1B3A6B;white-space:nowrap;font-weight:700">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
   }).join('');
 
-  const assessBtn=alreadyThisMonth
+  const assessBtn=readOnly?''
+    :alreadyThisMonth
     ?`<div style="background:rgba(27,58,107,0.15);border:1px solid rgba(27,58,107,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.4);text-align:center">✅ Assessment submitted for ${fmtDateFull(last.date)}. Next submission available next month.</div>`
     :`<button class="btn btn-full" onclick="startQuestionnaire()" style="padding:12px;font-size:14px">📝 Take this month's assessment</button>`;
 
-  container.innerHTML=`
+  const banner=readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
+
+  container.innerHTML=banner+`
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
