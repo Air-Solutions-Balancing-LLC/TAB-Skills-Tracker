@@ -88,10 +88,12 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- deleted_at IS NULL skips soft-deleted technicians (see supabase/admin.sql).
   SELECT id INTO v_tech_id
   FROM technicians
   WHERE email IS NOT NULL
-    AND lower(trim(email)) = v_email;
+    AND lower(trim(email)) = v_email
+    AND deleted_at IS NULL;
 
   IF v_tech_id IS NULL THEN
     RETURN NULL;
