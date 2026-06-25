@@ -9,16 +9,16 @@ const SUPABASE_URL = 'https://vwjizsgmfjwgnaojgkmt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hh7_CD_TuH0X3YugPn_Z6w_VWSAAvlb';
 
 const REGION_LABELS = {
-  RM: 'Rocky Mountain',
   IM: 'Intermountain',
-  PC: 'Pacific Coast',
-  SW: 'Southwest',
-  MW: 'Midwest',
-  SE: 'Southeast',
+  KES: 'KES',
   MA: 'Mid-Atlantic',
-  NE: 'New England',
+  MW: 'Midwest',
   National: 'National',
-  KES: 'KES'
+  NE: 'New England',
+  PC: 'Pacific Coast',
+  RM: 'Rocky Mountain',
+  SE: 'Southeast',
+  SW: 'Southwest'
 };
 
 // ============================================
