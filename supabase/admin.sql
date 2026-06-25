@@ -242,10 +242,14 @@ BEGIN
 END;
 $$;
 
--- ── Admin: update a person (name, role for admin/pm, region for technician) ──
+-- ── Admin: update a person (name, email, role for admin/pm, region for tech) ──
+-- Drop the older 4-arg signature so re-running this file leaves only one version.
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text);
+
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_id     bigint,
   p_name   text DEFAULT NULL,
+  p_email  text DEFAULT NULL,
   p_role   text DEFAULT NULL,
   p_region text DEFAULT NULL
 )
@@ -258,6 +262,7 @@ DECLARE
   v_role        text;
   v_tech_id     bigint;
   v_email       text;
+  v_new_email   text := lower(trim(p_email));
   v_me          text := app_current_email();
   v_admin_count int;
 BEGIN
@@ -275,6 +280,21 @@ BEGIN
   UPDATE public.app_people
   SET full_name = COALESCE(NULLIF(trim(p_name), ''), full_name)
   WHERE id = p_id;
+
+  -- Email change: must be an allowed domain and not already used by someone else.
+  -- Kept in sync on the technician record so email-based sign-in still matches.
+  IF v_new_email IS NOT NULL AND v_new_email <> '' AND v_new_email <> v_email THEN
+    IF NOT app_allowed_email(v_new_email) THEN
+      RAISE EXCEPTION 'Email domain is not allowed';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.app_people WHERE email = v_new_email AND id <> p_id) THEN
+      RAISE EXCEPTION 'That email is already in use';
+    END IF;
+    UPDATE public.app_people SET email = v_new_email WHERE id = p_id;
+    IF v_tech_id IS NOT NULL THEN
+      UPDATE public.technicians SET email = v_new_email WHERE id = v_tech_id;
+    END IF;
+  END IF;
 
   -- Role change is only allowed between admin and pm (technicians stay technicians).
   IF p_role IS NOT NULL AND p_role IN ('admin','pm')
@@ -308,4 +328,4 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text) TO authenticated;

@@ -836,7 +836,8 @@ function editRowHtml(p){
   const mid=p.role==='technician'
     ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select>`
     :`<select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select>`;
-  return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
+  const email=adminEsc(p.email||'');
+  return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
 }
 
 function renderPeople(el,rows,opts){
@@ -859,7 +860,8 @@ async function saveEdit(id,role){
   const err=document.getElementById('admin-err');
   err.style.display='none';
   const nameEl=document.getElementById('edit-name-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_role:null,p_region:null};
+  const emailEl=document.getElementById('edit-email-'+id);
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null};
   if(role==='technician'){const r=document.getElementById('edit-region-'+id);args.p_region=r?r.value:null;}
   else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
   try{
