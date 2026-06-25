@@ -54,6 +54,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-restore:hover{background:#d4efe5}
 .admin-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-edit:hover{background:#e0ebff}
+.admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
+.admin-view:hover{background:#d4efe5}
 .admin-cancel{font-size:12px;color:#666;background:#f1f1f1;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-cancel:hover{background:#e7e7e7}
 .admin-row-edit{flex-wrap:wrap}
@@ -694,7 +696,7 @@ function sectionScore(a,cat){
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
 let regionTechs=[],qAnswers={},azureEmailAddr=null;
-let userIsAdmin=false,currentDetailIdx=null;
+let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm';
 let sbClient=null,sbAccessToken=null;
 
 // Company Microsoft domains allowed to sign in
@@ -899,7 +901,7 @@ function renderAdminLists(){
   });
   renderPeople(document.getElementById('list-admins'),admins,{showRegion:false,action:'delete'});
   renderPeople(document.getElementById('list-pms'),pms,{showRegion:false,action:'delete'});
-  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete'});
+  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete',canView:true});
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
@@ -926,9 +928,12 @@ function renderPeople(el,rows,opts){
     if(opts.action!=='restore'&&p.id===adminEditId)return editRowHtml(p);
     const name=adminEsc(p.full_name||p.email);
     const region=opts.showRegion&&p.region?`<span class="rg">${adminEsc(p.region)}</span>`:'';
+    const viewBtn=opts.canView&&p.tech_id&&p.region
+      ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
+      :'';
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
-      :`<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
+      :`${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
     return `<div class="admin-row"><div class="who"><div class="nm">${name}</div><div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
   }).join('');
 }
@@ -1302,18 +1307,47 @@ function openTech(idx){
   document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));
 }
 
-// Admin: open the selected technician's own "My Progress" view, read-only.
+// Admin/PM: open the selected technician's own "My Progress" view, read-only.
 function viewTechAsAdmin(){
   if(currentDetailIdx===null)return;
   const t=Object.assign({},regionTechs[currentDetailIdx]);
   if(!t.region)t.region=currentRegion;
+  techViewBackPage='pg-pm';
+  openTechReadOnly(t);
+}
+
+// Admin: open a technician's read-only view straight from User Management.
+// We borrow a PM session for the technician's region to fetch their scores.
+async function viewTechFromAdmin(techId,region,name){
+  const err=document.getElementById('admin-err');
+  err.style.display='none';
+  if(!region){err.textContent='This technician has no region set, so there is nothing to view yet.';err.style.display='block';return;}
+  try{
+    await ensureSkills();
+    const token=await rpc('app_pm_azure_login',{p_region:region});
+    if(!token)throw new Error('could not open region '+region);
+    const techs=await rpc('app_pm_dashboard',{p_token:token})||[];
+    regionTechs=techs;currentRegion=region;
+    let idx=techs.findIndex(t=>String(t.id)===String(techId));
+    if(idx<0)idx=techs.findIndex(t=>(t.name||'').toLowerCase()===(name||'').toLowerCase());
+    if(idx<0){err.textContent='Could not find '+(name||'that technician')+' in '+region+'.';err.style.display='block';return;}
+    currentDetailIdx=idx;
+    techViewBackPage='pg-admin';
+    const t=Object.assign({},techs[idx]);if(!t.region)t.region=region;
+    openTechReadOnly(t);
+  }catch(e){err.textContent='Could not open technician view: '+(e.message||'try again');err.style.display='block';}
+}
+
+function openTechReadOnly(t){
   showPage('pg-tech');
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
   renderTechHome(t,{readOnly:true});
   window.scrollTo(0,0);
 }
+
 function exitTechView(){
+  if(techViewBackPage==='pg-admin'){showPage('pg-admin');loadAdminLists();return;}
   showPage('pg-pm');
   setPMView('tech',null);
 }

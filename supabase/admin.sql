@@ -71,8 +71,12 @@ AS $$
 $$;
 
 -- ── Admin: list everyone (active + deleted technicians) ──────────────────────
+-- Drop first: the return columns changed (added tech_id), which CREATE OR
+-- REPLACE cannot do in place.
+DROP FUNCTION IF EXISTS public.app_admin_list_people();
+
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -89,7 +93,8 @@ BEGIN
            COALESCE(p.full_name, t.name) AS full_name,
            p.role,
            t.region,
-           (t.deleted_at IS NOT NULL) AS deleted
+           (t.deleted_at IS NOT NULL) AS deleted,
+           p.tech_id
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY
