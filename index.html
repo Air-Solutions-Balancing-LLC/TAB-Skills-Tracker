@@ -52,6 +52,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-del:hover{background:#fdecea}
 .admin-restore{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-restore:hover{background:#d4efe5}
+.admin-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
+.admin-edit:hover{background:#e0ebff}
+.admin-cancel{font-size:12px;color:#666;background:#f1f1f1;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
+.admin-cancel:hover{background:#e7e7e7}
+.admin-row-edit{flex-wrap:wrap}
+.admin-edit-field{flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fff;outline:none}
+.admin-edit-field:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .admin-add input,.admin-add select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fafafa;outline:none}
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
@@ -776,8 +783,12 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+let adminPeople=[],adminEditId=null;
+const ADMIN_REGIONS=[['RM','Rocky Mountain'],['SW','Southwest'],['SE','Southeast'],['NE','New England'],['National','National'],['Survey','Survey']];
+
 function openAdmin(){
   currentRole='admin';
+  adminEditId=null;
   showPage('pg-admin');
   loadAdminLists();
 }
@@ -785,44 +796,77 @@ function openAdmin(){
 async function loadAdminLists(){
   const err=document.getElementById('admin-err');
   err.style.display='none';
-  const lists={admins:document.getElementById('list-admins'),pms:document.getElementById('list-pms'),techs:document.getElementById('list-techs'),deleted:document.getElementById('list-deleted')};
-  Object.values(lists).forEach(el=>el.innerHTML='<div class="admin-empty">Loading…</div>');
-  let people;
+  const lists=[document.getElementById('list-admins'),document.getElementById('list-pms'),document.getElementById('list-techs'),document.getElementById('list-deleted')];
+  lists.forEach(el=>el.innerHTML='<div class="admin-empty">Loading…</div>');
   try{
-    people=await rpc('app_admin_list_people',{});
+    adminPeople=await rpc('app_admin_list_people',{})||[];
   }catch(e){
-    Object.values(lists).forEach(el=>el.innerHTML='');
+    lists.forEach(el=>el.innerHTML='');
     err.textContent='Could not load users. '+(e.message||'Make sure supabase/admin.sql has been run.');
     err.style.display='block';
     return;
   }
+  renderAdminLists();
+}
+
+function renderAdminLists(){
   const admins=[],pms=[],techs=[],deleted=[];
-  (people||[]).forEach(p=>{
+  adminPeople.forEach(p=>{
     if(p.role==='admin')admins.push(p);
     else if(p.role==='pm')pms.push(p);
     else if(p.deleted)deleted.push(p);
     else techs.push(p);
   });
-  renderPeople(lists.admins,admins,{showRegion:false,action:'delete'});
-  renderPeople(lists.pms,pms,{showRegion:false,action:'delete'});
-  renderPeople(lists.techs,techs,{showRegion:true,action:'delete'});
-  renderPeople(lists.deleted,deleted,{showRegion:false,action:'restore'});
+  renderPeople(document.getElementById('list-admins'),admins,{showRegion:false,action:'delete'});
+  renderPeople(document.getElementById('list-pms'),pms,{showRegion:false,action:'delete'});
+  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete'});
+  renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
   document.getElementById('ct-techs').textContent=techs.length;
   document.getElementById('ct-deleted').textContent=deleted.length;
 }
 
+function regionOptionsHtml(sel){
+  return ADMIN_REGIONS.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${adminEsc(l)}</option>`).join('');
+}
+
+function editRowHtml(p){
+  const name=adminEsc(p.full_name||'');
+  const mid=p.role==='technician'
+    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select>`
+    :`<select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select>`;
+  return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
+}
+
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
   el.innerHTML=rows.map(p=>{
+    if(opts.action!=='restore'&&p.id===adminEditId)return editRowHtml(p);
     const name=adminEsc(p.full_name||p.email);
     const region=opts.showRegion&&p.region?`<span class="rg">${adminEsc(p.region)}</span>`:'';
-    const btn=opts.action==='restore'
+    const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
-      :`<button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
-    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div><div class="em">${adminEsc(p.email)}</div></div>${region}${btn}</div>`;
+      :`<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
+    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div><div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
   }).join('');
+}
+
+function editPerson(id){adminEditId=id;renderAdminLists();}
+function cancelEdit(){adminEditId=null;renderAdminLists();}
+
+async function saveEdit(id,role){
+  const err=document.getElementById('admin-err');
+  err.style.display='none';
+  const nameEl=document.getElementById('edit-name-'+id);
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_role:null,p_region:null};
+  if(role==='technician'){const r=document.getElementById('edit-region-'+id);args.p_region=r?r.value:null;}
+  else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
+  try{
+    await rpc('app_admin_update_person',args);
+    adminEditId=null;
+    await loadAdminLists();
+  }catch(e){err.textContent='Could not save: '+(e.message||'try again');err.style.display='block';}
 }
 
 async function addPerson(role){

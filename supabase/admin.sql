@@ -242,6 +242,65 @@ BEGIN
 END;
 $$;
 
+-- ── Admin: update a person (name, role for admin/pm, region for technician) ──
+CREATE OR REPLACE FUNCTION public.app_admin_update_person(
+  p_id     bigint,
+  p_name   text DEFAULT NULL,
+  p_role   text DEFAULT NULL,
+  p_region text DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_role        text;
+  v_tech_id     bigint;
+  v_email       text;
+  v_me          text := app_current_email();
+  v_admin_count int;
+BEGIN
+  IF NOT app_is_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  SELECT role, tech_id, email INTO v_role, v_tech_id, v_email
+  FROM public.app_people WHERE id = p_id;
+  IF v_role IS NULL THEN
+    RAISE EXCEPTION 'Person not found';
+  END IF;
+
+  -- Name (applies to everyone; mirrored to technicians below for tech rows).
+  UPDATE public.app_people
+  SET full_name = COALESCE(NULLIF(trim(p_name), ''), full_name)
+  WHERE id = p_id;
+
+  -- Role change is only allowed between admin and pm (technicians stay technicians).
+  IF p_role IS NOT NULL AND p_role IN ('admin','pm')
+     AND v_role IN ('admin','pm') AND p_role <> v_role THEN
+    IF v_role = 'admin' AND p_role <> 'admin' THEN
+      IF v_email = v_me THEN
+        RAISE EXCEPTION 'You cannot change your own admin role';
+      END IF;
+      SELECT count(*) INTO v_admin_count FROM public.app_people WHERE role = 'admin';
+      IF v_admin_count <= 1 THEN
+        RAISE EXCEPTION 'Cannot remove the last admin';
+      END IF;
+    END IF;
+    UPDATE public.app_people SET role = p_role WHERE id = p_id;
+  END IF;
+
+  -- Region + name on the technician record (active technicians only).
+  IF v_role = 'technician' AND v_tech_id IS NOT NULL THEN
+    UPDATE public.technicians
+    SET region = CASE WHEN p_region IS NOT NULL AND trim(p_region) <> '' THEN p_region ELSE region END,
+        name   = COALESCE(NULLIF(trim(p_name), ''), name)
+    WHERE id = v_tech_id AND deleted_at IS NULL;
+  END IF;
+END;
+$$;
+
 -- ── Grants ───────────────────────────────────────────────────────────────────
 GRANT EXECUTE ON FUNCTION public.app_my_role()                              TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_is_admin()                            TO authenticated;
@@ -249,3 +308,4 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text) TO authenticated;
