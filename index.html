@@ -65,6 +65,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
 .admin-empty{font-size:12px;color:#aaa;padding:4px 2px}
 
+/* SKILLS BOARD */
+.sk-sec{margin-top:16px;border:1px solid #e6e6e6;border-radius:12px;overflow:hidden}
+.sk-sec-h{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EEF4FF;border-bottom:1px solid #dce7fb}
+.sk-sec-emoji{font-size:16px}
+.sk-sec-name{flex:1;min-width:0;font-size:14px;font-weight:800;color:#1B3A6B;border:1.5px solid transparent;background:transparent;border-radius:8px;padding:5px 8px;outline:none}
+.sk-sec-name:focus{border-color:#1B3A6B;background:#fff}
+.sk-sec-ct{font-size:10px;background:#1B3A6B;color:#fff;padding:2px 8px;border-radius:10px;flex-shrink:0}
+.sk-list{padding:8px 10px;min-height:46px;display:flex;flex-direction:column;gap:6px}
+.sk-list.drag-over{background:#f3f8ff;outline:2px dashed #9bc0f5;outline-offset:-4px}
+.sk-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafafa;border:1px solid #ececec;border-radius:9px}
+.sk-item.dragging{opacity:.45}
+.sk-handle{cursor:grab;color:#bbb;font-size:14px;flex-shrink:0;user-select:none}
+.sk-handle:active{cursor:grabbing}
+.sk-body{flex:1;min-width:0}
+.sk-cat{font-size:9px;color:#4A90D9;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.sk-name{font-size:12px;color:#1a1a2e;line-height:1.4}
+.sk-mini{font-size:11px;border:1px solid #ddd;background:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-weight:700;color:#1B3A6B;flex-shrink:0}
+.sk-mini:hover{background:#EEF4FF}
+.sk-mini.del{color:#c0392b}
+.sk-mini.del:hover{background:#fdecea}
+.sk-add{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px 12px;align-items:center}
+.sk-add input{flex:1;min-width:110px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:12px;background:#fff;outline:none}
+.sk-add input:focus{border-color:#1B3A6B}
+.sk-empty{font-size:11px;color:#bbb;padding:6px 4px;text-align:center}
+
 /* APP SHELL */
 .app-shell{display:flex;min-height:100vh}
 .sidebar{width:220px;flex-shrink:0;background:#1a1a2e;display:flex;flex-direction:column;border-right:none;position:fixed;top:0;left:0;height:100vh;z-index:10;box-shadow:2px 0 10px rgba(0,0,0,0.2)}
@@ -331,6 +356,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
       </div>
       <div class="login-sub" style="color:#666">Add or remove Admins, Project Managers, and Technicians</div>
+      <button type="button" class="btn btn-full" style="background:#0F6E56;margin-bottom:4px" onclick="openSkills()">🧩 Manage Skills &amp; Categories</button>
       <div class="err" id="admin-err"></div>
 
       <div class="admin-sec">
@@ -376,6 +402,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <div class="admin-list" id="list-deleted"></div>
         <div class="admin-empty" style="margin-bottom:4px">Restoring a technician brings back their region and assessment history.</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN: skills & categories -->
+<div id="pg-skills" class="page">
+  <div class="login-bg" style="align-items:flex-start;padding:24px 16px">
+    <div class="login-box" style="max-width:900px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
+        <div class="login-logo">Skills &amp; Categories</div>
+        <button type="button" class="btn" style="padding:8px 14px;background:#888" onclick="showPage('pg-admin')">← Back</button>
+      </div>
+      <div class="login-sub" style="color:#666">Rename a category, drag skills between categories, and add, edit, or delete skills.</div>
+      <div class="err" id="skills-err"></div>
+      <div id="skills-board"></div>
     </div>
   </div>
 </div>
@@ -460,15 +501,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 </div>
 
 <script>
-const SKILL_CATS=[
-  {key:'safety_avg',label:'Safety / Core Values',emoji:'🛡️'},
-  {key:'basic_avg',label:'Basic',emoji:'🟩'},
-  {key:'intermediate_avg',label:'Intermediate',emoji:'🟦'},
-  {key:'advanced_avg',label:'Advanced',emoji:'🟨'},
-  {key:'survey_avg',label:'TAB Survey',emoji:'🟪'}
+// SKILL_CATS = the 5 core scored sections (PM dashboards read these avg columns).
+// TECH_CATS  = every section incl. admin-added ones (technician views).
+// Both are rebuilt from the database by buildSkillModel(); the values below are
+// the fallback used if the skills service can't be reached.
+let SKILL_CATS=[
+  {key:'safety_avg',skey:'safety',label:'Safety / Core Values',emoji:'🛡️',codes:[]},
+  {key:'basic_avg',skey:'basic',label:'Basic',emoji:'🟩',codes:[]},
+  {key:'intermediate_avg',skey:'intermediate',label:'Intermediate',emoji:'🟦',codes:[]},
+  {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[]},
+  {key:'survey_avg',skey:'survey',label:'TAB Survey',emoji:'🟪',codes:[]}
 ];
+let TECH_CATS=SKILL_CATS.slice();
 
-const QUESTIONNAIRE=[
+let QUESTIONNAIRE=[
   {section:'Safety + Core Values + Tools',emoji:'🛡️',key:'safety',color:'#4A90D9',skills:[
     {id:'s1',cat:'SAFETY',name:'PPE Usage: Demonstrate proper daily usage and replacement of damaged or missing PPE.'},
     {id:'s2',cat:'SAFETY',name:'Fall Protection: Explain and demonstrate ladder safety protocols and fall protection procedures.'},
@@ -614,6 +660,36 @@ const QUESTIONNAIRE=[
 ];
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+
+let skillsLoaded=false;
+// Pull the live skill/section list from the database and rebuild the model.
+async function ensureSkills(force){
+  if(skillsLoaded&&!force)return;
+  try{
+    const data=await rpc('app_skills',{});
+    if(Array.isArray(data)&&data.length)buildSkillModel(data);
+    skillsLoaded=true;
+  }catch(e){console.warn('skills load failed, using fallback',e);}
+}
+function buildSkillModel(sections){
+  QUESTIONNAIRE=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
+  const toCat=s=>({key:s.avg_field,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
+  TECH_CATS=QUESTIONNAIRE.map(toCat);
+  SKILL_CATS=QUESTIONNAIRE.filter(s=>s.avg_field).map(toCat);
+}
+function rawOf(a){
+  if(!a||!a.raw_scores)return null;
+  return typeof a.raw_scores==='string'?JSON.parse(a.raw_scores):a.raw_scores;
+}
+// Score for a section on one assessment: legacy avg column if present, else
+// computed from the per-skill raw_scores snapshot (works for new sections).
+function sectionScore(a,cat){
+  if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null)return a[cat.key];
+  const raw=rawOf(a);
+  if(!raw||!cat.codes||!cat.codes.length)return null;
+  const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null);
+  return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
+}
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
 let regionTechs=[],qAnswers={},azureEmailAddr=null;
@@ -908,6 +984,150 @@ async function restoreTech(id){
   }catch(e){err.textContent='Could not restore: '+(e.message||'try again');err.style.display='block';}
 }
 
+// ── Admin: skills & categories (drag and drop) ───────────────────────────────
+let adminSkills=[],skEditId=null,skDragId=null;
+function skErr(msg){const e=document.getElementById('skills-err');if(!msg){e.style.display='none';return;}e.textContent=msg;e.style.display='block';}
+
+function openSkills(){
+  skEditId=null;
+  showPage('pg-skills');
+  loadSkillsAdmin();
+}
+
+async function loadSkillsAdmin(){
+  skErr('');
+  const board=document.getElementById('skills-board');
+  board.innerHTML='<div class="sk-empty">Loading…</div>';
+  try{
+    adminSkills=await rpc('app_admin_list_skills',{})||[];
+  }catch(e){
+    board.innerHTML='';
+    skErr('Could not load skills. '+(e.message||'Make sure supabase/skills.sql has been run.'));
+    return;
+  }
+  renderSkillsBoard();
+}
+
+function renderSkillsBoard(){
+  const board=document.getElementById('skills-board');
+  board.innerHTML=adminSkills.map(sec=>{
+    const items=(sec.skills&&sec.skills.length)
+      ? sec.skills.map(skItemHtml).join('')
+      : '<div class="sk-empty">No skills — drag one here or add below.</div>';
+    return `<div class="sk-sec">
+      <div class="sk-sec-h">
+        <span class="sk-sec-emoji">${adminEsc(sec.emoji||'')}</span>
+        <input class="sk-sec-name" value="${adminEsc(sec.section)}" onchange="renameSection(${sec.id},this.value)" title="Rename category">
+        <span class="sk-sec-ct">${sec.skills?sec.skills.length:0}</span>
+      </div>
+      <div class="sk-list" ondragover="skDragOver(event,this)" ondragleave="skDragLeave(event,this)" ondrop="skDrop(event,${sec.id},this)">
+        ${items}
+      </div>
+      <div class="sk-add">
+        <input id="sk-add-cat-${sec.id}" placeholder="Category (optional)">
+        <input id="sk-add-name-${sec.id}" placeholder="New skill name">
+        <button type="button" class="btn" style="padding:8px 14px" onclick="addSkill(${sec.id})">Add</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function skItemHtml(sk){
+  if(sk.id===skEditId){
+    return `<div class="sk-item" style="flex-wrap:wrap">
+      <input id="sk-edit-cat-${sk.id}" class="admin-edit-field" style="min-width:100px" value="${adminEsc(sk.cat||'')}" placeholder="Category">
+      <input id="sk-edit-name-${sk.id}" class="admin-edit-field" value="${adminEsc(sk.name)}" placeholder="Skill name">
+      <button type="button" class="btn" style="padding:7px 12px" onclick="saveSkill(${sk.id})">Save</button>
+      <button type="button" class="admin-cancel" onclick="cancelSkillEdit()">Cancel</button>
+    </div>`;
+  }
+  return `<div class="sk-item" draggable="true" data-id="${sk.id}" ondragstart="skDragStart(event,${sk.id})" ondragend="skDragEnd(event)">
+    <span class="sk-handle" title="Drag to move">⋮⋮</span>
+    <div class="sk-body">${sk.cat?`<div class="sk-cat">${adminEsc(sk.cat)}</div>`:''}<div class="sk-name">${adminEsc(sk.name)}</div></div>
+    <button type="button" class="sk-mini" onclick="editSkill(${sk.id})">Edit</button>
+    <button type="button" class="sk-mini del" onclick="deleteSkill(${sk.id})">Delete</button>
+  </div>`;
+}
+
+function skDragStart(e,id){skDragId=id;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(id));}catch(_){}e.currentTarget.classList.add('dragging');}
+function skDragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.sk-list.drag-over').forEach(l=>l.classList.remove('drag-over'));}
+function skDragOver(e,list){e.preventDefault();e.dataTransfer.dropEffect='move';list.classList.add('drag-over');}
+function skDragLeave(e,list){if(!list.contains(e.relatedTarget))list.classList.remove('drag-over');}
+function skAfterElement(container,y){
+  const els=[...container.querySelectorAll('.sk-item:not(.dragging)')];
+  let closest={offset:-Infinity,el:null};
+  els.forEach(child=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-box.top-box.height/2;
+    if(offset<0&&offset>closest.offset)closest={offset,el:child};
+  });
+  return closest.el;
+}
+async function skDrop(e,sectionId,list){
+  e.preventDefault();
+  list.classList.remove('drag-over');
+  const dragging=document.querySelector('.sk-item.dragging');
+  if(!dragging)return;
+  const after=skAfterElement(list,e.clientY);
+  if(after)list.insertBefore(dragging,after);else list.appendChild(dragging);
+  const ids=[...list.querySelectorAll('.sk-item[data-id]')].map(el=>Number(el.dataset.id));
+  skErr('');
+  try{
+    await rpc('app_admin_reorder_skills',{p_section_id:sectionId,p_ids:ids});
+    skillsLoaded=false;
+  }catch(err){skErr('Could not move skill: '+(err.message||'try again'));}
+  await loadSkillsAdmin();
+}
+
+async function renameSection(id,val){
+  skErr('');
+  try{
+    await rpc('app_admin_update_section',{p_id:id,p_label:val});
+    skillsLoaded=false;
+    await loadSkillsAdmin();
+  }catch(e){skErr('Could not rename: '+(e.message||'try again'));}
+}
+
+async function addSkill(sectionId){
+  const nameEl=document.getElementById('sk-add-name-'+sectionId);
+  const catEl=document.getElementById('sk-add-cat-'+sectionId);
+  const name=(nameEl?nameEl.value:'').trim();
+  if(!name){skErr('Enter a skill name.');return;}
+  skErr('');
+  try{
+    await rpc('app_admin_add_skill',{p_section_id:sectionId,p_name:name,p_category:(catEl?catEl.value:'').trim()||null});
+    skillsLoaded=false;
+    await loadSkillsAdmin();
+  }catch(e){skErr('Could not add skill: '+(e.message||'try again'));}
+}
+
+function editSkill(id){skEditId=id;renderSkillsBoard();}
+function cancelSkillEdit(){skEditId=null;renderSkillsBoard();}
+
+async function saveSkill(id){
+  const nameEl=document.getElementById('sk-edit-name-'+id);
+  const catEl=document.getElementById('sk-edit-cat-'+id);
+  const name=(nameEl?nameEl.value:'').trim();
+  if(!name){skErr('Skill name cannot be empty.');return;}
+  skErr('');
+  try{
+    await rpc('app_admin_update_skill',{p_id:id,p_name:name,p_category:(catEl?catEl.value:'').trim()||null});
+    skEditId=null;
+    skillsLoaded=false;
+    await loadSkillsAdmin();
+  }catch(e){skErr('Could not save skill: '+(e.message||'try again'));}
+}
+
+async function deleteSkill(id){
+  if(!confirm('Delete this skill? Past assessment history keeps its saved snapshot.'))return;
+  skErr('');
+  try{
+    await rpc('app_admin_delete_skill',{p_id:id});
+    skillsLoaded=false;
+    await loadSkillsAdmin();
+  }catch(e){skErr('Could not delete skill: '+(e.message||'try again'));}
+}
+
 function scoreColor(v){
   if(v===null)return'rgba(255,255,255,0.2)';
   if(v>=4)return'#1D9E75';
@@ -955,6 +1175,7 @@ async function rpc(fn,args={}){
 
 async function loadPMDashboard(){
   document.getElementById('tech-grid').innerHTML='<div class="loading">Loading team...</div>';
+  await ensureSkills();
   const techs=await rpc('app_pm_dashboard',{p_token:currentToken});
   regionTechs=techs;
   renderMetrics(techs);
@@ -1188,6 +1409,7 @@ function toggleMod(id){
 async function loadTechHome(){
   const container=document.getElementById('tech-home-body');
   container.innerHTML='<div class="loading">Loading your profile...</div>';
+  await ensureSkills();
   const data=await rpc('app_tech_home',{p_token:currentToken});
   const t=data.tech;
   const assessments=data.assessments||[];
@@ -1265,8 +1487,9 @@ function sectionAvg(key){
   return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
 }
 
-function startQuestionnaire(){
+async function startQuestionnaire(){
   qAnswers={};
+  await ensureSkills();
   document.getElementById('tech-view-home').classList.remove('active');
   document.getElementById('tech-view-questionnaire').classList.add('active');
   renderQuestionnaire();
