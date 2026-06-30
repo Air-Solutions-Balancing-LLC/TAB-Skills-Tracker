@@ -4,6 +4,9 @@
 --
 -- Model:
 --   skill_sections  = the experience-level groups shown in the questionnaire.
+--                     section_type is 'rated' (1–5 scoring) or 'checklist'
+--                     (complete/incomplete, not scored). Checklist sections
+--                     appear before Safety (Orientation, Pre-Bootcamp).
 --                     The original 5 carry an avg_field that maps to the legacy
 --                     assessment columns (safety_avg, basic_avg, ...). New
 --                     sections have avg_field = NULL; their scores are derived
@@ -18,9 +21,10 @@ CREATE TABLE IF NOT EXISTS public.skill_sections (
   label      text NOT NULL,
   emoji      text,
   color      text,
-  avg_field  text,
-  sort_order int,
-  active     boolean NOT NULL DEFAULT true
+  avg_field    text,
+  sort_order   int,
+  section_type text NOT NULL DEFAULT 'rated',
+  active       boolean NOT NULL DEFAULT true
 );
 
 CREATE TABLE IF NOT EXISTS public.skills (
@@ -34,14 +38,36 @@ CREATE TABLE IF NOT EXISTS public.skills (
 );
 CREATE INDEX IF NOT EXISTS skills_section_idx ON public.skills (section_id);
 
--- ── Seed the 5 original sections ─────────────────────────────────────────────
-INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order) VALUES
-  ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       1),
-  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        2),
-  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 3),
-  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     4),
-  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       5)
-ON CONFLICT (skey) DO NOTHING;
+-- ── Migrate existing databases (table may exist without newer columns) ────────
+ALTER TABLE public.skill_sections
+  ADD COLUMN IF NOT EXISTS section_type text NOT NULL DEFAULT 'rated';
+
+ALTER TABLE public.technicians
+  ADD COLUMN IF NOT EXISTS checklist_completed jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+UPDATE public.skill_sections SET section_type = 'rated' WHERE section_type IS NULL;
+
+-- ── Seed checklist + scored sections ─────────────────────────────────────────
+INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type) VALUES
+  ('orientation',  'Orientation',  '📋', '#6B8CAE', NULL,           1, 'checklist'),
+  ('pre_bootcamp', 'Pre-Bootcamp', '🎒', '#8B7355', NULL,           2, 'checklist'),
+  ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated'),
+  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated'),
+  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated'),
+  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated'),
+  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated')
+ON CONFLICT (skey) DO UPDATE
+  SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
+      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp')
+                          THEN EXCLUDED.sort_order
+                          ELSE public.skill_sections.sort_order END;
+
+-- Ensure scored sections sit below the checklist sections on existing databases.
+UPDATE public.skill_sections SET sort_order = 3, section_type = 'rated' WHERE skey = 'safety';
+UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated' WHERE skey = 'basic';
+UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'intermediate';
+UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'advanced';
+UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated' WHERE skey = 'survey';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)
@@ -195,6 +221,7 @@ AS $$
   SELECT COALESCE(jsonb_agg(
            jsonb_build_object(
              'key', s.skey, 'section', s.label, 'emoji', s.emoji, 'color', s.color, 'avg_field', s.avg_field,
+             'section_type', s.section_type,
              'skills', COALESCE((
                SELECT jsonb_agg(jsonb_build_object('id', sk.skill_code, 'cat', sk.category, 'name', sk.name)
                                 ORDER BY sk.sort_order, sk.id)
@@ -226,6 +253,7 @@ BEGIN
   SELECT COALESCE(jsonb_agg(
            jsonb_build_object(
              'id', s.id, 'key', s.skey, 'section', s.label, 'emoji', s.emoji, 'color', s.color,
+             'section_type', s.section_type,
              'locked', (s.avg_field IS NOT NULL),
              'skills', COALESCE((
                SELECT jsonb_agg(jsonb_build_object('id', sk.id, 'code', sk.skill_code, 'cat', sk.category, 'name', sk.name)
@@ -270,11 +298,22 @@ SET search_path TO public
 AS $$
 DECLARE
   i int;
+  v_type text;
 BEGIN
   IF NOT app_is_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.skill_sections WHERE id = p_section_id) THEN
-    RAISE EXCEPTION 'Section not found';
+
+  SELECT section_type INTO v_type FROM public.skill_sections WHERE id = p_section_id;
+  IF v_type IS NULL THEN RAISE EXCEPTION 'Section not found'; END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.skills sk
+    JOIN public.skill_sections sec ON sec.id = sk.section_id
+    WHERE sk.id = ANY(p_ids) AND sec.section_type IS DISTINCT FROM v_type
+  ) THEN
+    RAISE EXCEPTION 'Cannot move tasks between checklist and rated sections';
   END IF;
+
   FOR i IN 1..COALESCE(array_length(p_ids, 1), 0) LOOP
     UPDATE public.skills SET section_id = p_section_id, sort_order = i WHERE id = p_ids[i];
   END LOOP;

@@ -247,6 +247,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .skill-alert-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #dde8f8;font-size:13px;color:#333;font-weight:500}
 .skill-alert-row:last-child{border-bottom:none}
 
+/* ORIENTATION / PRE-BOOTCAMP CHECKLIST (not scored) */
+.cl-box{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #6B8CAE}
+.cl-box-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
+.cl-box-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
+.cl-sec{margin-bottom:14px}
+.cl-sec:last-child{margin-bottom:0}
+.cl-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;color:#1B3A6B;margin-bottom:8px}
+.cl-ct{font-size:11px;font-weight:700;color:#666;background:#f0f4fa;padding:3px 9px;border-radius:10px}
+.cl-list{display:flex;flex-direction:column;gap:6px}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#f8faff;border:1px solid #e6eef8;transition:background .15s}
+.cl-item.cl-done{background:#f2faf6;border-color:#d4ede2}
+.cl-check{width:22px;height:22px;border-radius:6px;border:2px solid #b8c9e0;background:#fff;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1}
+.cl-check.done{background:#1D9E75;border-color:#1D9E75;color:#fff}
+.cl-body{flex:1;min-width:0}
+.cl-cat{font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.cl-name{font-size:13px;color:#333;line-height:1.45;font-weight:500}
+.cl-empty{font-size:12px;color:#999;padding:8px 4px}
+.cl-dark .cl-head{color:#fff}
+.cl-dark .cl-ct{background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7)}
+.cl-dark .cl-item{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1)}
+.cl-dark .cl-item.cl-done{background:rgba(29,158,117,0.15);border-color:rgba(29,158,117,0.35)}
+.cl-dark .cl-name{color:rgba(255,255,255,0.9)}
+.cl-dark .cl-cat{color:#7aaedd}
+.cl-dark .cl-empty{color:rgba(255,255,255,0.35)}
+.sk-sec-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:8px;flex-shrink:0}
+.sk-sec-tag.checklist{background:#E8F0EA;color:#0F6E56}
+.sk-sec-tag.rated{background:#EEF4FF;color:#1B3A6B}
+
 /* QUESTIONNAIRE */
 .q-wrap{max-width:760px;margin:0 auto;padding:20px 24px}
 .q-header{background:#fff;border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #1B3A6B}
@@ -427,7 +455,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <div class="login-logo">Skills &amp; Categories</div>
         <button type="button" class="btn" style="padding:8px 14px;background:#888" onclick="showPage('pg-admin')">← Back</button>
       </div>
-      <div class="login-sub" style="color:#666">Rename a category, drag skills between categories, and add, edit, or delete skills.</div>
+      <div class="login-sub" style="color:#666">Rename a category, drag skills between categories, and add, edit, or delete skills. Checklist sections (Orientation, Pre-Bootcamp) are task lists — not scored.</div>
       <div class="err" id="skills-err"></div>
       <div id="skills-board"></div>
     </div>
@@ -690,6 +718,8 @@ let QUESTIONNAIRE=[
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
 
 let skillsLoaded=false;
+let CHECKLIST_SECTIONS=[];
+let currentChecklist={},currentTechData=null;
 // Pull the live skill/section list from the database and rebuild the model.
 async function ensureSkills(force){
   if(skillsLoaded&&!force)return;
@@ -700,10 +730,59 @@ async function ensureSkills(force){
   }catch(e){console.warn('skills load failed, using fallback',e);}
 }
 function buildSkillModel(sections){
-  QUESTIONNAIRE=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
+  const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
+  CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist');
+  QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist');
   const toCat=s=>({key:s.avg_field,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
   TECH_CATS=QUESTIONNAIRE.map(toCat);
   SKILL_CATS=QUESTIONNAIRE.filter(s=>s.avg_field).map(toCat);
+}
+function parseChecklistCompleted(raw){
+  if(!raw)return{};
+  if(typeof raw==='string'){try{return JSON.parse(raw);}catch(e){return {};}}
+  return raw;
+}
+async function loadChecklistForTech(techId){
+  try{
+    const args={p_token:currentToken};
+    if(techId)args.p_tech_id=techId;
+    return parseChecklistCompleted(await rpc('app_checklist_get',args));
+  }catch(e){console.warn('checklist load',e);return {};}
+}
+function isChecklistDone(completed,code){return!!(completed&&completed[code]);}
+function checklistProgress(completed){
+  const total=CHECKLIST_SECTIONS.reduce((s,sec)=>s+sec.skills.length,0);
+  const done=CHECKLIST_SECTIONS.reduce((s,sec)=>s+sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length,0);
+  return{done,total,pct:total?Math.round((done/total)*100):0};
+}
+function renderChecklistHtml(completed,opts){
+  opts=opts||{};
+  const readOnly=!!opts.readOnly;
+  const dark=!!opts.dark;
+  if(!CHECKLIST_SECTIONS.length)return'';
+  const prog=checklistProgress(completed);
+  const sections=CHECKLIST_SECTIONS.map(sec=>{
+    const secDone=sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length;
+    const items=sec.skills.map(sk=>{
+      const done=isChecklistDone(completed,sk.id);
+      const check=readOnly
+        ?`<span class="cl-check ${done?'done':''}">${done?'✓':''}</span>`
+        :`<button type="button" class="cl-check ${done?'done':''}" onclick="toggleChecklistItem('${sk.id}',${done?'false':'true'})" title="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`;
+      return`<div class="cl-item ${done?'cl-done':''}">${check}<div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div></div></div>`;
+    }).join('');
+    return`<div class="cl-sec ${dark?'cl-dark':''}"><div class="cl-head"><span>${sec.emoji} ${adminEsc(sec.section)}</span><span class="cl-ct">${secDone}/${sec.skills.length}</span></div><div class="cl-list">${items||'<div class="cl-empty">No tasks yet.</div>'}</div></div>`;
+  }).join('');
+  const progNote=prog.total?` <strong>${prog.done}/${prog.total}</strong> done.`:'';
+  return`<div class="cl-box ${dark?'cl-dark':''}"><div class="cl-box-title">📋 Orientation — Pre Bootcamp</div><div class="cl-box-sub">Mark tasks complete as you finish them. These do not affect your skill scores.${progNote}</div>${sections}</div>`;
+}
+async function toggleChecklistItem(code,done){
+  try{
+    currentChecklist=parseChecklistCompleted(await rpc('app_checklist_toggle',{p_token:currentToken,p_skill_code:code,p_done:done}));
+    if(currentTechData){
+      currentTechData.checklist_completed=currentChecklist;
+      renderTechHome(currentTechData,{});
+    }
+  }catch(e){alert('Could not update task. Please try again.');console.error(e);}
 }
 function rawOf(a){
   if(!a||!a.raw_scores)return null;
@@ -1079,21 +1158,24 @@ async function loadSkillsAdmin(){
 function renderSkillsBoard(){
   const board=document.getElementById('skills-board');
   board.innerHTML=adminSkills.map(sec=>{
+    const isChecklist=(sec.section_type==='checklist');
+    const tag=`<span class="sk-sec-tag ${isChecklist?'checklist':'rated'}">${isChecklist?'Checklist':'Scored'}</span>`;
     const items=(sec.skills&&sec.skills.length)
       ? sec.skills.map(skItemHtml).join('')
-      : '<div class="sk-empty">No skills — drag one here or add below.</div>';
-    return `<div class="sk-sec">
+      : `<div class="sk-empty">No ${isChecklist?'tasks':'skills'} — drag one here or add below.</div>`;
+    return `<div class="sk-sec" data-section-type="${isChecklist?'checklist':'rated'}">
       <div class="sk-sec-h">
         <span class="sk-sec-emoji">${adminEsc(sec.emoji||'')}</span>
         <input class="sk-sec-name" value="${adminEsc(sec.section)}" onchange="renameSection(${sec.id},this.value)" title="Rename category">
+        ${tag}
         <span class="sk-sec-ct">${sec.skills?sec.skills.length:0}</span>
       </div>
-      <div class="sk-list" ondragover="skDragOver(event,this)" ondragleave="skDragLeave(event,this)" ondrop="skDrop(event,${sec.id},this)">
+      <div class="sk-list" data-section-id="${sec.id}" ondragover="skDragOver(event,this)" ondragleave="skDragLeave(event,this)" ondrop="skDrop(event,${sec.id},this)">
         ${items}
       </div>
       <div class="sk-add">
         <input id="sk-add-cat-${sec.id}" placeholder="Category (optional)">
-        <input id="sk-add-name-${sec.id}" placeholder="New skill name">
+        <input id="sk-add-name-${sec.id}" placeholder="${isChecklist?'New task name':'New skill name'}">
         <button type="button" class="btn" style="padding:8px 14px" onclick="addSkill(${sec.id})">Add</button>
       </div>
     </div>`;
@@ -1136,6 +1218,14 @@ async function skDrop(e,sectionId,list){
   list.classList.remove('drag-over');
   const dragging=document.querySelector('.sk-item.dragging');
   if(!dragging)return;
+  const targetSec=adminSkills.find(s=>s.id===sectionId);
+  const dragSkillId=Number(dragging.dataset.id);
+  const sourceSec=adminSkills.find(s=>(s.skills||[]).some(sk=>sk.id===dragSkillId));
+  if(targetSec&&sourceSec&&targetSec.section_type!==sourceSec.section_type){
+    skErr('Checklist tasks cannot be moved into scored skill categories (or vice versa).');
+    await loadSkillsAdmin();
+    return;
+  }
   const after=skAfterElement(list,e.clientY);
   if(after)list.insertBefore(dragging,after);else list.appendChild(dragging);
   const ids=[...list.querySelectorAll('.sk-item[data-id]')].map(el=>Number(el.dataset.id));
@@ -1397,10 +1487,13 @@ async function viewTechFromAdmin(techId,region,name){
   }catch(e){err.textContent='Could not open technician view: '+(e.message||'try again');err.style.display='block';}
 }
 
-function openTechReadOnly(t){
+async function openTechReadOnly(t){
   showPage('pg-tech');
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
+  await ensureSkills();
+  t.checklist_completed=await loadChecklistForTech(t.id);
+  currentTechData=t;
   renderTechHome(t,{readOnly:true});
   window.scrollTo(0,0);
 }
@@ -1411,11 +1504,13 @@ function exitTechView(){
   setPMView('tech',null);
 }
 
-function renderDetailView(t){
+async function renderDetailView(t){
   const assessments=t.assessments||[];
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
+  const completed=await loadChecklistForTech(t.id);
+  t.checklist_completed=completed;
 
   const compRows=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return'';
@@ -1436,6 +1531,7 @@ function renderDetailView(t){
 
   const rawScores=last&&last.raw_scores?last.raw_scores:{};
   const prevRawScores=prev&&prev.raw_scores?prev.raw_scores:{};
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true}):'';
 
   const moduleHTML=QUESTIONNAIRE.map(sec=>{
     const secKey=sec.key;
@@ -1485,6 +1581,7 @@ function renderDetailView(t){
       <div class="date-card"><div class="date-card-icon">📋</div><div><div class="date-card-label">Total submissions</div><div class="date-card-val">${assessments.length} assessment${assessments.length!==1?'s':''}</div></div></div>
     </div>
     ${assessments.length>=2?`<div class="comp-box"><div class="comp-title">📊 Last 2 months comparison — ${fmtDate(prev.date)} vs ${fmtDate(last.date)}</div>${compRows}</div>`:''}
+    ${checklistHtml}
     ${moduleHTML}
     <div class="hist-box">
       <div class="hist-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="toggleHist()">
@@ -1529,6 +1626,9 @@ async function loadTechHome(){
   const t=data.tech;
   t.assessments=data.assessments||[];
   currentTechId=t.id;currentTechName=t.name;
+  currentChecklist=await loadChecklistForTech();
+  t.checklist_completed=currentChecklist;
+  currentTechData=t;
   renderTechHome(t,{});
 }
 
@@ -1585,8 +1685,10 @@ function renderTechHome(t,opts){
     :`<button class="btn btn-full" onclick="startQuestionnaire()" style="padding:12px;font-size:14px">📝 Take this month's assessment</button>`;
 
   const banner=readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly}):"";
 
   container.innerHTML=banner+`
+    ${checklistHtml}
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
