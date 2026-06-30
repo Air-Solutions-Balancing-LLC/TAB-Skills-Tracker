@@ -28,8 +28,8 @@ STABLE
 AS $$
   SELECT t.id
   FROM public.technicians t
-  WHERE lower(trim(t.name)) = lower(trim(p_name))
-    AND t.deleted_at IS NULL
+  WHERE t.deleted_at IS NULL
+    AND lower(trim(t.name)) = lower(trim(p_name))
   ORDER BY CASE WHEN t.region = 'NE' THEN 0 ELSE 1 END, t.id
   LIMIT 1;
 $$;
