@@ -1,1134 +1,165 @@
 -- Import NE technician assessments from Microsoft Forms export
 -- Source: NE Responses - TAB Skills Self-Assessment.xlsx
 -- Run in Supabase SQL Editor. Safe to re-run.
-
-CREATE UNIQUE INDEX IF NOT EXISTS assessments_tech_id_date_uidx
-  ON public.assessments (tech_id, date);
-
-BEGIN;
-
--- Alex Baichu · latest
-UPDATE public.assessments a
-SET safety_avg = 4.0,
-    basic_avg = NULL,
-    intermediate_avg = NULL,
-    advanced_avg = NULL,
-    survey_avg = NULL,
-    comment = NULL,
-    raw_scores = '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4}'::jsonb
-FROM public.technicians t
-WHERE a.tech_id = t.id
-  AND lower(trim(t.name)) = lower(trim('Alex Baichu'))
-  AND t.region = 'NE'
-  AND t.deleted_at IS NULL
-  AND a.date = (SELECT max(a2.date) FROM public.assessments a2 WHERE a2.tech_id = t.id);
-
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-11-10'::date, 4.0, NULL, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Alex Baichu')) AND t.region = 'NE' AND t.deleted_at IS NULL
-  AND NOT EXISTS (SELECT 1 FROM public.assessments a WHERE a.tech_id = t.id);
-
--- Anatoliy Ilyuk · latest
-UPDATE public.assessments a
-SET safety_avg = 4.0,
-    basic_avg = 4.0,
-    intermediate_avg = NULL,
-    advanced_avg = NULL,
-    survey_avg = NULL,
-    comment = 'I need some training on sound testing vibration testing',
-    raw_scores = '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b36":4,"b37":4,"b38":4}'::jsonb
-FROM public.technicians t
-WHERE a.tech_id = t.id
-  AND lower(trim(t.name)) = lower(trim('Anatoliy Ilyuk'))
-  AND t.region = 'NE'
-  AND t.deleted_at IS NULL
-  AND a.date = (SELECT max(a2.date) FROM public.assessments a2 WHERE a2.tech_id = t.id);
-
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-11-06'::date, 4.0, 4.0, NULL, NULL, NULL, 'I need some training on sound testing vibration testing', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b36":4,"b37":4,"b38":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Anatoliy Ilyuk')) AND t.region = 'NE' AND t.deleted_at IS NULL
-  AND NOT EXISTS (SELECT 1 FROM public.assessments a WHERE a.tech_id = t.id);
-
--- Andrew Parziale · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 3.62, 2.79, 2.95, 2.59, 2.0, NULL, '{"s1":3,"s2":3,"s3":3,"s4":3,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":3,"b3":4,"b4":4,"b5":4,"b6":3,"b7":2,"b8":2,"b9":3,"b10":3,"b11":3,"b12":3,"b13":2,"b14":2,"b15":3,"b16":1,"b17":3,"b18":2,"b19":3,"b20":2,"b21":2,"b22":3,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":2,"b30":3,"b31":2,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":2,"i2":3,"i3":3,"i4":3,"i5":3,"i6":3,"i7":2,"i8":4,"i9":3,"i10":3,"i11":3,"i12":3,"i13":3,"i14":3,"i15":3,"i16":4,"i17":3,"i18":3,"i19":3,"i20":3,"i21":3,"i22":3,"i23":3,"i24":3,"i25":3,"i26":3,"i27":3,"i28":3,"i29":2,"i30":3,"i31":2,"i32":3,"i33":3,"i34":2,"i35":3,"i36":4,"i37":3,"i38":3,"i39":3,"i40":3,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":3,"a13":3,"a14":3,"a15":2,"a16":3,"a17":2,"a18":2,"a19":2,"a20":2,"a21":3,"a22":3,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Andrew Parziale')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Andrew Parziale · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 4.62, 3.82, 3.7, 2.63, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":2,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":3,"i8":5,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":2,"i30":4,"i31":3,"i32":3,"i33":4,"i34":3,"i35":4,"i36":5,"i37":3,"i38":3,"i39":3,"i40":3,"i41":4,"i42":3,"i43":2,"i44":3,"a1":3,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":3,"a13":3,"a14":3,"a15":2,"a16":3,"a17":2,"a18":2,"a19":2,"a20":2,"a21":3,"a22":4,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Andrew Parziale')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Andrew Parziale · 2026-03-27
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-27'::date, 4.62, 3.84, 3.7, 2.63, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":3,"i8":5,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":4,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":3,"i40":3,"i41":4,"i42":3,"i43":2,"i44":3,"a1":3,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":3,"a13":3,"a14":3,"a15":2,"a16":3,"a17":2,"a18":2,"a19":2,"a20":2,"a21":3,"a22":4,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Andrew Parziale')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Andrew Parziale · 2026-05-05
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-05-05'::date, 4.62, 3.84, 3.7, 2.63, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":3,"i8":5,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":4,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":3,"i40":3,"i41":4,"i42":3,"i43":2,"i44":3,"a1":3,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":3,"a13":3,"a14":3,"a15":2,"a16":3,"a17":2,"a18":2,"a19":2,"a20":2,"a21":3,"a22":4,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Andrew Parziale')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Andrew Parziale · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-05-05'::date, 4.62, 3.84, 3.7, 2.63, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":3,"i8":5,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":4,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":3,"i40":3,"i41":4,"i42":3,"i43":2,"i44":3,"a1":3,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":3,"a13":3,"a14":3,"a15":2,"a16":3,"a17":2,"a18":2,"a19":2,"a20":2,"a21":3,"a22":4,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Andrew Parziale')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Corey Crockett · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 4.0, 3.66, 3.88, 2.85, 3.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":1,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":4,"a4":2,"a5":1,"a6":3,"a7":3,"a8":4,"a9":2,"a10":4,"a11":3,"a12":3,"a13":4,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Corey Crockett')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Corey Crockett · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Corey Crockett')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Corey Crockett · 2026-02-27
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-27'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Corey Crockett')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Corey Crockett · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-27'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Corey Crockett')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dom Jean-Louis · 2026-02-02
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-02'::date, 4.31, 2.79, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":3,"b2":3,"b3":3,"b4":2,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":3,"b11":3,"b12":3,"b13":3,"b14":2,"b15":3,"b16":2,"b17":3,"b18":2,"b19":2,"b20":2,"b21":4,"b22":3,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":2,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dom Jean-Louis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dom Jean-Louis · 2026-06-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.31, 3.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":4,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":3,"b13":3,"b14":2,"b15":3,"b16":3,"b17":3,"b18":2,"b19":3,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dom Jean-Louis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dom Jean-Louis · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.31, 3.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":4,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":3,"b13":3,"b14":2,"b15":3,"b16":3,"b17":3,"b18":2,"b19":3,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dom Jean-Louis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Don Beauchesne · 2025-09-30
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-30'::date, 4.0, 4.0, 4.0, 2.7, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":2,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":3,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Don Beauchesne')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Don Beauchesne · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 5.0, 4.53, 4.4, 2.78, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":5,"b16":4,"b17":5,"b18":4,"b19":5,"b20":4,"b21":5,"b22":4,"b23":5,"b24":5,"b25":5,"b26":5,"b27":4,"b28":5,"b29":4,"b30":4,"b31":4,"b32":4,"b33":5,"b34":5,"b35":5,"b36":5,"b37":4,"b38":5,"i2":4,"i3":4,"i4":5,"i5":4,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":5,"i12":5,"i13":4,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":4,"i20":4,"i21":4,"i22":4,"i23":5,"i24":5,"i25":5,"i26":5,"i27":4,"i28":5,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":3,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Don Beauchesne')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Don Beauchesne · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 5.0, 4.53, 4.4, 2.78, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":5,"b16":4,"b17":5,"b18":4,"b19":5,"b20":4,"b21":5,"b22":4,"b23":5,"b24":5,"b25":5,"b26":5,"b27":4,"b28":5,"b29":4,"b30":4,"b31":4,"b32":4,"b33":5,"b34":5,"b35":5,"b36":5,"b37":4,"b38":5,"i2":4,"i3":4,"i4":5,"i5":4,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":5,"i12":5,"i13":4,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":4,"i20":4,"i21":4,"i22":4,"i23":5,"i24":5,"i25":5,"i26":5,"i27":4,"i28":5,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":3,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Don Beauchesne')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dylan Conner · 2025-09-26
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-26'::date, 3.92, 3.76, 3.95, 3.78, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":3,"b14":4,"b15":4,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":2,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":2,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":4,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dylan Conner')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dylan Conner · 2026-02-02
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-02'::date, 4.54, 4.24, 4.05, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":2,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":2,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dylan Conner')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dylan Conner · 2026-06-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.54, 4.26, 4.12, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":3,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":5,"i19":5,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dylan Conner')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Dylan Conner · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.54, 4.26, 4.12, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":3,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":5,"i19":5,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Dylan Conner')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Eric Olson · 2025-09-26
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-26'::date, 4.0, 3.95, 3.93, 2.63, 1.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":2,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":4,"a8":4,"a9":1,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":3,"a19":2,"a20":2,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Eric Olson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Eric Olson · 2026-01-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-29'::date, 5.0, 4.92, 4.86, 3.44, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":5,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":5,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":4,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":5,"i30":5,"i31":4,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":5,"i41":5,"i42":5,"i43":2,"i44":5,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":5,"a8":5,"a9":2,"a10":5,"a11":3,"a12":5,"a13":5,"a14":5,"a15":5,"a16":5,"a17":2,"a18":4,"a19":3,"a20":3,"a21":5,"a22":2,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Eric Olson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Eric Olson · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-29'::date, 5.0, 4.92, 4.86, 3.44, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":5,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":5,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":4,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":5,"i30":5,"i31":4,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":5,"i41":5,"i42":5,"i43":2,"i44":5,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":5,"a8":5,"a9":2,"a10":5,"a11":3,"a12":5,"a13":5,"a14":5,"a15":5,"a16":5,"a17":2,"a18":4,"a19":3,"a20":3,"a21":5,"a22":2,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Eric Olson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Gary St. Clair · 2025-09-26
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-26'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Gary St. Clair')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Gary St. Clair · 2026-02-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Gary St. Clair')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Gary St. Clair · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Gary St. Clair')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jimmy Anderson · 2025-09-30
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-30'::date, 3.92, 3.66, 3.79, 3.33, 1.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":1,"b19":3,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":3,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":3,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jimmy Anderson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jimmy Anderson · 2026-02-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-04'::date, 4.92, 4.47, 4.19, 3.33, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":1,"b19":4,"b20":4,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":3,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":5,"i23":5,"i24":4,"i25":5,"i26":5,"i27":4,"i28":5,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":4,"i37":4,"i38":4,"i39":5,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jimmy Anderson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jimmy Anderson · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-04'::date, 4.92, 4.47, 4.19, 3.33, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":1,"b19":4,"b20":4,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":3,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":5,"i23":5,"i24":4,"i25":5,"i26":5,"i27":4,"i28":5,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":4,"i37":4,"i38":4,"i39":5,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":2,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jimmy Anderson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- James Dupass · 2025-09-26
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-26'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('James Dupass')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- James Dupass · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('James Dupass')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- James Dupass · 2026-02-25
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-25'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('James Dupass')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- James Dupass · 2026-04-30
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-04-30'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('James Dupass')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- James Dupass · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-04-30'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('James Dupass')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jeremy Wickson · 2025-09-30
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-30'::date, 4.0, 3.89, 3.93, 3.19, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":3,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":3,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":3,"a28":3,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jeremy Wickson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jeremy Wickson · 2026-02-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-04'::date, 4.0, 3.92, 3.95, 3.26, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":4,"a28":3,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jeremy Wickson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jeremy Wickson · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-04'::date, 4.0, 3.92, 3.95, 3.26, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":4,"a28":3,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jeremy Wickson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jonny Cascarano · 2025-10-01
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-10-01'::date, 3.92, 3.34, 1.77, 1.0, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":3,"b2":3,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":3,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":2,"b34":2,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jonny Cascarano')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jonny Cascarano · 2026-02-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 5.0, 3.68, 1.77, 1.0, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":4,"b16":3,"b17":5,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jonny Cascarano')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Jonny Cascarano · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 5.0, 3.68, 1.77, 1.0, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":4,"b16":3,"b17":5,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Jonny Cascarano')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kody Collins · 2025-11-05
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-11-05'::date, 4.0, 4.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kody Collins')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kody Collins · 2026-02-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kody Collins')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kody Collins · 2026-06-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-04'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kody Collins')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kody Collins · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-04'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kody Collins')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kurt Paradis · 2025-09-26
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-26'::date, 4.0, 3.82, 3.93, 3.3, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":3,"a7":4,"a8":4,"a9":4,"a10":4,"a11":3,"a12":3,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":3,"a22":3,"a23":3,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kurt Paradis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kurt Paradis · 2026-02-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 5.0, 4.66, 4.72, 3.52, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":2,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":3,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":3,"a23":3,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kurt Paradis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kurt Paradis · 2026-06-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 5.0, 4.68, 4.74, 3.63, 2.5, 'I have yet to do any KES surveys', '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":2,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":3,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":4,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":4,"a23":4,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kurt Paradis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Kurt Paradis · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 5.0, 4.68, 4.74, 3.63, 2.5, 'I have yet to do any KES surveys', '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":2,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":3,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":4,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":4,"a23":4,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Kurt Paradis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Luisander Ruiz · 2026-01-07
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-07'::date, 3.46, 2.26, 1.0, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":3,"s4":3,"s5":2,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":1,"b1":3,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":3,"b10":2,"b11":2,"b12":3,"b13":3,"b14":1,"b15":1,"b16":1,"b17":3,"b18":1,"b19":2,"b20":2,"b21":3,"b22":3,"b23":2,"b24":1,"b25":3,"b26":2,"b27":2,"b28":2,"b29":2,"b30":2,"b31":2,"b32":2,"b33":2,"b34":2,"b35":3,"b36":3,"b37":3,"b38":2,"i2":1,"i3":1,"i4":1,"i5":1,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":1,"i12":1,"i13":1,"i14":1,"i15":1,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":1,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Luisander Ruiz')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Luisander Ruiz · 2026-02-02
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-02'::date, 3.85, 3.66, 1.21, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":3,"b28":4,"b29":2,"b30":3,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":1,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Luisander Ruiz')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Luisander Ruiz · 2026-03-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-04'::date, 4.0, 3.82, 1.23, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":3,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":2,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Luisander Ruiz')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Luisander Ruiz · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-04'::date, 4.0, 3.82, 1.23, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":3,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":2,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Luisander Ruiz')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Matt O'Brien · 2025-12-09
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-12-09'::date, 3.23, 2.89, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":3,"s2":3,"s3":2,"s4":3,"s5":3,"s6":4,"s7":3,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":2,"b1":3,"b2":3,"b3":3,"b4":3,"b5":3,"b6":3,"b7":2,"b8":3,"b9":3,"b10":3,"b11":3,"b12":3,"b13":3,"b14":2,"b15":3,"b16":2,"b17":2,"b18":2,"b19":3,"b20":3,"b21":3,"b22":3,"b23":4,"b24":3,"b25":3,"b26":3,"b27":4,"b28":4,"b29":2,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Matt O''Brien')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Matt O'Brien · 2026-03-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-04'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Matt O''Brien')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Matt O'Brien · 2026-06-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Matt O''Brien')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Matt O'Brien · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-06-03'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Matt O''Brien')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Richard Wilson · 2025-11-05
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-11-05'::date, 3.85, 2.61, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":2,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":2,"b7":1,"b8":2,"b9":4,"b10":4,"b11":3,"b12":4,"b13":3,"b14":1,"b15":4,"b16":1,"b17":1,"b18":1,"b19":1,"b20":2,"b21":4,"b22":2,"b23":3,"b24":4,"b25":1,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":3,"b33":3,"b34":2,"b35":4,"b36":3,"b37":1,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Richard Wilson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Richard Wilson · 2026-02-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-04'::date, 4.69, 3.08, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time. Would like more exposure to FPB (parallel and series) and VAVs. A lot of the time I get the chance to do them there is something wrong with the unit, or I only do a few. Then weeks will pass and by the time I do them again it feels a little unfamiliar.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":2,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":2,"b7":1,"b8":2,"b9":5,"b10":5,"b11":3,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":1,"b18":1,"b19":1,"b20":2,"b21":4,"b22":4,"b23":3,"b24":5,"b25":1,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Richard Wilson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Richard Wilson · 2026-02-25
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-25'::date, 4.77, 3.24, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time. Would like more exposure to FPB (parallel and series) and VAVs. A lot of the time I get the chance to do them there is something wrong with the unit, or I only do a few. Then weeks will pass and by the time I do them again it feels a little unfamiliar. Need more exposure with VAVs, FPBs (both parallel and series), the majority of the work I have done has been constant volume systems. I need more exposure to these so I can move forward with ATA.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":2,"b7":1,"b8":4,"b9":5,"b10":5,"b11":3,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":2,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Richard Wilson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Richard Wilson · 2026-03-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-29'::date, 4.77, 3.32, NULL, NULL, NULL, 'I would rather be a helper at this point.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":3,"b7":1,"b8":4,"b9":5,"b10":5,"b11":4,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":3,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Richard Wilson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Richard Wilson · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-29'::date, 4.77, 3.32, NULL, NULL, NULL, 'I would rather be a helper at this point.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":3,"b7":1,"b8":4,"b9":5,"b10":5,"b11":4,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":3,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Richard Wilson')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Sean Sutherland · 2025-11-04
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-11-04'::date, 3.77, 3.21, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":2,"s6":4,"s7":4,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":3,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":4,"b26":3,"b27":3,"b28":3,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Sean Sutherland')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Sean Sutherland · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 3.77, 3.32, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second base.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":2,"s6":4,"s7":4,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":2,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":3,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Sean Sutherland')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Sean Sutherland · 2026-03-30
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-30'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Sean Sutherland')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Sean Sutherland · 2026-05-06
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-05-06'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Sean Sutherland')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Sean Sutherland · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-05-06'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Sean Sutherland')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Stavros Themeilis · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 3.85, 3.95, 3.93, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":3,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":4,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Stavros Themeilis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Stavros Themeilis · 2026-02-06
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-06'::date, 3.85, 3.95, 3.95, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":4,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":3,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Stavros Themeilis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Stavros Themeilis · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-06'::date, 3.85, 3.95, 3.95, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":4,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":3,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Stavros Themeilis')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Thomas Ryan · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 3.77, 4.0, 3.95, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Thomas Ryan')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Thomas Ryan · 2026-02-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 3.77, 4.0, 3.74, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":3,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Thomas Ryan')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Thomas Ryan · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-02-03'::date, 3.77, 4.0, 3.74, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":3,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Thomas Ryan')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Tyler LeBlanc · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 4.0, 3.74, 3.23, 1.37, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":3,"b17":4,"b18":2,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":2,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":2,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":2,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":3,"i20":3,"i21":3,"i22":2,"i23":3,"i24":3,"i25":4,"i26":2,"i27":3,"i28":2,"i29":1,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":2,"i39":4,"i40":2,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Tyler LeBlanc')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Tyler LeBlanc · 2026-01-28
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 5.0, 4.45, 3.81, 1.37, 1.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":3,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":2,"b15":4,"b16":3,"b17":5,"b18":2,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":2,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":4,"b38":2,"i2":3,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":4,"i12":5,"i13":2,"i14":5,"i15":5,"i16":4,"i17":5,"i18":4,"i19":4,"i20":4,"i21":3,"i22":3,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":4,"i40":3,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Tyler LeBlanc')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Tyler LeBlanc · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-01-28'::date, 5.0, 4.45, 3.81, 1.37, 1.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":3,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":2,"b15":4,"b16":3,"b17":5,"b18":2,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":2,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":4,"b38":2,"i2":3,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":4,"i12":5,"i13":2,"i14":5,"i15":5,"i16":4,"i17":5,"i18":4,"i19":4,"i20":4,"i21":3,"i22":3,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":4,"i40":3,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Tyler LeBlanc')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Vinny Fitzpatrick · 2025-09-29
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2025-09-29'::date, 4.0, 3.92, 3.88, 2.41, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i13":4,"i14":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Vinny Fitzpatrick')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Vinny Fitzpatrick · 2026-03-03
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-03'::date, 5.0, 4.82, 4.7, 2.41, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":4,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":5,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Vinny Fitzpatrick')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
--- Vinny Fitzpatrick · latest
-INSERT INTO public.assessments (tech_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
-SELECT t.id, '2026-03-03'::date, 5.0, 4.82, 4.7, 2.41, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":4,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":5,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb
-FROM public.technicians t
-WHERE lower(trim(t.name)) = lower(trim('Vinny Fitzpatrick')) AND t.region = 'NE' AND t.deleted_at IS NULL
-ON CONFLICT (tech_id, date) DO UPDATE SET
-  safety_avg = EXCLUDED.safety_avg,
-  basic_avg = EXCLUDED.basic_avg,
-  intermediate_avg = EXCLUDED.intermediate_avg,
-  advanced_avg = EXCLUDED.advanced_avg,
-  survey_avg = EXCLUDED.survey_avg,
-  comment = EXCLUDED.comment,
-  raw_scores = EXCLUDED.raw_scores;
-
-COMMIT;
-
--- 23 technicians, 56 dated snapshots, 2 latest-with-blank-date updates
+-- Auto-detects assessments FK column (technician_id or tech_id).
+
+CREATE TEMP TABLE _ne_import (
+  action text NOT NULL,
+  tech_name text NOT NULL,
+  assessment_date date,
+  safety_avg numeric,
+  basic_avg numeric,
+  intermediate_avg numeric,
+  advanced_avg numeric,
+  survey_avg numeric,
+  comment text,
+  raw_scores jsonb
+) ON COMMIT DROP;
+
+INSERT INTO _ne_import (action, tech_name, assessment_date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores) VALUES
+  ('update_latest', 'Alex Baichu', '2025-11-10'::date, 4.0, NULL, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4}'::jsonb),
+  ('update_latest', 'Anatoliy Ilyuk', '2025-11-06'::date, 4.0, 4.0, NULL, NULL, NULL, 'I need some training on sound testing vibration testing', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b36":4,"b37":4,"b38":4}'::jsonb),
+  ('upsert', 'Andrew Parziale', '2025-09-29'::date, 3.62, 2.79, NULL, NULL, NULL, NULL, '{"s1":3,"s2":3,"s3":3,"s4":3,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":3,"b3":4,"b4":4,"b5":4,"b6":3,"b7":2,"b8":2,"b9":3,"b10":3,"b11":3,"b12":3,"b13":2,"b14":2,"b15":3,"b16":1,"b17":3,"b18":2,"b19":3,"b20":2,"b21":2,"b22":3,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":2,"b30":3,"b31":2,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":2}'::jsonb),
+  ('upsert', 'Andrew Parziale', '2026-01-28'::date, 4.62, 3.82, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":2,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Andrew Parziale', '2026-03-27'::date, 4.62, 3.84, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Andrew Parziale', '2026-05-05'::date, 4.62, 3.84, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Andrew Parziale', '2026-05-05'::date, 4.62, 3.84, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":3,"b21":3,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Corey Crockett', '2025-09-29'::date, 4.0, 3.66, 3.88, 2.85, 3.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":1,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":4,"a4":2,"a5":1,"a6":3,"a7":3,"a8":4,"a9":2,"a10":4,"a11":3,"a12":3,"a13":4,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":4}'::jsonb),
+  ('upsert', 'Corey Crockett', '2026-01-28'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Corey Crockett', '2026-02-27'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Corey Crockett', '2026-02-27'::date, 4.15, 3.74, 3.88, 2.74, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":5,"s8":5,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":1,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":2,"a3":3,"a4":2,"a5":1,"a6":3,"a7":3,"a8":3,"a9":2,"a10":4,"a11":3,"a12":3,"a13":3,"a14":3,"a15":3,"a16":4,"a17":3,"a18":3,"a19":4,"a20":4,"a21":3,"a22":3,"a23":1,"a24":1,"a25":4,"a26":3,"a27":2,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Dom Jean-Louis', '2026-02-02'::date, 4.31, 2.79, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":3,"b2":3,"b3":3,"b4":2,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":3,"b11":3,"b12":3,"b13":3,"b14":2,"b15":3,"b16":2,"b17":3,"b18":2,"b19":2,"b20":2,"b21":4,"b22":3,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":2,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb),
+  ('upsert', 'Dom Jean-Louis', '2026-06-03'::date, 4.31, 3.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":4,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":3,"b13":3,"b14":2,"b15":3,"b16":3,"b17":3,"b18":2,"b19":3,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb),
+  ('upsert', 'Dom Jean-Louis', '2026-06-03'::date, 4.31, 3.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":4,"s8":5,"s9":5,"s10":4,"s11":4,"s12":4,"s13":5,"b1":4,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":3,"b13":3,"b14":2,"b15":3,"b16":3,"b17":3,"b18":2,"b19":3,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":3,"b26":3,"b27":3,"b28":3,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3}'::jsonb),
+  ('upsert', 'Don Beauchesne', '2025-09-30'::date, 4.0, 4.0, 4.0, 2.7, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":2,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":3,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb),
+  ('upsert', 'Don Beauchesne', '2026-01-28'::date, 5.0, 4.53, 4.4, 2.78, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":5,"b16":4,"b17":5,"b18":4,"b19":5,"b20":4,"b21":5,"b22":4,"b23":5,"b24":5,"b25":5,"b26":5,"b27":4,"b28":5,"b29":4,"b30":4,"b31":4,"b32":4,"b33":5,"b34":5,"b35":5,"b36":5,"b37":4,"b38":5,"i2":4,"i3":4,"i4":5,"i5":4,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":5,"i12":5,"i13":4,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":4,"i20":4,"i21":4,"i22":4,"i23":5,"i24":5,"i25":5,"i26":5,"i27":4,"i28":5,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":3,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb),
+  ('upsert', 'Don Beauchesne', '2026-01-28'::date, 5.0, 4.53, 4.4, 2.78, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":5,"b16":4,"b17":5,"b18":4,"b19":5,"b20":4,"b21":5,"b22":4,"b23":5,"b24":5,"b25":5,"b26":5,"b27":4,"b28":5,"b29":4,"b30":4,"b31":4,"b32":4,"b33":5,"b34":5,"b35":5,"b36":5,"b37":4,"b38":5,"i2":4,"i3":4,"i4":5,"i5":4,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":5,"i12":5,"i13":4,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":4,"i20":4,"i21":4,"i22":4,"i23":5,"i24":5,"i25":5,"i26":5,"i27":4,"i28":5,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":2,"a5":2,"a6":3,"a7":3,"a8":2,"a9":2,"a10":3,"a11":2,"a12":2,"a13":4,"a14":2,"a15":4,"a16":3,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":2,"a26":2,"a27":2,"a28":2,"sv1":2,"sv2":2}'::jsonb),
+  ('upsert', 'Dylan Conner', '2025-09-26'::date, 3.92, 3.76, 3.95, 3.78, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":3,"b14":4,"b15":4,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":2,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":2,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":4,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb),
+  ('upsert', 'Dylan Conner', '2026-02-02'::date, 4.54, 4.24, 4.05, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":2,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":2,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb),
+  ('upsert', 'Dylan Conner', '2026-06-03'::date, 4.54, 4.26, 4.12, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":3,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":5,"i19":5,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb),
+  ('upsert', 'Dylan Conner', '2026-06-03'::date, 4.54, 4.26, 4.12, 3.85, 3.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":4,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":4,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":2,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":5,"b23":5,"b24":5,"b25":4,"b26":5,"b27":4,"b28":5,"b29":3,"b30":4,"b31":5,"b32":4,"b33":5,"b34":5,"b35":4,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":5,"i17":5,"i18":5,"i19":5,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":5,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":5,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":4,"a19":4,"a20":4,"a21":4,"a22":2,"a23":2,"a24":2,"a25":4,"a26":5,"a27":4,"a28":4,"sv1":3,"sv2":4}'::jsonb),
+  ('upsert', 'Eric Olson', '2025-09-26'::date, 4.0, 3.95, 3.93, 2.63, 1.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":2,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":4,"a8":4,"a9":1,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":3,"a19":2,"a20":2,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb),
+  ('upsert', 'Eric Olson', '2026-01-29'::date, 5.0, 4.92, 4.86, 3.44, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":5,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":5,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":4,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":5,"i30":5,"i31":4,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":5,"i41":5,"i42":5,"i43":2,"i44":5,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":5,"a8":5,"a9":2,"a10":5,"a11":3,"a12":5,"a13":5,"a14":5,"a15":5,"a16":5,"a17":2,"a18":4,"a19":3,"a20":3,"a21":5,"a22":2,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Eric Olson', '2026-01-29'::date, 5.0, 4.92, 4.86, 3.44, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":3,"b14":4,"b15":5,"b16":5,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":5,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":4,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":5,"i30":5,"i31":4,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":5,"i41":5,"i42":5,"i43":2,"i44":5,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":5,"a8":5,"a9":2,"a10":5,"a11":3,"a12":5,"a13":5,"a14":5,"a15":5,"a16":5,"a17":2,"a18":4,"a19":3,"a20":3,"a21":5,"a22":2,"a23":2,"a24":2,"a25":2,"a26":3,"a27":2,"a28":2,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Gary St. Clair', '2025-09-26'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Gary St. Clair', '2026-02-03'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Gary St. Clair', '2026-02-03'::date, 4.0, 3.84, 3.86, 2.78, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":3,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":3,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":2,"a10":3,"a11":1,"a12":3,"a13":4,"a14":4,"a15":4,"a16":3,"a17":4,"a18":3,"a19":3,"a20":3,"a21":4,"a22":3,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Jimmy Anderson', '2025-09-30'::date, 3.92, 3.66, 3.79, 3.33, 1.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":3,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":1,"b19":3,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":3,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":3,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb),
+  ('upsert', 'Jimmy Anderson', '2026-02-04'::date, 4.92, 4.47, 4.19, 3.33, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":1,"b19":4,"b20":4,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":3,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":5,"i23":5,"i24":4,"i25":5,"i26":5,"i27":4,"i28":5,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":4,"i37":4,"i38":4,"i39":5,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":2,"sv2":2}'::jsonb),
+  ('upsert', 'Jimmy Anderson', '2026-02-04'::date, 4.92, 4.47, 4.19, 3.33, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":1,"b19":4,"b20":4,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":3,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":4,"i6":4,"i7":1,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":5,"i23":5,"i24":4,"i25":5,"i26":5,"i27":4,"i28":5,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":5,"i36":4,"i37":4,"i38":4,"i39":5,"i40":4,"i41":4,"i42":4,"i43":4,"i44":3,"a1":3,"a3":4,"a4":4,"a5":3,"a6":4,"a7":4,"a8":4,"a9":3,"a10":4,"a11":1,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":4,"a22":4,"a23":4,"a24":2,"a25":4,"a26":1,"a27":1,"a28":1,"sv1":2,"sv2":2}'::jsonb),
+  ('upsert', 'James Dupass', '2025-09-26'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'James Dupass', '2026-01-28'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'James Dupass', '2026-02-25'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'James Dupass', '2026-04-30'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'James Dupass', '2026-04-30'::date, 4.0, 3.92, 3.86, 3.07, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":1,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":1,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":1,"i44":4,"a1":4,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":2,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":1,"a18":4,"a19":4,"a20":4,"a21":4,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":2,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Jeremy Wickson', '2025-09-30'::date, 4.0, 3.89, 3.93, 3.19, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":3,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":3,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":3,"a28":3,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Jeremy Wickson', '2026-02-04'::date, 4.0, 3.92, 3.95, 3.26, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":4,"a28":3,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Jeremy Wickson', '2026-02-04'::date, 4.0, 3.92, 3.95, 3.26, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":3,"i44":4,"a1":4,"a3":3,"a4":3,"a5":3,"a6":3,"a7":3,"a8":2,"a9":3,"a10":4,"a11":3,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":3,"a19":3,"a20":3,"a21":3,"a22":3,"a23":3,"a24":2,"a25":4,"a26":3,"a27":4,"a28":3,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Jonny Cascarano', '2025-10-01'::date, 3.92, 3.34, 1.77, 1.0, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":3,"b2":3,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":3,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":2,"b34":2,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb),
+  ('upsert', 'Jonny Cascarano', '2026-02-03'::date, 5.0, 3.68, 1.77, 1.0, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":4,"b16":3,"b17":5,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb),
+  ('upsert', 'Jonny Cascarano', '2026-02-03'::date, 5.0, 3.68, 1.77, 1.0, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":4,"b2":4,"b3":3,"b4":3,"b5":4,"b6":2,"b7":4,"b8":2,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":5,"b15":4,"b16":3,"b17":5,"b18":3,"b19":4,"b20":4,"b21":4,"b22":3,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":3,"i2":2,"i3":3,"i4":4,"i5":3,"i6":2,"i7":2,"i8":3,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":3,"i15":2,"i16":2,"i17":2,"i18":2,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":2,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":2,"i31":2,"i32":2,"i33":1,"i34":2,"i35":2,"i36":3,"i37":1,"i38":2,"i39":1,"i40":1,"i41":3,"i42":2,"i43":1,"i44":1,"a1":1}'::jsonb),
+  ('upsert', 'Kody Collins', '2025-11-05'::date, 4.0, 4.0, NULL, NULL, NULL, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4}'::jsonb),
+  ('upsert', 'Kody Collins', '2026-02-03'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Kody Collins', '2026-06-04'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Kody Collins', '2026-06-04'::date, 4.77, 4.74, NULL, NULL, NULL, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":4,"s6":5,"s7":4,"s8":5,"s9":4,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":4,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":5,"b17":4,"b18":4,"b19":4,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Kurt Paradis', '2025-09-26'::date, 4.0, 3.82, 3.93, 3.3, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":1,"b17":4,"b18":3,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":4,"i43":2,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":3,"a7":4,"a8":4,"a9":4,"a10":4,"a11":3,"a12":3,"a13":4,"a14":4,"a15":4,"a16":4,"a17":3,"a18":4,"a19":4,"a20":4,"a21":3,"a22":3,"a23":3,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Kurt Paradis', '2026-02-03'::date, 5.0, 4.66, 4.72, 3.52, 2.5, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":1,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":2,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":3,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":3,"a23":3,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Kurt Paradis', '2026-06-03'::date, 5.0, 4.68, 4.74, 3.63, 2.5, 'I have yet to do any KES surveys', '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":2,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":3,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":4,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":4,"a23":4,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Kurt Paradis', '2026-06-03'::date, 5.0, 4.68, 4.74, 3.63, 2.5, 'I have yet to do any KES surveys', '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":2,"b17":5,"b18":3,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":4,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":5,"b37":5,"b38":1,"i2":5,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":4,"i32":4,"i33":5,"i34":4,"i35":5,"i36":5,"i37":5,"i38":4,"i39":5,"i40":4,"i41":5,"i42":5,"i43":3,"i44":4,"a1":3,"a3":4,"a4":3,"a5":3,"a6":4,"a7":4,"a8":4,"a9":4,"a10":5,"a11":4,"a12":3,"a13":5,"a14":5,"a15":4,"a16":4,"a17":3,"a18":4,"a19":5,"a20":5,"a21":3,"a22":4,"a23":4,"a24":1,"a25":3,"a26":3,"a27":3,"a28":1,"sv1":2,"sv2":3}'::jsonb),
+  ('upsert', 'Luisander Ruiz', '2026-01-07'::date, 3.46, 2.26, 1.0, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":3,"s4":3,"s5":2,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":1,"b1":3,"b2":3,"b3":3,"b4":3,"b5":3,"b6":2,"b7":2,"b8":2,"b9":3,"b10":2,"b11":2,"b12":3,"b13":3,"b14":1,"b15":1,"b16":1,"b17":3,"b18":1,"b19":2,"b20":2,"b21":3,"b22":3,"b23":2,"b24":1,"b25":3,"b26":2,"b27":2,"b28":2,"b29":2,"b30":2,"b31":2,"b32":2,"b33":2,"b34":2,"b35":3,"b36":3,"b37":3,"b38":2,"i2":1,"i3":1,"i4":1,"i5":1,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":1,"i12":1,"i13":1,"i14":1,"i15":1,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":1,"i24":1,"i25":1,"i26":1,"i27":1,"i28":1,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Luisander Ruiz', '2026-02-02'::date, 3.85, 3.66, 1.21, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":4,"b17":4,"b18":1,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":3,"b28":4,"b29":2,"b30":3,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":1,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Luisander Ruiz', '2026-03-04'::date, 4.0, 3.82, 1.23, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":3,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":2,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Luisander Ruiz', '2026-03-04'::date, 4.0, 3.82, 1.23, 1.0, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":4,"b17":4,"b18":3,"b19":4,"b20":3,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":3,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":1,"i3":1,"i4":2,"i5":2,"i6":1,"i7":1,"i8":1,"i9":1,"i10":1,"i11":3,"i12":1,"i13":1,"i14":3,"i15":2,"i16":1,"i17":1,"i18":1,"i19":1,"i20":1,"i21":1,"i22":1,"i23":2,"i24":1,"i25":2,"i26":1,"i27":1,"i28":2,"i29":1,"i30":1,"i31":1,"i32":1,"i33":1,"i34":1,"i35":1,"i36":1,"i37":1,"i38":1,"i39":1,"i40":1,"i41":1,"i42":1,"i43":1,"i44":1,"a1":1,"a3":1,"a4":1,"a5":1,"a6":1,"a7":1,"a8":1,"a9":1,"a10":1,"a11":1,"a12":1,"a13":1,"a14":1,"a15":1,"a16":1,"a17":1,"a18":1,"a19":1,"a20":1,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Matt O''Brien', '2025-12-09'::date, 3.23, 2.89, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":3,"s2":3,"s3":2,"s4":3,"s5":3,"s6":4,"s7":3,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":2,"b1":3,"b2":3,"b3":3,"b4":3,"b5":3,"b6":3,"b7":2,"b8":3,"b9":3,"b10":3,"b11":3,"b12":3,"b13":3,"b14":2,"b15":3,"b16":2,"b17":2,"b18":2,"b19":3,"b20":3,"b21":3,"b22":3,"b23":4,"b24":3,"b25":3,"b26":3,"b27":4,"b28":4,"b29":2,"b30":3,"b31":3,"b32":3,"b33":3,"b34":3,"b35":3,"b36":3,"b37":3,"b38":2}'::jsonb),
+  ('upsert', 'Matt O''Brien', '2026-03-04'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Matt O''Brien', '2026-06-03'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Matt O''Brien', '2026-06-03'::date, 4.08, 3.68, NULL, NULL, NULL, 'For me this was my first assessment,  and I think it will be helpful going forward.', '{"s1":4,"s2":3,"s3":3,"s4":4,"s5":3,"s6":4,"s7":3,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":3,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":3,"b20":4,"b21":4,"b22":4,"b23":5,"b24":4,"b25":4,"b26":4,"b27":4,"b28":5,"b29":2,"b30":4,"b31":3,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2}'::jsonb),
+  ('upsert', 'Richard Wilson', '2025-11-05'::date, 3.85, 2.61, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":2,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":2,"b7":1,"b8":2,"b9":4,"b10":4,"b11":3,"b12":4,"b13":3,"b14":1,"b15":4,"b16":1,"b17":1,"b18":1,"b19":1,"b20":2,"b21":4,"b22":2,"b23":3,"b24":4,"b25":1,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":3,"b33":3,"b34":2,"b35":4,"b36":3,"b37":1,"b38":1}'::jsonb),
+  ('upsert', 'Richard Wilson', '2026-02-04'::date, 4.69, 3.08, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time. Would like more exposure to FPB (parallel and series) and VAVs. A lot of the time I get the chance to do them there is something wrong with the unit, or I only do a few. Then weeks will pass and by the time I do them again it feels a little unfamiliar.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":2,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":2,"b7":1,"b8":2,"b9":5,"b10":5,"b11":3,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":1,"b18":1,"b19":1,"b20":2,"b21":4,"b22":4,"b23":3,"b24":5,"b25":1,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Richard Wilson', '2026-02-25'::date, 4.77, 3.24, NULL, NULL, NULL, 'Need to understand where and why to take amperage and voltage at units. Every time I have taken measurements under supervision, I always have the wrong idea of where to take measurements, I am worried I might damage the unit or electrocute myself at this current point in time. Would like more exposure to FPB (parallel and series) and VAVs. A lot of the time I get the chance to do them there is something wrong with the unit, or I only do a few. Then weeks will pass and by the time I do them again it feels a little unfamiliar. Need more exposure with VAVs, FPBs (both parallel and series), the majority of the work I have done has been constant volume systems. I need more exposure to these so I can move forward with ATA.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":2,"b7":1,"b8":4,"b9":5,"b10":5,"b11":3,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":2,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Richard Wilson', '2026-03-29'::date, 4.77, 3.32, NULL, NULL, NULL, 'I would rather be a helper at this point.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":3,"b7":1,"b8":4,"b9":5,"b10":5,"b11":4,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":3,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Richard Wilson', '2026-03-29'::date, 4.77, 3.32, NULL, NULL, NULL, 'I would rather be a helper at this point.', '{"s1":5,"s2":5,"s3":4,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":3,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":3,"b7":1,"b8":4,"b9":5,"b10":5,"b11":4,"b12":5,"b13":3,"b14":1,"b15":5,"b16":1,"b17":3,"b18":1,"b19":1,"b20":3,"b21":4,"b22":4,"b23":3,"b24":5,"b25":3,"b26":3,"b27":3,"b28":4,"b29":1,"b30":1,"b31":2,"b32":4,"b33":3,"b34":3,"b35":4,"b36":3,"b37":5,"b38":1}'::jsonb),
+  ('upsert', 'Sean Sutherland', '2025-11-04'::date, 3.77, 3.21, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":2,"s6":4,"s7":4,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":2,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":3,"b14":2,"b15":4,"b16":2,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":3,"b24":3,"b25":4,"b26":3,"b27":3,"b28":3,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb),
+  ('upsert', 'Sean Sutherland', '2026-01-28'::date, 3.77, 3.32, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second base.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":2,"s6":4,"s7":4,"s8":4,"s9":3,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":2,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":3,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb),
+  ('upsert', 'Sean Sutherland', '2026-03-30'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb),
+  ('upsert', 'Sean Sutherland', '2026-05-06'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb),
+  ('upsert', 'Sean Sutherland', '2026-05-06'::date, 3.92, 3.37, NULL, NULL, NULL, 'Teams of two - Much faster for larger sites.  Or a second hood.', '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":3,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":2,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":3,"b15":4,"b16":3,"b17":4,"b18":2,"b19":2,"b20":2,"b21":4,"b22":4,"b23":4,"b24":3,"b25":4,"b26":3,"b27":3,"b28":4,"b29":2,"b30":2,"b31":4,"b32":3,"b33":3,"b34":3,"b35":4,"b36":4,"b37":4,"b38":1}'::jsonb),
+  ('upsert', 'Stavros Themeilis', '2025-09-29'::date, 3.85, 3.95, 3.93, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":3,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":3,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":4,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb),
+  ('upsert', 'Stavros Themeilis', '2026-02-06'::date, 3.85, 3.95, 3.95, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":4,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":3,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb),
+  ('upsert', 'Stavros Themeilis', '2026-02-06'::date, 3.85, 3.95, 3.95, 3.67, 2.5, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":3,"s12":4,"s13":3,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":4,"i41":4,"i42":3,"i43":3,"i44":4,"a1":3,"a3":4,"a4":4,"a5":4,"a6":4,"a7":4,"a8":4,"a9":4,"a10":4,"a11":4,"a12":4,"a13":4,"a14":4,"a15":4,"a16":4,"a17":4,"a18":3,"a19":4,"a20":4,"a21":4,"a22":2,"a23":4,"a24":2,"a25":3,"a26":4,"a27":3,"a28":3,"sv1":3,"sv2":2}'::jsonb),
+  ('upsert', 'Thomas Ryan', '2025-09-29'::date, 3.77, 4.0, 3.95, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":4,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":4,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb),
+  ('upsert', 'Thomas Ryan', '2026-02-03'::date, 3.77, 4.0, 3.74, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":3,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb),
+  ('upsert', 'Thomas Ryan', '2026-02-03'::date, 3.77, 4.0, 3.74, 1.96, 1.5, NULL, '{"s1":4,"s2":3,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":2,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":4,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":3,"i13":3,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":3,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":3,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":4,"i39":4,"i40":2,"i41":4,"i42":4,"i43":4,"i44":4,"a1":4,"a3":2,"a4":2,"a5":2,"a6":2,"a7":2,"a8":2,"a9":2,"a10":2,"a11":2,"a12":2,"a13":2,"a14":2,"a15":3,"a16":2,"a17":1,"a18":2,"a19":2,"a20":3,"a21":3,"a22":1,"a23":1,"a24":1,"a25":2,"a26":2,"a27":1,"a28":1,"sv1":1,"sv2":2}'::jsonb),
+  ('upsert', 'Tyler LeBlanc', '2025-09-29'::date, 4.0, 3.74, 3.23, 1.37, 1.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":3,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":2,"b15":4,"b16":3,"b17":4,"b18":2,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":2,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":2,"i2":2,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i12":4,"i13":2,"i14":4,"i15":4,"i16":4,"i17":4,"i18":4,"i19":3,"i20":3,"i21":3,"i22":2,"i23":3,"i24":3,"i25":4,"i26":2,"i27":3,"i28":2,"i29":1,"i30":4,"i31":3,"i32":3,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":2,"i39":4,"i40":2,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Tyler LeBlanc', '2026-01-28'::date, 5.0, 4.45, 3.81, 1.37, 1.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":3,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":2,"b15":4,"b16":3,"b17":5,"b18":2,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":2,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":4,"b38":2,"i2":3,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":4,"i12":5,"i13":2,"i14":5,"i15":5,"i16":4,"i17":5,"i18":4,"i19":4,"i20":4,"i21":3,"i22":3,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":4,"i40":3,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Tyler LeBlanc', '2026-01-28'::date, 5.0, 4.45, 3.81, 1.37, 1.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":3,"b8":4,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":2,"b15":4,"b16":3,"b17":5,"b18":2,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":2,"b30":4,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":4,"b38":2,"i2":3,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":4,"i10":5,"i11":4,"i12":5,"i13":2,"i14":5,"i15":5,"i16":4,"i17":5,"i18":4,"i19":4,"i20":4,"i21":3,"i22":3,"i23":4,"i24":4,"i25":4,"i26":4,"i27":4,"i28":4,"i29":1,"i30":4,"i31":4,"i32":4,"i33":3,"i34":3,"i35":4,"i36":4,"i37":3,"i38":3,"i39":4,"i40":3,"i41":3,"i42":3,"i43":2,"i44":3,"a1":3,"a3":2,"a4":2,"a5":1,"a6":1,"a7":1,"a8":2,"a9":1,"a10":1,"a11":1,"a12":1,"a13":3,"a14":2,"a15":1,"a16":1,"a17":1,"a18":1,"a19":2,"a20":2,"a21":1,"a22":1,"a23":1,"a24":1,"a25":1,"a26":1,"a27":1,"a28":1,"sv1":1,"sv2":1}'::jsonb),
+  ('upsert', 'Vinny Fitzpatrick', '2025-09-29'::date, 4.0, 3.92, 3.88, 2.41, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i13":4,"i14":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Vinny Fitzpatrick', '2026-03-03'::date, 5.0, 4.82, 4.7, 2.41, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":4,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":5,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb),
+  ('upsert', 'Vinny Fitzpatrick', '2026-03-03'::date, 5.0, 4.82, 4.7, 2.41, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":4,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":5,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb);
+
+DO $$
+DECLARE
+  fk_col text;
+  r record;
+  updated_count int;
+BEGIN
+  SELECT column_name INTO fk_col
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'assessments'
+    AND column_name IN ('technician_id', 'tech_id')
+  ORDER BY CASE column_name WHEN 'technician_id' THEN 1 ELSE 2 END
+  LIMIT 1;
+
+  IF fk_col IS NULL THEN
+    RAISE EXCEPTION 'assessments has no technician_id/tech_id column. Columns: %',
+      (SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'assessments');
+  END IF;
+
+  EXECUTE format(
+    'CREATE UNIQUE INDEX IF NOT EXISTS assessments_fk_date_uidx ON public.assessments (%I, date)',
+    fk_col
+  );
+
+  FOR r IN SELECT * FROM _ne_import WHERE action = 'upsert' AND assessment_date IS NOT NULL LOOP
+    EXECUTE format(
+      'INSERT INTO public.assessments (%I, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores) '
+      'SELECT t.id, $1, $2, $3, $4, $5, $6, $7, $8 '
+      'FROM public.technicians t '
+      'WHERE lower(trim(t.name)) = lower(trim($9)) AND t.region = ''NE'' AND t.deleted_at IS NULL '
+      'ON CONFLICT (%I, date) DO UPDATE SET '
+      'safety_avg = EXCLUDED.safety_avg, basic_avg = EXCLUDED.basic_avg, '
+      'intermediate_avg = EXCLUDED.intermediate_avg, advanced_avg = EXCLUDED.advanced_avg, '
+      'survey_avg = EXCLUDED.survey_avg, comment = EXCLUDED.comment, raw_scores = EXCLUDED.raw_scores',
+      fk_col, fk_col
+    ) USING r.assessment_date, r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
+  END LOOP;
+
+  FOR r IN SELECT * FROM _ne_import WHERE action = 'update_latest' LOOP
+    EXECUTE format(
+      'UPDATE public.assessments a SET '
+      'safety_avg = $1, basic_avg = $2, intermediate_avg = $3, advanced_avg = $4, survey_avg = $5, '
+      'comment = $6, raw_scores = $7 '
+      'FROM public.technicians t '
+      'WHERE a.%I = t.id AND lower(trim(t.name)) = lower(trim($8)) AND t.region = ''NE'' AND t.deleted_at IS NULL '
+      'AND a.date = (SELECT max(a2.date) FROM public.assessments a2 WHERE a2.%I = t.id)',
+      fk_col, fk_col
+    ) USING r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
+    GET DIAGNOSTICS updated_count = ROW_COUNT;
+    IF updated_count = 0 AND r.assessment_date IS NOT NULL THEN
+      EXECUTE format(
+        'INSERT INTO public.assessments (%I, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores) '
+        'SELECT t.id, $1, $2, $3, $4, $5, $6, $7, $8 '
+        'FROM public.technicians t '
+        'WHERE lower(trim(t.name)) = lower(trim($9)) AND t.region = ''NE'' AND t.deleted_at IS NULL '
+        'AND NOT EXISTS (SELECT 1 FROM public.assessments a WHERE a.%I = t.id)',
+        fk_col, fk_col
+      ) USING r.assessment_date, r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
+    END IF;
+  END LOOP;
+
+  RAISE NOTICE 'NE import complete using assessments.%', fk_col;
+END $$;
+
+-- 23 technicians, 79 import operations
