@@ -62,6 +62,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
+.admin-tech-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
+.admin-tech-edit:hover{background:#e0ebff}
 .admin-cancel{font-size:12px;color:#666;background:#f1f1f1;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-cancel:hover{background:#e7e7e7}
 .admin-row-edit{flex-wrap:wrap}
@@ -73,7 +75,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
 .admin-empty{font-size:12px;color:#aaa;padding:4px 2px}
 .admin-box-wide{max-width:1000px!important}
-.report-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.report-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:0}
+.report-item{border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafafa}
+.report-item:last-child{margin-bottom:0}
+.report-toggle{border:none;background:transparent;cursor:pointer;padding:0 4px 0 0;font-size:9px;color:#1B3A6B;line-height:1;flex-shrink:0}
+.report-toggle:hover{color:#2d5a9e}
+.report-toggle[aria-expanded="false"] .admin-sec-chevron{transform:rotate(-90deg)}
+.report-head-main{flex:1;min-width:160px}
+.report-table-body{margin-top:10px}
+.report-table-body.collapsed{display:none}
 .report-title{font-size:14px;font-weight:700;color:#1a1a2e}
 .report-meta{font-size:12px;color:#666;margin-top:2px}
 .report-actions{display:flex;gap:8px;flex-shrink:0}
@@ -429,32 +439,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <div class="err" id="admin-err"></div>
 
       <div class="admin-sec" id="admin-reports-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-reports" aria-expanded="true" onclick="toggleAdminSection('reports')">
-          <span class="admin-sec-chevron">▼</span> Reports
-        </button>
-        <div class="admin-sec-body" id="admin-sec-body-reports">
-          <div class="report-head">
-            <div>
-              <div class="report-title">Technician Activity Report</div>
-              <div class="report-meta">Report date: <span id="admin-report-date-label">—</span></div>
+        <div class="admin-sec-h">Reports</div>
+        <div class="report-list">
+          <div class="report-item" id="report-activity">
+            <div class="report-head">
+              <button type="button" class="report-toggle" id="report-toggle-activity" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('activity')"><span class="admin-sec-chevron">▼</span></button>
+              <div class="report-head-main">
+                <div class="report-title">Technician Activity Report</div>
+                <div class="report-meta">Report date: <span id="admin-report-date-label">—</span></div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
+                <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+              </div>
             </div>
-            <div class="report-actions">
-              <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
-              <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+            <div class="report-table-body collapsed" id="report-table-activity">
+              <div class="err" id="admin-report-err" style="display:none"></div>
+              <div class="report-wrap" id="admin-report-wrap">
+                <div class="admin-empty" style="padding:12px">Loading…</div>
+              </div>
             </div>
-          </div>
-          <div class="err" id="admin-report-err" style="display:none"></div>
-          <div class="report-wrap" id="admin-report-wrap">
-            <div class="admin-empty" style="padding:12px">Loading…</div>
           </div>
         </div>
       </div>
 
       <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="true" onclick="toggleAdminSection('admins')">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="false" onclick="toggleAdminSection('admins')">
           <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
         </button>
-        <div class="admin-sec-body" id="admin-sec-body-admins">
+        <div class="admin-sec-body collapsed" id="admin-sec-body-admins">
         <div class="admin-list" id="list-admins"></div>
         <div class="admin-add">
           <input id="add-admin-name" placeholder="Full name">
@@ -465,10 +478,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       </div>
 
       <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-pms" aria-expanded="true" onclick="toggleAdminSection('pms')">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-pms" aria-expanded="false" onclick="toggleAdminSection('pms')">
           <span class="admin-sec-chevron">▼</span> Project Managers <span class="ct" id="ct-pms">0</span>
         </button>
-        <div class="admin-sec-body" id="admin-sec-body-pms">
+        <div class="admin-sec-body collapsed" id="admin-sec-body-pms">
         <div class="admin-list" id="list-pms"></div>
         <div class="admin-add">
           <input id="add-pm-name" placeholder="Full name">
@@ -479,10 +492,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       </div>
 
       <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-techs" aria-expanded="true" onclick="toggleAdminSection('techs')">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-techs" aria-expanded="false" onclick="toggleAdminSection('techs')">
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
-        <div class="admin-sec-body" id="admin-sec-body-techs">
+        <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
         <div class="admin-list" id="list-techs"></div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
@@ -901,7 +914,7 @@ async function setChecklistRating(code,level){
     currentChecklist=parseChecklistCompleted(await rpc('app_checklist_rate',{p_token:currentToken,p_skill_code:code,p_level:level}));
     if(currentTechData){
       currentTechData.checklist_completed=currentChecklist;
-      renderTechHome(currentTechData,{});
+      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
     }
   }catch(e){alert('Could not save rating. Please try again.');console.error(e);}
 }
@@ -910,7 +923,7 @@ async function toggleChecklistItem(code,done){
     currentChecklist=parseChecklistCompleted(await rpc('app_checklist_toggle',{p_token:currentToken,p_skill_code:code,p_done:done}));
     if(currentTechData){
       currentTechData.checklist_completed=currentChecklist;
-      renderTechHome(currentTechData,{});
+      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
     }
   }catch(e){alert('Could not update task. Please try again.');console.error(e);}
 }
@@ -930,7 +943,7 @@ function sectionScore(a,cat){
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
 let regionTechs=[],qAnswers={},azureEmailAddr=null;
-let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm';
+let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
 
 // Company Microsoft domains allowed to sign in
@@ -1059,7 +1072,7 @@ async function chooseRole(role){
   try{
     const token=await rpc('app_tech_azure_login',{});
     if(!token){err.textContent='No technician record found for '+azureEmailAddr+'. Contact your project manager to get set up.';err.style.display='block';return;}
-    currentRole='tech';currentToken=token;
+    currentRole='tech';currentToken=token;techViewMode=null;
     await loadTechHome();
     showPage('pg-tech');
   }catch(e){
@@ -1135,7 +1148,27 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null;
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
-const adminSecOpen={reports:true,admins:true,pms:true,techs:true,deleted:false};
+const adminSecOpen={admins:false,pms:false,techs:false,deleted:false};
+const reportTableOpen={activity:false};
+
+function toggleReportTable(key){
+  if(!(key in reportTableOpen))return;
+  reportTableOpen[key]=!reportTableOpen[key];
+  applyReportTableState(key);
+}
+
+function applyReportTableState(key){
+  const body=document.getElementById('report-table-'+key);
+  const toggle=document.getElementById('report-toggle-'+key);
+  if(!body||!toggle)return;
+  const open=!!reportTableOpen[key];
+  body.classList.toggle('collapsed',!open);
+  toggle.setAttribute('aria-expanded',open?'true':'false');
+}
+
+function initReportTables(){
+  Object.keys(reportTableOpen).forEach(applyReportTableState);
+}
 
 function toggleAdminSection(key){
   if(!(key in adminSecOpen))return;
@@ -1246,6 +1279,7 @@ function openAdmin(){
   adminEditId=null;
   showPage('pg-admin');
   initAdminSections();
+  initReportTables();
   Promise.all([loadAdminLists(),loadAdminActivityReport()]);
 }
 
@@ -1275,7 +1309,7 @@ function renderAdminLists(){
   });
   renderPeople(document.getElementById('list-admins'),admins,{showRegion:false,action:'delete'});
   renderPeople(document.getElementById('list-pms'),pms,{showRegion:false,action:'delete'});
-  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete',canView:true});
+  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete',canView:true,canTechEdit:true});
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
@@ -1305,9 +1339,12 @@ function renderPeople(el,rows,opts){
     const viewBtn=opts.canView&&p.tech_id&&p.region
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
+    const techEditBtn=opts.canTechEdit&&p.tech_id&&p.region
+      ?`<button type="button" class="admin-tech-edit" onclick="editTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Tech edit</button>`
+      :'';
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
-      :`${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
+      :`${viewBtn}${techEditBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
     return `<div class="admin-row"><div class="who"><div class="nm">${name}</div><div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
   }).join('');
 }
@@ -1732,6 +1769,7 @@ async function viewTechFromAdmin(techId,region,name){
 }
 
 async function openTechReadOnly(t){
+  techViewMode='readonly';
   showPage('pg-tech');
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
@@ -1742,8 +1780,52 @@ async function openTechReadOnly(t){
   window.scrollTo(0,0);
 }
 
+async function editTechFromAdmin(techId,region,name){
+  const err=document.getElementById('admin-err');
+  err.style.display='none';
+  if(!region){err.textContent='This technician has no region set, so there is nothing to edit yet.';err.style.display='block';return;}
+  try{
+    await ensureSkills();
+    const token=await rpc('app_admin_tech_edit_session',{p_tech_id:techId});
+    if(!token)throw new Error('Could not start edit session for '+(name||'technician'));
+    currentToken=token;
+    currentRole='tech';
+    currentTechId=techId;
+    currentRegion=region;
+    techViewBackPage='pg-admin';
+    techViewMode='edit';
+    showPage('pg-tech');
+    document.getElementById('tech-view-home').classList.add('active');
+    document.getElementById('tech-view-questionnaire').classList.remove('active');
+    const data=await rpc('app_tech_home',{p_token:token});
+    const t=data.tech;
+    t.assessments=data.assessments||[];
+    currentTechName=t.name;
+    currentTechId=t.id;
+    currentChecklist=await loadChecklistForTech();
+    t.checklist_completed=currentChecklist;
+    currentTechData=t;
+    renderTechHome(t,{readOnly:false,adminEdit:true});
+    window.scrollTo(0,0);
+  }catch(e){
+    err.textContent='Could not open technician edit view: '+(e.message||'Run supabase/admin-tech-edit.sql in Supabase.');
+    err.style.display='block';
+  }
+}
+
 function exitTechView(){
-  if(techViewBackPage==='pg-admin'){showPage('pg-admin');loadAdminLists();return;}
+  const back=techViewBackPage;
+  techViewMode=null;
+  if(back==='pg-admin'){
+    currentToken=null;
+    currentTechId=null;
+    currentTechName=null;
+    currentRegion=null;
+    currentRole='admin';
+    showPage('pg-admin');
+    loadAdminLists();
+    return;
+  }
   showPage('pg-pm');
   setPMView('tech',null);
 }
@@ -1873,12 +1955,13 @@ async function loadTechHome(){
   currentChecklist=await loadChecklistForTech();
   t.checklist_completed=currentChecklist;
   currentTechData=t;
-  renderTechHome(t,{});
+  renderTechHome(t,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
 }
 
 function renderTechHome(t,opts){
   opts=opts||{};
-  const readOnly=!!opts.readOnly;
+  const readOnly=opts.readOnly!==undefined?!!opts.readOnly:techViewMode==='readonly';
+  const adminEdit=opts.adminEdit!==undefined?!!opts.adminEdit:techViewMode==='edit';
   const container=document.getElementById('tech-home-body');
   const assessments=t.assessments||[];
   document.getElementById('tech-name-label').textContent=t.name;
@@ -1928,7 +2011,9 @@ function renderTechHome(t,opts){
     ?`<div style="background:rgba(27,58,107,0.15);border:1px solid rgba(27,58,107,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.4);text-align:center">✅ Assessment submitted for ${fmtDateFull(last.date)}. Next submission available next month.</div>`
     :`<button class="btn btn-full" onclick="startQuestionnaire()" style="padding:12px;font-size:14px">📝 Take this month's assessment</button>`;
 
-  const banner=readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
+  const banner=adminEdit
+    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`
+    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly}):"";
 
   container.innerHTML=banner+`
