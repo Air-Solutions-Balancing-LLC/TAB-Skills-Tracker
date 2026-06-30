@@ -66,6 +66,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
 .admin-empty{font-size:12px;color:#aaa;padding:4px 2px}
+.admin-box-wide{max-width:1000px!important}
+.report-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.report-title{font-size:14px;font-weight:700;color:#1a1a2e}
+.report-meta{font-size:12px;color:#666;margin-top:2px}
+.report-actions{display:flex;gap:8px;flex-shrink:0}
+.report-actions .btn{padding:8px 14px;font-size:12px}
+.report-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px;background:#fafafa}
+.report-table{width:100%;border-collapse:collapse;font-size:12px}
+.report-table th{text-align:left;padding:10px 12px;background:#EEF4FF;color:#1B3A6B;font-weight:700;border-bottom:1px solid #dce7fb;white-space:nowrap}
+.report-table td{padding:9px 12px;border-bottom:1px solid #eee;color:#1a1a2e}
+.report-table tr:last-child td{border-bottom:none}
+.report-table tbody tr:hover td{background:#fff}
+.days-green{color:#0F6E56;font-weight:700}
+.days-yellow{color:#B8860B;font-weight:700}
+.days-red{color:#c0392b;font-weight:700}
+#admin-report-print{display:none}
+@media print{
+  body.printing-report *{visibility:hidden}
+  body.printing-report #admin-report-print,
+  body.printing-report #admin-report-print *{visibility:visible}
+  body.printing-report #admin-report-print{display:block!important;position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff}
+  .days-green,.days-yellow,.days-red{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
+  .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
+}
 
 /* SKILLS BOARD */
 .sk-sec{margin-top:16px;border:1px solid #e6e6e6;border-radius:12px;overflow:hidden}
@@ -380,7 +405,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 <!-- ADMIN: user management -->
 <div id="pg-admin" class="page">
   <div class="login-bg" style="align-items:flex-start;padding:24px 16px">
-    <div class="login-box" style="max-width:840px">
+    <div class="login-box admin-box-wide" style="max-width:840px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
         <div class="login-logo">User Management</div>
         <div style="display:flex;gap:8px">
@@ -391,6 +416,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <div class="login-sub" style="color:#666">Add or remove Admins, Project Managers, and Technicians</div>
       <button type="button" class="btn btn-full" style="background:#0F6E56;margin-bottom:4px" onclick="openSkills()">🧩 Manage Skills &amp; Categories</button>
       <div class="err" id="admin-err"></div>
+
+      <div class="admin-sec" id="admin-reports-sec">
+        <div class="admin-sec-h">Reports</div>
+        <div class="report-head">
+          <div>
+            <div class="report-title">Technician Activity Report</div>
+            <div class="report-meta">Report date: <span id="admin-report-date-label">—</span></div>
+          </div>
+          <div class="report-actions">
+            <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
+            <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+          </div>
+        </div>
+        <div class="err" id="admin-report-err" style="display:none"></div>
+        <div class="report-wrap" id="admin-report-wrap">
+          <div class="admin-empty" style="padding:12px">Loading…</div>
+        </div>
+      </div>
 
       <div class="admin-sec">
         <div class="admin-sec-h">Admins <span class="ct" id="ct-admins">0</span></div>
@@ -442,6 +485,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
     </div>
   </div>
 </div>
+<div id="admin-report-print" aria-hidden="true"></div>
 
 <!-- ADMIN: skills & categories -->
 <div id="pg-skills" class="page">
@@ -1058,14 +1102,98 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null;
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null;
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
+
+function regionLabel(code){
+  return(typeof REGION_LABELS!=='undefined'&&REGION_LABELS[code])?REGION_LABELS[code]:(code||'—');
+}
+
+function reportDaysClass(days){
+  if(days===null||days===undefined)return 'days-red';
+  if(days<30)return 'days-green';
+  if(days<=59)return 'days-yellow';
+  return 'days-red';
+}
+
+function buildAdminReportTableHtml(rows){
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No active technicians.</div>';
+  const body=rows.map(r=>{
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const days=r.days_since_update;
+    const daysText=days===null||days===undefined?'—':String(days);
+    const daysCls=reportDaysClass(days);
+    const skills=r.assessment_count<2?'—':String(r.skills_changed??0);
+    return `<tr>
+      <td>${adminEsc(r.name)}</td>
+      <td>${adminEsc(regionLabel(r.region))}</td>
+      <td>${adminEsc(last)}</td>
+      <td class="${daysCls}">${adminEsc(daysText)}</td>
+      <td>${adminEsc(skills)}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="report-table">
+    <thead><tr>
+      <th>Technician</th><th>Region</th><th>Last updated</th><th>Days since update</th><th>Skills changed since last submission</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function renderAdminActivityReport(){
+  const wrap=document.getElementById('admin-report-wrap');
+  if(!wrap)return;
+  wrap.innerHTML=buildAdminReportTableHtml(adminReportRows);
+}
+
+async function loadAdminActivityReport(){
+  const wrap=document.getElementById('admin-report-wrap');
+  const err=document.getElementById('admin-report-err');
+  if(!wrap)return;
+  if(err)err.style.display='none';
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  adminReportDate=new Date();
+  const dateLabel=document.getElementById('admin-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDate.toISOString().slice(0,10));
+  try{
+    adminReportRows=await rpc('app_admin_technician_activity_report',{})||[];
+  }catch(e){
+    wrap.innerHTML='';
+    if(err){
+      err.textContent='Could not load report. '+(e.message||'Run supabase/admin-reports.sql in Supabase.');
+      err.style.display='block';
+    }
+    return;
+  }
+  renderAdminActivityReport();
+}
+
+function exportAdminReportPdf(){
+  const printEl=document.getElementById('admin-report-print');
+  if(!printEl||!adminReportRows.length){
+    alert('Load the report first.');
+    return;
+  }
+  const reportDate=adminReportDate?fmtDateFull(adminReportDate.toISOString().slice(0,10)):fmtDateFull(new Date().toISOString().slice(0,10));
+  const prevTitle=document.title;
+  document.title='Technician Activity Report — '+reportDate;
+  printEl.innerHTML=`<div class="report-print-title">Technician Activity Report</div>
+    <div class="report-print-meta">Report date: ${adminEsc(reportDate)}</div>
+    ${buildAdminReportTableHtml(adminReportRows)}`;
+  document.body.classList.add('printing-report');
+  window.print();
+  setTimeout(()=>{
+    document.body.classList.remove('printing-report');
+    printEl.innerHTML='';
+    document.title=prevTitle;
+  },500);
+}
 
 function openAdmin(){
   currentRole='admin';
   adminEditId=null;
   showPage('pg-admin');
-  loadAdminLists();
+  Promise.all([loadAdminLists(),loadAdminActivityReport()]);
 }
 
 async function loadAdminLists(){
@@ -1363,8 +1491,14 @@ function spClass(v){
   return'sp4';
 }
 function initials(name){return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
-function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('en-US',{month:'short',year:'numeric'})}
-function fmtDateFull(d){if(!d)return'—';return new Date(d).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+function parseDateOnly(d){
+  if(!d)return null;
+  const s=String(d).slice(0,10);
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(d);
+}
+function fmtDate(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}
+function fmtDateFull(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'—'}
 function nebbBadge(s){
   if(!s)return'<span class="nebb-badge nebb-tr">In Training</span>';
   if(s.includes('CP'))return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
@@ -1499,14 +1633,16 @@ function setPMView(v,el){
   if(el){document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
 }
 
-function openTech(idx){
+async function openTech(idx){
   currentDetailIdx=idx;
+  await loadPMDashboard();
   const t=regionTechs[idx];
+  if(!t)return;
   document.getElementById('detail-av-initials').textContent=initials(t.name);
   document.getElementById('detail-tech-name').textContent=t.name;
   document.getElementById('detail-tech-sub').textContent=(t.nebb_status||'In Training')+(t.lead_tech?' · Lead: '+t.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
   const vb=document.getElementById('detail-view-as');if(vb)vb.style.display=userIsAdmin?'':'none';
-  renderDetailView(t);
+  await renderDetailView(t);
   setPMView('tech',null);
   document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));
 }
