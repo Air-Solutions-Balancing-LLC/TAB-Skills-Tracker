@@ -3,6 +3,16 @@
 -- PREREQ: run supabase/assessments-rpcs.sql first (creates app_match_technician_id).
 -- Safe to re-run.
 
+-- Drop duplicate rows so (technician_id, date) can be unique (keeps highest id).
+DELETE FROM public.assessments a
+WHERE a.technician_id IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.assessments b
+    WHERE b.technician_id = a.technician_id
+      AND b.date = a.date
+      AND b.id > a.id
+  );
+
 CREATE UNIQUE INDEX IF NOT EXISTS assessments_technician_id_date_uidx
   ON public.assessments (technician_id, date);
 
