@@ -41,6 +41,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 /* ADMIN */
 .admin-sec{margin-top:18px;border-top:1px solid #eee;padding-top:14px}
 .admin-sec-h{font-size:12px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.admin-sec-h.admin-sec-toggle{width:100%;border:none;background:transparent;cursor:pointer;text-align:left;padding:0;font-family:inherit}
+.admin-sec-h.admin-sec-toggle:hover{color:#2d5a9e}
+.admin-sec-h.admin-sec-toggle[aria-expanded="false"]{margin-bottom:0}
+.admin-sec-chevron{font-size:9px;transition:transform .2s;display:inline-block;flex-shrink:0}
+.admin-sec-h.admin-sec-toggle[aria-expanded="false"] .admin-sec-chevron{transform:rotate(-90deg)}
+.admin-sec-body.collapsed{display:none}
 .admin-sec-h .ct{font-size:10px;background:#E6EEF8;color:#1B3A6B;padding:2px 8px;border-radius:10px}
 .admin-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 .admin-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:10px}
@@ -78,8 +84,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .report-table td{padding:9px 12px;border-bottom:1px solid #eee;color:#1a1a2e}
 .report-table tr:last-child td{border-bottom:none}
 .report-table tbody tr:hover td{background:#fff}
+.report-table td.days-green{color:#0F6E56!important;font-weight:700}
+.report-table td.days-yellow{color:#C9A000!important;font-weight:700}
+.report-table td.days-red{color:#c0392b!important;font-weight:700}
 .days-green{color:#0F6E56;font-weight:700}
-.days-yellow{color:#B8860B;font-weight:700}
+.days-yellow{color:#C9A000;font-weight:700}
 .days-red{color:#c0392b;font-weight:700}
 #admin-report-print{display:none}
 @media print{
@@ -87,7 +96,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   body.printing-report #admin-report-print,
   body.printing-report #admin-report-print *{visibility:visible}
   body.printing-report #admin-report-print{display:block!important;position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff}
-  .days-green,.days-yellow,.days-red{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .report-table td.days-green,.days-green{color:#0F6E56!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .report-table td.days-yellow,.days-yellow{color:#C9A000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .report-table td.days-red,.days-red{color:#c0392b!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
   .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
 }
@@ -418,45 +429,60 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <div class="err" id="admin-err"></div>
 
       <div class="admin-sec" id="admin-reports-sec">
-        <div class="admin-sec-h">Reports</div>
-        <div class="report-head">
-          <div>
-            <div class="report-title">Technician Activity Report</div>
-            <div class="report-meta">Report date: <span id="admin-report-date-label">—</span></div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-reports" aria-expanded="true" onclick="toggleAdminSection('reports')">
+          <span class="admin-sec-chevron">▼</span> Reports
+        </button>
+        <div class="admin-sec-body" id="admin-sec-body-reports">
+          <div class="report-head">
+            <div>
+              <div class="report-title">Technician Activity Report</div>
+              <div class="report-meta">Report date: <span id="admin-report-date-label">—</span></div>
+            </div>
+            <div class="report-actions">
+              <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
+              <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+            </div>
           </div>
-          <div class="report-actions">
-            <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
-            <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+          <div class="err" id="admin-report-err" style="display:none"></div>
+          <div class="report-wrap" id="admin-report-wrap">
+            <div class="admin-empty" style="padding:12px">Loading…</div>
           </div>
-        </div>
-        <div class="err" id="admin-report-err" style="display:none"></div>
-        <div class="report-wrap" id="admin-report-wrap">
-          <div class="admin-empty" style="padding:12px">Loading…</div>
         </div>
       </div>
 
       <div class="admin-sec">
-        <div class="admin-sec-h">Admins <span class="ct" id="ct-admins">0</span></div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="true" onclick="toggleAdminSection('admins')">
+          <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
+        </button>
+        <div class="admin-sec-body" id="admin-sec-body-admins">
         <div class="admin-list" id="list-admins"></div>
         <div class="admin-add">
           <input id="add-admin-name" placeholder="Full name">
           <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
           <button type="button" class="btn" onclick="addPerson('admin')">Add</button>
         </div>
+        </div>
       </div>
 
       <div class="admin-sec">
-        <div class="admin-sec-h">Project Managers <span class="ct" id="ct-pms">0</span></div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-pms" aria-expanded="true" onclick="toggleAdminSection('pms')">
+          <span class="admin-sec-chevron">▼</span> Project Managers <span class="ct" id="ct-pms">0</span>
+        </button>
+        <div class="admin-sec-body" id="admin-sec-body-pms">
         <div class="admin-list" id="list-pms"></div>
         <div class="admin-add">
           <input id="add-pm-name" placeholder="Full name">
           <input id="add-pm-email" type="email" placeholder="name@airadigmsolutions.com">
           <button type="button" class="btn" onclick="addPerson('pm')">Add</button>
         </div>
+        </div>
       </div>
 
       <div class="admin-sec">
-        <div class="admin-sec-h">Technicians <span class="ct" id="ct-techs">0</span></div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-techs" aria-expanded="true" onclick="toggleAdminSection('techs')">
+          <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
+        </button>
+        <div class="admin-sec-body" id="admin-sec-body-techs">
         <div class="admin-list" id="list-techs"></div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
@@ -475,12 +501,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
+        </div>
       </div>
 
       <div class="admin-sec">
-        <div class="admin-sec-h">Deleted Technicians <span class="ct" id="ct-deleted">0</span></div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-deleted" aria-expanded="false" onclick="toggleAdminSection('deleted')">
+          <span class="admin-sec-chevron">▼</span> Deleted Technicians <span class="ct" id="ct-deleted">0</span>
+        </button>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-deleted">
         <div class="admin-list" id="list-deleted"></div>
         <div class="admin-empty" style="margin-bottom:4px">Restoring a technician brings back their region and assessment history.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1104,15 +1135,36 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null;
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
+const adminSecOpen={reports:true,admins:true,pms:true,techs:true,deleted:false};
+
+function toggleAdminSection(key){
+  if(!(key in adminSecOpen))return;
+  adminSecOpen[key]=!adminSecOpen[key];
+  applyAdminSectionState(key);
+}
+
+function applyAdminSectionState(key){
+  const body=document.getElementById('admin-sec-body-'+key);
+  const head=document.getElementById('admin-sec-h-'+key);
+  if(!body||!head)return;
+  const open=!!adminSecOpen[key];
+  body.classList.toggle('collapsed',!open);
+  head.setAttribute('aria-expanded',open?'true':'false');
+}
+
+function initAdminSections(){
+  Object.keys(adminSecOpen).forEach(applyAdminSectionState);
+}
 
 function regionLabel(code){
   return(typeof REGION_LABELS!=='undefined'&&REGION_LABELS[code])?REGION_LABELS[code]:(code||'—');
 }
 
 function reportDaysClass(days){
-  if(days===null||days===undefined)return 'days-red';
-  if(days<30)return 'days-green';
-  if(days<=59)return 'days-yellow';
+  const n=days===null||days===undefined||days===''?null:Number(days);
+  if(n===null||Number.isNaN(n))return 'days-red';
+  if(n<=30)return 'days-green';
+  if(n<=59)return 'days-yellow';
   return 'days-red';
 }
 
@@ -1193,6 +1245,7 @@ function openAdmin(){
   currentRole='admin';
   adminEditId=null;
   showPage('pg-admin');
+  initAdminSections();
   Promise.all([loadAdminLists(),loadAdminActivityReport()]);
 }
 

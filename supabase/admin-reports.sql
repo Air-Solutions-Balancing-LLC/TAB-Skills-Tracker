@@ -56,7 +56,7 @@ BEGIN
       LEFT JOIN LATERAL (
         SELECT
           r.date AS last_update_date,
-          r.raw_scores AS latest_raw,
+          r.raw_scores::jsonb AS latest_raw,
           r.assessment_count
         FROM (
           SELECT
@@ -70,7 +70,7 @@ BEGIN
         WHERE r.rn = 1
       ) l ON true
       LEFT JOIN LATERAL (
-        SELECT r.raw_scores AS prev_raw
+        SELECT r.raw_scores::jsonb AS prev_raw
         FROM (
           SELECT
             a.raw_scores,
