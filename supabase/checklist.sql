@@ -11,16 +11,23 @@ ALTER TABLE public.skill_sections
 ALTER TABLE public.technicians
   ADD COLUMN IF NOT EXISTS checklist_completed jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+ALTER TABLE public.skill_sections
+  ADD COLUMN IF NOT EXISTS checklist_mode text;
+
+UPDATE public.skill_sections SET checklist_mode = 'checkbox' WHERE skey = 'orientation';
+UPDATE public.skill_sections SET checklist_mode = 'rated'    WHERE skey = 'pre_bootcamp';
+
 -- ── Insert checklist sections before Safety ───────────────────────────────────
-INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type) VALUES
-  ('orientation',   'Orientation',   '📋', '#6B8CAE', NULL, 1, 'checklist'),
-  ('pre_bootcamp',  'Pre-Bootcamp',  '🎒', '#8B7355', NULL, 2, 'checklist')
+INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type, checklist_mode) VALUES
+  ('orientation',   'Orientation',   '📋', '#6B8CAE', NULL, 1, 'checklist', 'checkbox'),
+  ('pre_bootcamp',  'Pre-Bootcamp',  '🎒', '#8B7355', NULL, 2, 'checklist', 'rated')
 ON CONFLICT (skey) DO UPDATE
   SET label = EXCLUDED.label,
       emoji = EXCLUDED.emoji,
       color = EXCLUDED.color,
       avg_field = NULL,
       section_type = 'checklist',
+      checklist_mode = EXCLUDED.checklist_mode,
       sort_order = EXCLUDED.sort_order,
       active = true;
 
@@ -44,6 +51,7 @@ AS $$
            jsonb_build_object(
              'key', s.skey, 'section', s.label, 'emoji', s.emoji, 'color', s.color,
              'avg_field', s.avg_field, 'section_type', s.section_type,
+             'checklist_mode', s.checklist_mode,
              'skills', COALESCE((
                SELECT jsonb_agg(jsonb_build_object('id', sk.skill_code, 'cat', sk.category, 'name', sk.name)
                                 ORDER BY sk.sort_order, sk.id)
@@ -214,6 +222,7 @@ BEGIN
       AND sk.active
       AND sec.active
       AND sec.section_type = 'checklist'
+      AND COALESCE(sec.checklist_mode, 'checkbox') = 'checkbox'
   ) THEN
     RAISE EXCEPTION 'Invalid checklist task';
   END IF;
@@ -234,9 +243,64 @@ BEGIN
 END;
 $$;
 
+-- ── Rate a Pre-Bootcamp task: 1 = Seen it, 2 = Done it, 3 = Multiple Times ───
+-- p_level 0 clears the rating. Values are stored as integers in checklist_completed.
+CREATE OR REPLACE FUNCTION public.app_checklist_rate(p_token text, p_skill_code text, p_level int)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_tech_id   bigint := app_session_tech_id(p_token);
+  v_code      text := NULLIF(trim(p_skill_code), '');
+  v_completed jsonb;
+BEGIN
+  IF v_tech_id IS NULL THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  IF v_code IS NULL THEN
+    RAISE EXCEPTION 'Task code is required';
+  END IF;
+
+  IF p_level IS NULL OR p_level < 0 OR p_level > 3 THEN
+    RAISE EXCEPTION 'Invalid rating level';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.skills sk
+    JOIN public.skill_sections sec ON sec.id = sk.section_id
+    WHERE sk.skill_code = v_code
+      AND sk.active
+      AND sec.active
+      AND sec.section_type = 'checklist'
+      AND sec.checklist_mode = 'rated'
+  ) THEN
+    RAISE EXCEPTION 'Invalid rated checklist task';
+  END IF;
+
+  IF p_level = 0 THEN
+    UPDATE public.technicians
+    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) - v_code
+    WHERE id = v_tech_id AND deleted_at IS NULL
+    RETURNING checklist_completed INTO v_completed;
+  ELSE
+    UPDATE public.technicians
+    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) || jsonb_build_object(v_code, p_level)
+    WHERE id = v_tech_id AND deleted_at IS NULL
+    RETURNING checklist_completed INTO v_completed;
+  END IF;
+
+  RETURN COALESCE(v_completed, '{}'::jsonb);
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.app_skills()                              TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_list_skills()                   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_reorder_skills(bigint, bigint[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_session_tech_id(text)                TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_checklist_get(text, bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_checklist_toggle(text, text, boolean)  TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_checklist_rate(text, text, int)        TO authenticated;

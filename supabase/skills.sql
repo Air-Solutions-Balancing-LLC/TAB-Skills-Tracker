@@ -47,17 +47,24 @@ ALTER TABLE public.technicians
 
 UPDATE public.skill_sections SET section_type = 'rated' WHERE section_type IS NULL;
 
+ALTER TABLE public.skill_sections
+  ADD COLUMN IF NOT EXISTS checklist_mode text;
+
+UPDATE public.skill_sections SET checklist_mode = 'checkbox' WHERE skey = 'orientation';
+UPDATE public.skill_sections SET checklist_mode = 'rated'    WHERE skey = 'pre_bootcamp';
+
 -- ── Seed checklist + scored sections ─────────────────────────────────────────
-INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type) VALUES
-  ('orientation',  'Orientation',  '📋', '#6B8CAE', NULL,           1, 'checklist'),
-  ('pre_bootcamp', 'Pre-Bootcamp', '🎒', '#8B7355', NULL,           2, 'checklist'),
-  ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated'),
-  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated'),
-  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated'),
-  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated'),
-  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated')
+INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type, checklist_mode) VALUES
+  ('orientation',  'Orientation',  '📋', '#6B8CAE', NULL,           1, 'checklist', 'checkbox'),
+  ('pre_bootcamp', 'Pre-Bootcamp', '🎒', '#8B7355', NULL,           2, 'checklist', 'rated'),
+  ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated', NULL),
+  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated', NULL),
+  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated', NULL),
+  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated', NULL),
+  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
+      checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
       sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp')
                           THEN EXCLUDED.sort_order
                           ELSE public.skill_sections.sort_order END;
@@ -222,6 +229,7 @@ AS $$
            jsonb_build_object(
              'key', s.skey, 'section', s.label, 'emoji', s.emoji, 'color', s.color, 'avg_field', s.avg_field,
              'section_type', s.section_type,
+             'checklist_mode', s.checklist_mode,
              'skills', COALESCE((
                SELECT jsonb_agg(jsonb_build_object('id', sk.skill_code, 'cat', sk.category, 'name', sk.name)
                                 ORDER BY sk.sort_order, sk.id)
@@ -254,6 +262,7 @@ BEGIN
            jsonb_build_object(
              'id', s.id, 'key', s.skey, 'section', s.label, 'emoji', s.emoji, 'color', s.color,
              'section_type', s.section_type,
+             'checklist_mode', s.checklist_mode,
              'locked', (s.avg_field IS NOT NULL),
              'skills', COALESCE((
                SELECT jsonb_agg(jsonb_build_object('id', sk.id, 'code', sk.skill_code, 'cat', sk.category, 'name', sk.name)

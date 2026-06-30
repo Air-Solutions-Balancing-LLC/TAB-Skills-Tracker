@@ -251,11 +251,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .cl-box{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #6B8CAE}
 .cl-box-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
 .cl-box-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
-.cl-sec{margin-bottom:14px}
-.cl-sec:last-child{margin-bottom:0}
-.cl-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;color:#1B3A6B;margin-bottom:8px}
-.cl-ct{font-size:11px;font-weight:700;color:#666;background:#f0f4fa;padding:3px 9px;border-radius:10px}
-.cl-list{display:flex;flex-direction:column;gap:6px}
+.cl-list{display:flex;flex-direction:column;gap:6px;padding-top:8px}
 .cl-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#f8faff;border:1px solid #e6eef8;transition:background .15s}
 .cl-item.cl-done{background:#f2faf6;border-color:#d4ede2}
 .cl-check{width:22px;height:22px;border-radius:6px;border:2px solid #b8c9e0;background:#fff;color:#fff;font-size:13px;font-weight:800;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1}
@@ -264,13 +260,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .cl-cat{font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
 .cl-name{font-size:13px;color:#333;line-height:1.45;font-weight:500}
 .cl-empty{font-size:12px;color:#999;padding:8px 4px}
-.cl-dark .cl-head{color:#fff}
-.cl-dark .cl-ct{background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7)}
-.cl-dark .cl-item{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1)}
-.cl-dark .cl-item.cl-done{background:rgba(29,158,117,0.15);border-color:rgba(29,158,117,0.35)}
-.cl-dark .cl-name{color:rgba(255,255,255,0.9)}
-.cl-dark .cl-cat{color:#7aaedd}
-.cl-dark .cl-empty{color:rgba(255,255,255,0.35)}
+.cl-item.cl-rated{flex-direction:column;align-items:stretch;gap:10px}
+.cl-rating-row{display:flex;gap:6px;flex-wrap:wrap}
+.cl-rate-btn{flex:1;min-width:90px;padding:8px 6px;border:2px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:#666;transition:all .15s}
+.cl-rate-btn:hover{border-color:#1B3A6B;background:#EEF4FF;color:#1B3A6B}
+.cl-rate-btn.selected{border-color:#1B3A6B;background:#1B3A6B;color:#fff}
+.cl-rate-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:#EEF4FF;color:#1B3A6B}
+.cl-item-pct{font-size:10px;font-weight:700;color:#888;margin-top:4px}
 .sk-sec-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:8px;flex-shrink:0}
 .sk-sec-tag.checklist{background:#E8F0EA;color:#0F6E56}
 .sk-sec-tag.rated{background:#EEF4FF;color:#1B3A6B}
@@ -730,13 +726,28 @@ async function ensureSkills(force){
   }catch(e){console.warn('skills load failed, using fallback',e);}
 }
 function buildSkillModel(sections){
-  const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
+  const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',checklist_mode:s.checklist_mode||null,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
   CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist');
   QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist');
   const toCat=s=>({key:s.avg_field,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
   TECH_CATS=QUESTIONNAIRE.map(toCat);
   SKILL_CATS=QUESTIONNAIRE.filter(s=>s.avg_field).map(toCat);
 }
+const PRE_BOOTCAMP_RATINGS=[{v:1,l:'Seen it',pct:33},{v:2,l:'Done it',pct:67},{v:3,l:'Multiple Times',pct:100}];
+function isRatedChecklistSection(sec){return sec.checklist_mode==='rated'||sec.key==='pre_bootcamp';}
+function getChecklistRating(completed,code){
+  const v=completed&&completed[code];
+  if(v===true)return 2;
+  const n=Number(v);
+  return (n>=1&&n<=3)?n:0;
+}
+function checklistItemPct(rating){return rating?Math.round((rating/3)*100):0;}
+function sectionRatingPct(completed,sec){
+  if(!sec.skills.length)return 0;
+  const sum=sec.skills.reduce((s,sk)=>s+checklistItemPct(getChecklistRating(completed,sk.id)),0);
+  return Math.round(sum/sec.skills.length);
+}
+function pctColor(pct){return pct>=100?'#1D9E75':pct>=50?'#4A90D9':'#7aaedd';}
 function parseChecklistCompleted(raw){
   if(!raw)return{};
   if(typeof raw==='string'){try{return JSON.parse(raw);}catch(e){return {};}}
@@ -749,31 +760,75 @@ async function loadChecklistForTech(techId){
     return parseChecklistCompleted(await rpc('app_checklist_get',args));
   }catch(e){console.warn('checklist load',e);return {};}
 }
-function isChecklistDone(completed,code){return!!(completed&&completed[code]);}
+function isChecklistDone(completed,code){return getChecklistRating(completed,code)>0||!!(completed&&completed[code]===true);}
 function checklistProgress(completed){
-  const total=CHECKLIST_SECTIONS.reduce((s,sec)=>s+sec.skills.length,0);
-  const done=CHECKLIST_SECTIONS.reduce((s,sec)=>s+sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length,0);
-  return{done,total,pct:total?Math.round((done/total)*100):0};
+  const checkboxSecs=CHECKLIST_SECTIONS.filter(s=>!isRatedChecklistSection(s));
+  const total=checkboxSecs.reduce((s,sec)=>s+sec.skills.length,0);
+  const done=checkboxSecs.reduce((s,sec)=>s+sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length,0);
+  const ratedSec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
+  const ratedPct=ratedSec?sectionRatingPct(completed,ratedSec):0;
+  return{done,total,pct:total?Math.round((done/total)*100):0,ratedPct,ratedSec};
+}
+function renderChecklistItemHtml(sk,completed,sec,readOnly){
+  if(isRatedChecklistSection(sec)){
+    const cur=getChecklistRating(completed,sk.id);
+    const itemPct=checklistItemPct(cur);
+    const ratingHtml=readOnly
+      ?`<span class="cl-rate-badge">${cur?PRE_BOOTCAMP_RATINGS.find(r=>r.v===cur).l:'Not rated'}${cur?` · ${itemPct}%`:''}</span>`
+      :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${cur===r.v?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
+    return`<div class="cl-item cl-rated ${cur?'cl-done':''}"><div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div>${cur?`<div class="cl-item-pct">${itemPct}%</div>`:''}</div>${ratingHtml}</div>`;
+  }
+  const done=isChecklistDone(completed,sk.id);
+  const check=readOnly
+    ?`<span class="cl-check ${done?'done':''}">${done?'✓':''}</span>`
+    :`<button type="button" class="cl-check ${done?'done':''}" onclick="event.stopPropagation();toggleChecklistItem('${sk.id}',${done?'false':'true'})" title="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`;
+  return`<div class="cl-item ${done?'cl-done':''}">${check}<div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div></div></div>`;
 }
 function renderChecklistHtml(completed,opts){
   opts=opts||{};
   const readOnly=!!opts.readOnly;
-  const dark=!!opts.dark;
   if(!CHECKLIST_SECTIONS.length)return'';
   const prog=checklistProgress(completed);
   const sections=CHECKLIST_SECTIONS.map(sec=>{
-    const secDone=sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length;
-    const items=sec.skills.map(sk=>{
-      const done=isChecklistDone(completed,sk.id);
-      const check=readOnly
-        ?`<span class="cl-check ${done?'done':''}">${done?'✓':''}</span>`
-        :`<button type="button" class="cl-check ${done?'done':''}" onclick="toggleChecklistItem('${sk.id}',${done?'false':'true'})" title="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`;
-      return`<div class="cl-item ${done?'cl-done':''}">${check}<div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div></div></div>`;
-    }).join('');
-    return`<div class="cl-sec ${dark?'cl-dark':''}"><div class="cl-head"><span>${sec.emoji} ${adminEsc(sec.section)}</span><span class="cl-ct">${secDone}/${sec.skills.length}</span></div><div class="cl-list">${items||'<div class="cl-empty">No tasks yet.</div>'}</div></div>`;
+    const secKey=sec.key;
+    const rated=isRatedChecklistSection(sec);
+    const total=sec.skills.length;
+    let avgLabel,avgColor;
+    if(rated){
+      const pct=sectionRatingPct(completed,sec);
+      avgLabel=total?`${pct}%`:'no tasks';
+      avgColor=pctColor(pct);
+    }else{
+      const secDone=sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length;
+      avgLabel=total?`${secDone}/${total} done`:'no tasks';
+      avgColor=total&&secDone===total?'#1D9E75':'#7aaedd';
+    }
+    const items=sec.skills.map(sk=>renderChecklistItemHtml(sk,completed,sec,readOnly)).join('');
+    return`<div class="mod-section">
+      <div class="mod-head" onclick="toggleMod('${secKey}')">
+        <span class="mod-emoji">${sec.emoji}</span>
+        <span class="mod-name">${adminEsc(sec.section)}</span>
+        <span class="mod-avg" style="color:${avgColor}">${avgLabel}</span>
+        <span class="mod-tog" id="tog-${secKey}">▶</span>
+      </div>
+      <div class="mod-skills" id="mod-${secKey}"><div class="cl-list">${items||'<div class="cl-empty">No tasks yet.</div>'}</div></div>
+    </div>`;
   }).join('');
-  const progNote=prog.total?` <strong>${prog.done}/${prog.total}</strong> done.`:'';
-  return`<div class="cl-box ${dark?'cl-dark':''}"><div class="cl-box-title">📋 Orientation — Pre Bootcamp</div><div class="cl-box-sub">Mark tasks complete as you finish them. These do not affect your skill scores.${progNote}</div>${sections}</div>`;
+  let progNote='';
+  if(prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
+  else if(prog.total)progNote=` <strong>${prog.done}/${prog.total}</strong> done.`;
+  const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
+  return`<div class="cl-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
+}
+function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
+async function setChecklistRating(code,level){
+  try{
+    currentChecklist=parseChecklistCompleted(await rpc('app_checklist_rate',{p_token:currentToken,p_skill_code:code,p_level:level}));
+    if(currentTechData){
+      currentTechData.checklist_completed=currentChecklist;
+      renderTechHome(currentTechData,{});
+    }
+  }catch(e){alert('Could not save rating. Please try again.');console.error(e);}
 }
 async function toggleChecklistItem(code,done){
   try{
