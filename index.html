@@ -383,6 +383,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   </div>
 </div>
 
+<!-- NO ACCESS (signed in but not in tracker) -->
+<div id="pg-no-access" class="page">
+  <div class="login-bg">
+    <div class="login-box">
+      <div class="login-logo">No Access</div>
+      <div class="login-sub" style="color:#666">Signed in as <strong id="no-access-email">…</strong></div>
+      <div class="err" style="display:block;margin-top:1rem">No access. Your profile has not been added to this tracker.</div>
+      <p style="font-size:13px;color:#666;margin-top:1rem;line-height:1.6">Contact your administrator if you believe you should have access.</p>
+      <button type="button" class="btn btn-full" style="margin-top:1.2rem" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+</div>
+
 <!-- ROLE PICKER (after Microsoft sign-in) -->
 <div id="pg-role" class="page">
   <div class="login-bg">
@@ -1045,14 +1058,30 @@ async function handleSession(session){
   document.getElementById('role-admin-btn').style.display='none';
   document.getElementById('role-pm-btn').style.display='none';
   document.getElementById('role-tech-btn').style.display='none';
-  showPage('pg-role');
   // Reveal role buttons based on the server-verified role:
   //   admin -> Admin + Project Manager, pm -> Project Manager only,
-  //   everyone else -> Technician only.
+  //   everyone else with a technician profile -> Technician only.
   try{
-    const role=await rpc('app_my_role',{});
-    applyRoleButtons(role);
-  }catch(e){console.warn('role check',e);applyRoleButtons(null);}
+    const access=await rpc('app_access_status',{});
+    if(!access||!access.has_access){
+      document.getElementById('no-access-email').textContent=email;
+      showPage('pg-no-access');
+      return;
+    }
+    showPage('pg-role');
+    applyRoleButtons(access.registry_role);
+  }catch(e){
+    console.warn('access check',e);
+    try{
+      const role=await rpc('app_my_role',{});
+      showPage('pg-role');
+      applyRoleButtons(role);
+    }catch(e2){
+      console.warn('role check',e2);
+      document.getElementById('no-access-email').textContent=email;
+      showPage('pg-no-access');
+    }
+  }
 }
 
 function applyRoleButtons(role){
@@ -1079,7 +1108,7 @@ async function chooseRole(role){
   err.style.display='none';
   try{
     const token=await rpc('app_tech_azure_login',{});
-    if(!token){err.textContent='No technician record found for '+azureEmailAddr+'. Contact your project manager to get set up.';err.style.display='block';return;}
+    if(!token){err.textContent='No access. Your profile has not been added to this tracker.';err.style.display='block';return;}
     currentRole='tech';currentToken=token;techViewMode=null;
     await loadTechHome();
     showPage('pg-tech');
@@ -1145,7 +1174,7 @@ function azureSetupError(e){
 }
 
 async function doLogout(){
-  currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;azureEmailAddr=null;
+  currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;azureEmailAddr=null;techViewMode=null;
   document.getElementById('login-err').style.display='none';
   try{if(sbClient)await sbClient.auth.signOut();}catch(e){console.warn('sign out',e);}
   showPage('pg-login');
