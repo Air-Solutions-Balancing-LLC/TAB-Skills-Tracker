@@ -20,6 +20,20 @@ AS $$
   LIMIT 1;
 $$;
 
+-- ── Match NE import rows to a technician id (name match, prefer region NE) ─────
+CREATE OR REPLACE FUNCTION public.app_match_technician_id(p_name text)
+RETURNS bigint
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT t.id
+  FROM public.technicians t
+  WHERE lower(trim(t.name)) = lower(trim(p_name))
+    AND t.deleted_at IS NULL
+  ORDER BY CASE WHEN t.region = 'NE' THEN 0 ELSE 1 END, t.id
+  LIMIT 1;
+$$;
+
 -- ── PM dashboard: technicians in session region + assessment history ───────────
 CREATE OR REPLACE FUNCTION public.app_pm_dashboard(p_token text)
 RETURNS json
@@ -199,6 +213,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.app_assessments_fk_col() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_match_technician_id(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_pm_dashboard(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_tech_home(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_submit_assessment(text, jsonb) TO anon, authenticated;

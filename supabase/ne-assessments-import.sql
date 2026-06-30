@@ -1,7 +1,10 @@
 -- Import NE technician assessments from Microsoft Forms export
 -- Source: NE Responses - TAB Skills Self-Assessment.xlsx
--- Run AFTER supabase/assessments-rpcs.sql
--- Safe to re-run. Matches technicians by name (prefers region NE).
+-- PREREQ: run supabase/assessments-rpcs.sql first (creates app_match_technician_id).
+-- Safe to re-run.
+
+CREATE UNIQUE INDEX IF NOT EXISTS assessments_technician_id_date_uidx
+  ON public.assessments (technician_id, date);
 
 CREATE TEMP TABLE _ne_import (
   action text NOT NULL,
@@ -76,64 +79,46 @@ INSERT INTO _ne_import (action, tech_name, assessment_date, safety_avg, basic_av
   ('upsert', 'Vinny Fitzpatrick', '2025-09-29'::date, 4.0, 3.92, 3.88, 2.41, 2.0, NULL, '{"s1":4,"s2":4,"s3":4,"s4":4,"s5":4,"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"b1":4,"b2":4,"b3":4,"b4":4,"b5":4,"b6":4,"b7":4,"b8":4,"b9":4,"b10":4,"b11":4,"b12":4,"b13":4,"b14":4,"b15":4,"b16":4,"b17":4,"b18":4,"b19":4,"b20":4,"b21":4,"b22":4,"b23":4,"b24":4,"b25":4,"b26":4,"b27":4,"b28":4,"b29":4,"b30":4,"b31":4,"b32":4,"b33":4,"b34":4,"b35":4,"b36":4,"b37":4,"b38":1,"i2":4,"i3":4,"i4":4,"i5":4,"i6":4,"i7":4,"i8":4,"i9":4,"i10":4,"i11":4,"i13":4,"i14":4,"i16":4,"i17":4,"i18":4,"i19":4,"i20":4,"i21":4,"i22":4,"i23":4,"i24":4,"i25":4,"i26":4,"i28":4,"i29":3,"i30":4,"i31":4,"i32":4,"i33":4,"i34":4,"i35":4,"i36":4,"i37":4,"i38":4,"i39":4,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb),
   ('upsert', 'Vinny Fitzpatrick', '2026-03-03'::date, 5.0, 4.82, 4.7, 2.41, 2.0, NULL, '{"s1":5,"s2":5,"s3":5,"s4":5,"s5":5,"s6":5,"s7":5,"s8":5,"s9":5,"s10":5,"s11":5,"s12":5,"s13":5,"b1":5,"b2":5,"b3":5,"b4":5,"b5":5,"b6":5,"b7":5,"b8":5,"b9":5,"b10":5,"b11":5,"b12":5,"b13":5,"b14":4,"b15":5,"b16":4,"b17":5,"b18":5,"b19":5,"b20":5,"b21":5,"b22":5,"b23":5,"b24":5,"b25":5,"b26":5,"b27":5,"b28":5,"b29":5,"b30":5,"b31":5,"b32":5,"b33":5,"b34":5,"b35":5,"b36":4,"b37":5,"b38":1,"i2":4,"i3":4,"i4":5,"i5":5,"i6":5,"i7":5,"i8":5,"i9":5,"i10":5,"i11":5,"i12":5,"i13":5,"i14":5,"i15":5,"i16":5,"i17":5,"i18":5,"i19":5,"i20":5,"i21":5,"i22":5,"i23":5,"i24":5,"i25":5,"i26":5,"i27":5,"i28":5,"i29":3,"i30":5,"i31":5,"i32":5,"i33":5,"i34":5,"i35":5,"i36":5,"i37":5,"i38":5,"i39":5,"i40":3,"i41":4,"i42":4,"i43":2,"i44":3,"a1":2,"a3":3,"a4":2,"a5":2,"a6":2,"a7":3,"a8":3,"a9":2,"a10":3,"a11":3,"a12":2,"a13":3,"a14":3,"a15":3,"a16":3,"a17":2,"a18":3,"a19":3,"a20":3,"a21":2,"a22":3,"a23":1,"a24":1,"a25":2,"a26":3,"a27":2,"a28":1,"sv1":1,"sv2":3}'::jsonb);
 
-DO $$
-DECLARE
-  fk_col text;
-  r record;
-  updated_count int;
-  upsert_count int := 0;
-  latest_count int := 0;
-BEGIN
-  fk_col := app_assessments_fk_col();
-  IF fk_col IS NULL THEN
-    RAISE EXCEPTION 'Run supabase/assessments-rpcs.sql first — no technician_id/tech_id on assessments';
-  END IF;
+-- Historical + dated snapshots
+INSERT INTO public.assessments (technician_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
+SELECT app_match_technician_id(i.tech_name), i.assessment_date, i.safety_avg, i.basic_avg, i.intermediate_avg, i.advanced_avg, i.survey_avg, i.comment, i.raw_scores
+FROM _ne_import i
+WHERE i.action = 'upsert' AND i.assessment_date IS NOT NULL AND app_match_technician_id(i.tech_name) IS NOT NULL
+ON CONFLICT (technician_id, date) DO UPDATE SET
+  safety_avg = EXCLUDED.safety_avg,
+  basic_avg = EXCLUDED.basic_avg,
+  intermediate_avg = EXCLUDED.intermediate_avg,
+  advanced_avg = EXCLUDED.advanced_avg,
+  survey_avg = EXCLUDED.survey_avg,
+  comment = EXCLUDED.comment,
+  raw_scores = EXCLUDED.raw_scores;
 
-  EXECUTE format(
-    'CREATE UNIQUE INDEX IF NOT EXISTS assessments_fk_date_uidx ON public.assessments (%I, date)', fk_col);
+-- Latest rows with blank Today's Date: update max-date row in place
+UPDATE public.assessments a SET
+  safety_avg = i.safety_avg,
+  basic_avg = i.basic_avg,
+  intermediate_avg = i.intermediate_avg,
+  advanced_avg = i.advanced_avg,
+  survey_avg = i.survey_avg,
+  comment = i.comment,
+  raw_scores = i.raw_scores
+FROM _ne_import i
+WHERE i.action = 'update_latest'
+  AND a.technician_id = app_match_technician_id(i.tech_name)
+  AND a.date = (SELECT max(a2.date) FROM public.assessments a2 WHERE a2.technician_id = a.technician_id);
 
-  FOR r IN SELECT * FROM _ne_import WHERE action = 'upsert' AND assessment_date IS NOT NULL LOOP
-    EXECUTE format(
-      'INSERT INTO public.assessments (%I, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores) '
-      'SELECT t.id, $1, $2, $3, $4, $5, $6, $7, $8 '
-      'FROM (SELECT t.* FROM public.technicians t WHERE lower(trim(t.name)) = lower(trim($9)) AND t.deleted_at IS NULL ORDER BY CASE WHEN t.region = 'NE' THEN 0 ELSE 1 END, t.id LIMIT 1) t '
-      'ON CONFLICT (%I, date) DO UPDATE SET '
-      'safety_avg = EXCLUDED.safety_avg, basic_avg = EXCLUDED.basic_avg, '
-      'intermediate_avg = EXCLUDED.intermediate_avg, advanced_avg = EXCLUDED.advanced_avg, '
-      'survey_avg = EXCLUDED.survey_avg, comment = EXCLUDED.comment, raw_scores = EXCLUDED.raw_scores',
-      fk_col, fk_col
-    ) USING r.assessment_date, r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
-    GET DIAGNOSTICS updated_count = ROW_COUNT;
-    IF updated_count > 0 THEN upsert_count := upsert_count + 1; END IF;
-  END LOOP;
+-- If no assessment exists yet for update_latest techs, insert one
+INSERT INTO public.assessments (technician_id, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores)
+SELECT app_match_technician_id(i.tech_name), i.assessment_date, i.safety_avg, i.basic_avg, i.intermediate_avg, i.advanced_avg, i.survey_avg, i.comment, i.raw_scores
+FROM _ne_import i
+WHERE i.action = 'update_latest' AND i.assessment_date IS NOT NULL AND app_match_technician_id(i.tech_name) IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM public.assessments a WHERE a.technician_id = app_match_technician_id(i.tech_name));
 
-  FOR r IN SELECT * FROM _ne_import WHERE action = 'update_latest' LOOP
-    EXECUTE format(
-      'UPDATE public.assessments a SET '
-      'safety_avg = $1, basic_avg = $2, intermediate_avg = $3, advanced_avg = $4, survey_avg = $5, '
-      'comment = $6, raw_scores = $7 '
-      'FROM (SELECT t.* FROM public.technicians t WHERE lower(trim(t.name)) = lower(trim($8)) AND t.deleted_at IS NULL '
-      'ORDER BY CASE WHEN t.region = ''NE'' THEN 0 ELSE 1 END, t.id LIMIT 1) t '
-      'WHERE a.%I = t.id AND a.date = (SELECT max(a2.date) FROM public.assessments a2 WHERE a2.%I = t.id)',
-      fk_col, fk_col
-    ) USING r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
-    GET DIAGNOSTICS updated_count = ROW_COUNT;
-    IF updated_count > 0 THEN
-      latest_count := latest_count + 1;
-    ELSIF r.assessment_date IS NOT NULL THEN
-      EXECUTE format(
-        'INSERT INTO public.assessments (%I, date, safety_avg, basic_avg, intermediate_avg, advanced_avg, survey_avg, comment, raw_scores) '
-        'SELECT t.id, $1, $2, $3, $4, $5, $6, $7, $8 '
-        'FROM (SELECT t.* FROM public.technicians t WHERE lower(trim(t.name)) = lower(trim($9)) AND t.deleted_at IS NULL ORDER BY CASE WHEN t.region = 'NE' THEN 0 ELSE 1 END, t.id LIMIT 1) t '
-        'AND NOT EXISTS (SELECT 1 FROM public.assessments a WHERE a.%I = t.id)',
-        fk_col, fk_col
-      ) USING r.assessment_date, r.safety_avg, r.basic_avg, r.intermediate_avg, r.advanced_avg, r.survey_avg, r.comment, r.raw_scores, r.tech_name;
-      GET DIAGNOSTICS updated_count = ROW_COUNT;
-      IF updated_count > 0 THEN latest_count := latest_count + 1; END IF;
-    END IF;
-  END LOOP;
-
-  RAISE NOTICE 'NE import done via assessments.%. upserts=%, latest=%, expected techs=23', fk_col, upsert_count, latest_count;
-END $$;
+-- Spot-check Dom Jean-Louis (expect latest date 2026-06-03, basic_avg 3.0)
+SELECT t.name, t.region, a.date, a.safety_avg, a.basic_avg
+FROM public.technicians t
+JOIN public.assessments a ON a.technician_id = t.id
+WHERE lower(trim(t.name)) = 'dom jean-louis'
+ORDER BY a.date DESC;
 
 -- 23 technicians, 58 import operations
