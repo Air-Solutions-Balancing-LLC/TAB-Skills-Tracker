@@ -180,6 +180,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 
 /* SECTION */
 .section-label{font-size:11px;font-weight:700;color:#999;padding:20px 24px 10px;text-transform:uppercase;letter-spacing:.6px}
+.pm-search-wrap{padding:0 24px 12px}
+.pm-search-wrap input{width:100%;max-width:420px;padding:10px 14px 10px 36px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.006a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 12px center;outline:none}
+.pm-search-wrap input:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
+.pm-search-hint{font-size:11px;color:#aaa;margin-top:6px}
 .tech-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 24px 24px}
 @media(max-width:900px){.tech-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.tech-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -588,6 +592,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
         <div id="pm-alert-box"></div>
         <div class="section-label">Team members — click to view full profile</div>
+        <div class="pm-search-wrap">
+          <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
+          <div class="pm-search-hint" id="pm-search-hint"></div>
+        </div>
         <div class="tech-grid" id="tech-grid"><div class="loading">Loading...</div></div>
       </div>
       <div id="pm-view-alerts" class="view">
@@ -1612,6 +1620,9 @@ async function rpc(fn,args={}){
 
 async function loadPMDashboard(){
   document.getElementById('tech-grid').innerHTML='<div class="loading">Loading team...</div>';
+  const searchEl=document.getElementById('pm-tech-search');
+  if(searchEl)searchEl.value='';
+  updatePmSearchHint('');
   await ensureSkills();
   const techs=await rpc('app_pm_dashboard',{p_token:currentToken});
   regionTechs=techs;
@@ -1620,6 +1631,25 @@ async function loadPMDashboard(){
   renderTechGrid(techs);
   renderAlertsView(techs);
   renderCompareView(techs);
+}
+
+function filterTechsBySearch(techs,query){
+  const q=(query||'').trim().toLowerCase();
+  const indexed=techs.map((t,i)=>({t,idx:i}));
+  if(!q)return indexed;
+  return indexed.filter(({t})=>(t.name||'').toLowerCase().includes(q));
+}
+
+function updatePmSearchHint(query,shown,total){
+  const hint=document.getElementById('pm-search-hint');
+  if(!hint)return;
+  const q=(query||'').trim();
+  if(!q){hint.textContent='';return;}
+  hint.textContent=shown===total?`${shown} match${shown===1?'':'es'}`:`Showing ${shown} of ${total}`;
+}
+
+function onPmTechSearch(){
+  renderTechGrid(regionTechs);
 }
 
 function renderMetrics(techs){
@@ -1664,8 +1694,12 @@ function renderAlertBox(techs){
 }
 
 function renderTechGrid(techs){
-  if(!techs.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians found.</div>';return;}
-  document.getElementById('tech-grid').innerHTML=techs.map((t,idx)=>{
+  if(!techs.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians found.</div>';updatePmSearchHint('',0,0);return;}
+  const query=document.getElementById('pm-tech-search')?document.getElementById('pm-tech-search').value:'';
+  const filtered=filterTechsBySearch(techs,query);
+  updatePmSearchHint(query,filtered.length,techs.length);
+  if(!filtered.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians match “'+adminEsc(query.trim())+'”.</div>';return;}
+  document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     const prev=t.assessments.length>1?t.assessments[t.assessments.length-2]:null;
     const first=t.assessments.length?t.assessments[0]:null;
