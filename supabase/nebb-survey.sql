@@ -76,12 +76,14 @@ STABLE
 SECURITY DEFINER
 SET search_path TO public
 AS $$
+DECLARE
+  v_join text := app_assessment_join_sql('a', 't.id');
 BEGIN
   IF NOT app_is_admin() THEN
     RAISE EXCEPTION 'Not authorized';
   END IF;
 
-  RETURN QUERY
+  RETURN QUERY EXECUTE format($q$
     SELECT p.id,
            p.email,
            COALESCE(p.full_name, t.name) AS full_name,
@@ -94,7 +96,7 @@ BEGIN
            (
              SELECT a.raw_scores
              FROM public.assessments a
-             WHERE (a.technician_id = t.id OR a.tech_id = t.id)
+             WHERE %s
                AND a.raw_scores IS NOT NULL
                AND a.raw_scores <> '{}'::jsonb
              ORDER BY a.date DESC
@@ -105,7 +107,8 @@ BEGIN
     ORDER BY
       CASE p.role WHEN 'admin' THEN 1 WHEN 'pm' THEN 2 ELSE 3 END,
       (t.deleted_at IS NOT NULL),
-      lower(COALESCE(p.full_name, t.name, p.email));
+      lower(COALESCE(p.full_name, t.name, p.email))
+  $q$, v_join);
 END;
 $$;
 
