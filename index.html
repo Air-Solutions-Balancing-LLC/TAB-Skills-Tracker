@@ -2519,8 +2519,11 @@ async function startQuestionnaire(){
 function renderQuestionnaire(){
   const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
   const prefilled=Object.keys(qAnswers).length;
+  const hasPriorAssessments=!!(currentTechData&&currentTechData.assessments&&currentTechData.assessments.length);
   const prefilledNote=prefilled
     ?` Your ratings from your last assessment are pre-filled — update only what has changed.`
+    :hasPriorAssessments
+    ?` We don't have your previous skill-by-skill ratings on file yet (only section averages from an older import). Please rate each skill — after you submit once, future assessments will pre-fill automatically.`
     :'';
   const sections=QUESTIONNAIRE.map(sec=>`
     <div class="q-section" id="q-sec-${sec.key}">
