@@ -140,7 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 
 /* APP SHELL */
 .app-shell{display:flex;min-height:100vh}
-.sidebar{width:220px;flex-shrink:0;background:#1a1a2e;display:flex;flex-direction:column;border-right:none;position:fixed;top:0;left:0;height:100vh;z-index:10;box-shadow:2px 0 10px rgba(0,0,0,0.2)}
+.sidebar{width:220px;flex-shrink:0;background:#1a1a2e;display:flex;flex-direction:column;border-right:none;position:fixed;top:0;left:0;height:100vh;z-index:10;box-shadow:2px 0 10px rgba(0,0,0,0.2);overflow:visible}
 .sb-brand{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,0.08);background:#f5f5f3;display:flex;align-items:center;min-height:70px}
 .sb-brand img{max-height:40px;max-width:170px;object-fit:contain;object-position:left}
 .sb-logo-fallback{font-size:16px;font-weight:800;color:#1B3A6B;display:none;letter-spacing:-.3px}
@@ -164,6 +164,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .sb-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08)}
 .sb-logout{font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:10px;transition:all .2s}
 .sb-logout:hover{color:#fff;background:rgba(255,255,255,0.06)}
+.sb-section-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 8px 6px}
+.sb-sidebar-close{display:none;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;font-size:18px;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
+.sb-sidebar-close:hover{background:rgba(255,255,255,0.14)}
+.sb-section-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:none;background:transparent;cursor:pointer;padding:10px 8px 6px;font-family:inherit}
+.sb-section-toggle .sb-section{padding:0;flex:1;text-align:left}
+.sb-section-chevron{font-size:10px;color:rgba(255,255,255,0.45);transition:transform .2s;flex-shrink:0}
+.sb-skill-links{display:flex;flex-direction:column;gap:2px;padding:0 4px 8px;max-height:50vh;overflow-y:auto}
+.sb-skill-links.collapsed{display:none}
+.sb-skill-link{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.78);transition:background .15s;line-height:1.3}
+.sb-skill-link:hover{background:rgba(255,255,255,0.08);color:#fff}
+.sb-skill-emoji{font-size:14px;flex-shrink:0}
+.sb-skill-name{flex:1;min-width:0;font-weight:500}
+.sb-skill-pct{font-size:10px;font-weight:800;flex-shrink:0;white-space:nowrap}
+.sb-pct-good{color:#7ddeb8}
+.sb-pct-mid{color:#7aaedd}
+.sb-pct-low{color:rgba(255,255,255,0.4)}
+.sb-collapse-tab{display:none;position:absolute;top:50%;right:-14px;transform:translateY(-50%);width:28px;height:56px;border:none;border-radius:0 10px 10px 0;background:#1a1a2e;color:#fff;font-size:20px;cursor:pointer;box-shadow:2px 0 8px rgba(0,0,0,0.25);padding:0;line-height:1;z-index:12}
+.mobile-menu-btn.is-open{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
+.my-brow,.q-section{scroll-margin-top:76px}
 .main-content{margin-left:220px;flex:1;min-width:0;background:#f0f2f5}
 .view{display:none}.view.active{display:block}
 
@@ -351,7 +370,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .q-section{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .q-section-title{font-size:15px;font-weight:800;margin-bottom:4px;color:#1B3A6B;letter-spacing:-.2px}
 .q-section-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
-.q-legend{background:#f8faff;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#555;line-height:1.9;border:1.5px solid #E6EEF8}
+.q-legend{background:#f8faff;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#555;line-height:1.7;border:1.5px solid #E6EEF8}
+.q-legend-intro{margin-bottom:10px;font-style:italic;color:#444}
+.q-legend-list{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:8px}
+.q-legend-list li{line-height:1.55}
+.q-legend-list strong{color:#c45a1a}
 .q-skill{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f5f5f5}
 .q-skill:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
 .q-skill-name{font-size:13px;font-weight:600;margin-bottom:8px;line-height:1.5;color:#1a1a2e}
@@ -390,6 +413,8 @@ body.mobile-nav-open{overflow:hidden}
 @media(max-width:768px){
   .sidebar{width:min(280px,88vw);transform:translateX(-100%);transition:transform .25s ease;z-index:11}
   .sidebar.mobile-open{transform:translateX(0)}
+  .sb-sidebar-close{display:inline-flex}
+  .sb-collapse-tab{display:block}
   .main-content{margin-left:0;width:100%}
   .mobile-menu-btn{display:inline-flex}
   .mobile-assess-btn.visible{display:inline-flex}
@@ -738,6 +763,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="app-shell">
     <div class="sidebar-overlay" onclick="closeMobileNav()"></div>
     <div class="sidebar" id="tech-sidebar">
+      <button type="button" class="sb-collapse-tab" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
       <div class="sb-brand">
         <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       </div>
@@ -747,8 +773,16 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-assess-done" id="tech-assess-done"></div>
       </div>
       <div class="sb-nav-wrap">
-        <div class="sb-section">Navigation</div>
-        <div class="sb-nav active" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
+        <div class="sb-section-row">
+          <div class="sb-section">Navigation</div>
+          <button type="button" class="sb-sidebar-close" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
+        </div>
+        <div class="sb-nav active" id="sb-nav-home" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
+        <button type="button" class="sb-section-toggle" id="sb-skill-toggle" onclick="toggleSbSkillSections()" aria-expanded="true">
+          <span class="sb-section">Skill sections</span>
+          <span class="sb-section-chevron" id="sb-skill-chevron">▼</span>
+        </button>
+        <div id="tech-sb-sections" class="sb-skill-links"></div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -935,6 +969,21 @@ let QUESTIONNAIRE=[
 ];
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+const RATING_SCALE_DEFS=[
+  {n:1,label:'Beginner',text:'Not Seen/Not enough experience.'},
+  {n:2,label:'Developing',text:'Has completed the skill a few times but still needs guidance and is not yet able to perform it independently.'},
+  {n:3,label:'Experienced',text:'Has completed the skill multiple times and can perform it with minimal guidance, though may still need occasional support or a refresher.'},
+  {n:4,label:'Proficient',text:'Confident performing the skill independently.'},
+  {n:5,label:'Exceptional',text:'Demonstrates full mastery. Can teach or mentor others and is recognized as a subject matter expert. Please note: This means that you would feel comfortable explaining the method, theory, and calculations during a job meeting or to a commissioning authority or engineer.'}
+];
+function ratingScaleLegendHtml(){
+  return`<div class="q-legend">
+    <div class="q-legend-intro">Please rate each one from 1 (Beginner) to 5 (Exceptional).</div>
+    <ul class="q-legend-list">
+      ${RATING_SCALE_DEFS.map(d=>`<li><strong>${d.n} = ${d.label}</strong> — ${d.text}</li>`).join('')}
+    </ul>
+  </div>`;
+}
 
 let skillsLoaded=false;
 let CHECKLIST_SECTIONS=[];
@@ -1108,24 +1157,83 @@ function updateTechAssessNav(t,readOnly){
     if(mobile)mobile.classList.add('visible');
   }
 }
+function syncMobileMenuBtns(open){
+  document.querySelectorAll('#pg-tech .mobile-menu-btn').forEach(btn=>{
+    btn.textContent=open?'◀':'☰';
+    btn.setAttribute('aria-label',open?'Close menu':'Open menu');
+    btn.classList.toggle('is-open',!!open);
+  });
+}
 function toggleMobileNav(which){
   const page=which==='pm'?'pg-pm':'pg-tech';
   const shell=document.querySelector('#'+page+' .app-shell');
   if(!shell)return;
   const sidebar=shell.querySelector('.sidebar');
   const overlay=shell.querySelector('.sidebar-overlay');
-  const open=sidebar&&!sidebar.classList.contains('mobile-open');
-  closeMobileNav();
-  if(open&&sidebar){
+  const willOpen=sidebar&&!sidebar.classList.contains('mobile-open');
+  if(willOpen){
     sidebar.classList.add('mobile-open');
     if(overlay)overlay.classList.add('visible');
     document.body.classList.add('mobile-nav-open');
+    if(which==='tech')renderTechSidebarNav();
+    if(which==='tech')syncMobileMenuBtns(true);
+  }else{
+    closeMobileNav();
   }
 }
 function closeMobileNav(){
   document.querySelectorAll('.sidebar.mobile-open').forEach(s=>s.classList.remove('mobile-open'));
   document.querySelectorAll('.sidebar-overlay.visible').forEach(o=>o.classList.remove('visible'));
   document.body.classList.remove('mobile-nav-open');
+  syncMobileMenuBtns(false);
+}
+let sbSkillSectionsOpen=true;
+function toggleSbSkillSections(){
+  sbSkillSectionsOpen=!sbSkillSectionsOpen;
+  const el=document.getElementById('tech-sb-sections');
+  const toggle=document.getElementById('sb-skill-toggle');
+  const chev=document.getElementById('sb-skill-chevron');
+  if(el)el.classList.toggle('collapsed',!sbSkillSectionsOpen);
+  if(toggle)toggle.setAttribute('aria-expanded',sbSkillSectionsOpen?'true':'false');
+  if(chev)chev.textContent=sbSkillSectionsOpen?'▼':'▶';
+}
+function techSidebarSectionPct(sec){
+  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
+  const total=sec.skills.length;
+  if(!total)return 0;
+  if(inQ){
+    const rated=sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length;
+    return Math.round((rated/total)*100);
+  }
+  const raw=lastAssessmentRawScores();
+  let sum=0,n=0;
+  sec.skills.forEach(sk=>{
+    const v=Number(raw[sk.id]);
+    if(v>=1&&v<=5){sum+=Math.round((v/5)*100);n++;}
+  });
+  return n?Math.round(sum/n):0;
+}
+function renderTechSidebarNav(){
+  const wrap=document.getElementById('tech-sb-sections');
+  if(!wrap||!QUESTIONNAIRE.length)return;
+  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
+  const homeNav=document.getElementById('sb-nav-home');
+  if(homeNav)homeNav.classList.toggle('active',!inQ);
+  wrap.innerHTML=QUESTIONNAIRE.map(sec=>{
+    const pct=techSidebarSectionPct(sec);
+    const pctLabel=inQ?pct+'% rated':(pct?pct+'%':'—');
+    const pctClass=!pct?'sb-pct-low':pct>=80?'sb-pct-good':pct>=50?'sb-pct-mid':'sb-pct-low';
+    return`<div class="sb-skill-link" onclick="jumpToTechSection('${sec.key}')"><span class="sb-skill-emoji">${sec.emoji}</span><span class="sb-skill-name">${adminEsc(sec.section)}</span><span class="sb-skill-pct ${pctClass}">${pctLabel}</span></div>`;
+  }).join('');
+  wrap.classList.toggle('collapsed',!sbSkillSectionsOpen);
+  const chev=document.getElementById('sb-skill-chevron');
+  if(chev)chev.textContent=sbSkillSectionsOpen?'▼':'▶';
+}
+function jumpToTechSection(key){
+  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
+  closeMobileNav();
+  const target=document.getElementById(inQ?'q-sec-'+key:'home-sec-'+key);
+  if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function renderTechNotesHtml(t,opts){
   const readOnly=!!opts.readOnly;
@@ -1840,7 +1948,10 @@ function showPage(id){
   closeMobileNav();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='pg-tech'&&currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
+  if(id==='pg-tech'&&currentTechData){
+    updateTechAssessNav(currentTechData,techViewMode==='readonly');
+    renderTechSidebarNav();
+  }
 }
 
 async function rpc(fn,args={}){
@@ -2248,9 +2359,9 @@ function renderTechHome(t,opts){
   const first=assessments.length?assessments[0]:null;
 
   const myBars=SKILL_CATS.map(c=>{
-    if(!last||last[c.key]===null)return'';
+    if(!last||last[c.key]===null)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
     const v=last[c.key],pct=Math.round((v/5)*100),col=scoreColor(v);
-    return`<div class="my-brow"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
+    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
   }).join('');
 
   const stalled=[];
@@ -2301,6 +2412,7 @@ function renderTechHome(t,opts){
     ${checklistHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
   updateTechAssessNav(t,readOnly);
+  renderTechSidebarNav();
 }
 
 function showTechHome(){
@@ -2308,9 +2420,26 @@ function showTechHome(){
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
   if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
+  renderTechSidebarNav();
 }
 
 // QUESTIONNAIRE
+function lastAssessmentRawScores(){
+  const assessments=currentTechData&&currentTechData.assessments;
+  if(!assessments||!assessments.length)return {};
+  return rawOf(assessments[assessments.length-1])||{};
+}
+function prefillQAnswersFromLast(){
+  const raw=lastAssessmentRawScores();
+  const filled={};
+  QUESTIONNAIRE.forEach(sec=>{
+    sec.skills.forEach(sk=>{
+      const n=Number(raw[sk.id]);
+      if(n>=1&&n<=5)filled[sk.id]=n;
+    });
+  });
+  return filled;
+}
 function sectionAvg(key){
   const sec=QUESTIONNAIRE.find(s=>s.key===key);
   if(!sec)return null;
@@ -2320,22 +2449,25 @@ function sectionAvg(key){
 
 async function startQuestionnaire(){
   closeMobileNav();
-  qAnswers={};
   await ensureSkills();
+  qAnswers=prefillQAnswersFromLast();
   document.getElementById('tech-view-home').classList.remove('active');
   document.getElementById('tech-view-questionnaire').classList.add('active');
   renderQuestionnaire();
+  renderTechSidebarNav();
   window.scrollTo(0,0);
 }
 
 function renderQuestionnaire(){
   const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
-  const legend=`<div class="q-legend"><strong>Rating scale:</strong><br>1 = Beginner — Not seen / No experience<br>2 = Developing — Done a few times, still needs guidance<br>3 = Experienced — Can do with minimal guidance<br>4 = Proficient — Confident independently<br>5 = Exceptional — Full mastery, can teach others</div>`;
+  const prefilled=Object.keys(qAnswers).length;
+  const prefilledNote=prefilled
+    ?` Your ratings from your last assessment are pre-filled — update only what has changed.`
+    :'';
   const sections=QUESTIONNAIRE.map(sec=>`
-    <div class="q-section">
+    <div class="q-section" id="q-sec-${sec.key}">
       <div class="q-section-title">${sec.emoji} ${sec.section}</div>
-      <div class="q-section-sub">Rate each skill honestly from 1 to 5.</div>
-      ${legend}
+      <div class="q-section-sub">Rate each skill from 1 (Beginner) to 5 (Exceptional).</div>
       ${sec.skills.map(sk=>`
         <div class="q-skill">
           <div class="q-skill-cat">${sk.cat}</div>
@@ -2349,7 +2481,8 @@ function renderQuestionnaire(){
   document.getElementById('q-content').innerHTML=`
     <div class="q-header">
       <div class="q-title">TAB Skills Self-Assessment</div>
-      <div class="q-sub">Your answers help customize your training and track progress over time.</div>
+      <div class="q-sub">Your answers help customize your training and track progress over time.${prefilledNote}</div>
+      ${ratingScaleLegendHtml()}
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
     </div>
@@ -2363,6 +2496,8 @@ function renderQuestionnaire(){
       <button class="btn btn-outline" onclick="showTechHome()">Cancel</button>
       <button class="btn" onclick="submitAssessment()">Submit assessment</button>
     </div>`;
+  updateProgress();
+  renderTechSidebarNav();
 }
 
 function setRating(id,val){
@@ -2372,6 +2507,7 @@ function setRating(id,val){
     b.className='rating-btn selected-'+val;
   });
   updateProgress();
+  renderTechSidebarNav();
 }
 
 function updateProgress(){
