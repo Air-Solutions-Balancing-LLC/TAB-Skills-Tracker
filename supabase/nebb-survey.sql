@@ -94,11 +94,11 @@ BEGIN
            t.nebb_status,
            t.start_date,
            (
-             SELECT a.raw_scores
+             SELECT a.raw_scores::jsonb
              FROM public.assessments a
              WHERE %s
                AND a.raw_scores IS NOT NULL
-               AND a.raw_scores <> '{}'::jsonb
+               AND a.raw_scores::jsonb <> '{}'::jsonb
              ORDER BY a.date DESC
              LIMIT 1
            ) AS latest_raw_scores
