@@ -236,6 +236,8 @@ BEGIN
         t.region,
         t.nebb_status,
         t.lead_tech,
+        t.notes_to_tech,
+        t.tech_comments,
         coalesce((
           SELECT json_agg(row_to_json(a) ORDER BY a.date)
           FROM (

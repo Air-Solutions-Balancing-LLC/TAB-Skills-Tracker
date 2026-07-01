@@ -152,6 +152,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .sb-nav{font-size:13px;padding:11px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500}
 .sb-nav:hover{background:rgba(255,255,255,0.08);color:#fff}
 .sb-nav.active{background:#4A90D9;color:#fff;font-weight:700}
+.sb-nav-assess{background:#E87722;color:#fff;font-weight:700;margin-bottom:4px}
+.sb-nav-assess:hover{background:#d96a1a;color:#fff}
+.sb-assess-done{font-size:11px;padding:10px 14px;border-radius:10px;color:rgba(255,255,255,0.45);line-height:1.4;margin-bottom:4px}
 .sb-badge{background:rgba(255,255,255,0.2);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:auto}
 .sb-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08)}
 .sb-logout{font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:10px;transition:all .2s}
@@ -303,6 +306,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .cl-box{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #6B8CAE}
 .cl-box-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
 .cl-box-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
+.tech-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:700px){.tech-notes-grid{grid-template-columns:1fr}}
+.tech-notes-box{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #1B3A6B}
+.tech-notes-box.comments{border-top-color:#E87722}
+.tech-notes-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:8px}
+.tech-notes-body{font-size:13px;color:#555;line-height:1.55;white-space:pre-wrap}
+.tech-notes-input{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;min-height:88px;outline:none;background:#fafafa;color:#1a1a2e;line-height:1.5}
+.tech-notes-input:focus{border-color:#1B3A6B;background:#fff}
+.tech-notes-save{margin-top:8px;padding:7px 14px;font-size:12px}
 .cl-list{display:flex;flex-direction:column;gap:6px;padding-top:8px}
 .cl-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#f8faff;border:1px solid #e6eef8;transition:background .15s}
 .cl-item.cl-done{background:#f2faf6;border-color:#d4ede2}
@@ -644,6 +656,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
+        <div class="sb-nav sb-nav-assess" id="tech-assess-nav" style="display:none" onclick="startQuestionnaire()">📝 Take this month's assessment</div>
+        <div class="sb-assess-done" id="tech-assess-done" style="display:none"></div>
         <div class="sb-nav active" onclick="showTechHome()">📊 My Progress</div>
       </div>
       <div class="sb-footer">
@@ -969,6 +983,70 @@ function sectionProficiencyPct(avg){
 function sectionRawAvg(rawScores,sec){
   const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
   return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+}
+function techAlreadySubmittedThisMonth(assessments){
+  const last=assessments&&assessments.length?assessments[assessments.length-1]:null;
+  if(!last)return false;
+  const d=new Date(last.date),now=new Date();
+  return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+}
+function updateTechAssessNav(t,readOnly){
+  const nav=document.getElementById('tech-assess-nav');
+  const done=document.getElementById('tech-assess-done');
+  if(!nav||!done)return;
+  if(readOnly){
+    nav.style.display='none';
+    done.style.display='none';
+    return;
+  }
+  const assessments=t.assessments||[];
+  if(techAlreadySubmittedThisMonth(assessments)){
+    const last=assessments[assessments.length-1];
+    nav.style.display='none';
+    done.style.display='block';
+    done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
+  }else{
+    nav.style.display='flex';
+    done.style.display='none';
+  }
+}
+function renderTechNotesHtml(t,opts){
+  const readOnly=!!opts.readOnly;
+  const adminEdit=!!opts.adminEdit;
+  const notesToTech=t.notes_to_tech||'';
+  const techComments=t.tech_comments||'';
+  const notesEditable=adminEdit;
+  const commentsEditable=!readOnly;
+  const notesBody=notesEditable
+    ?`<textarea class="tech-notes-input" id="notes-to-tech-input" placeholder="Notes from your lead or admin…">${adminEsc(notesToTech)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveNotesToTech()">Save notes</button>`
+    :`<div class="tech-notes-body">${notesToTech?adminEsc(notesToTech):'<span class="no-comment">No notes yet.</span>'}</div>`;
+  const commentsBody=commentsEditable
+    ?`<textarea class="tech-notes-input" id="tech-comments-input" placeholder="Your comments or questions…">${adminEsc(techComments)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveTechComments()">Save comments</button>`
+    :`<div class="tech-notes-body">${techComments?adminEsc(techComments):'<span class="no-comment">No comments yet.</span>'}</div>`;
+  return`<div class="tech-notes-grid">
+    <div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div>${notesBody}</div>
+    <div class="tech-notes-box comments"><div class="tech-notes-title">💬 Tech Comments</div>${commentsBody}</div>
+  </div>`;
+}
+async function saveTechComments(){
+  if(!currentTechData||!currentToken)return;
+  const el=document.getElementById('tech-comments-input');
+  if(!el)return;
+  try{
+    const saved=await rpc('app_save_tech_comments',{p_token:currentToken,p_comments:el.value});
+    currentTechData.tech_comments=saved||'';
+    alert('Comments saved.');
+  }catch(e){alert('Could not save comments. Please try again.');console.error(e);}
+}
+async function saveNotesToTech(){
+  if(!currentTechData)return;
+  const el=document.getElementById('notes-to-tech-input');
+  if(!el)return;
+  try{
+    const saved=await rpc('app_save_notes_to_tech',{p_tech_id:currentTechData.id,p_notes:el.value});
+    currentTechData.notes_to_tech=saved||'';
+    alert('Notes saved.');
+  }catch(e){alert('Could not save notes. Please try again.');console.error(e);}
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
@@ -2046,8 +2124,7 @@ function renderTechHome(t,opts){
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
-  const now=new Date();
-  const alreadyThisMonth=last&&new Date(last.date).getMonth()===now.getMonth()&&new Date(last.date).getFullYear()===now.getFullYear();
+  updateTechAssessNav(t,readOnly);
 
   const myBars=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return'';
@@ -2082,10 +2159,7 @@ function renderTechHome(t,opts){
     return`<tr><td style="color:#1B3A6B;white-space:nowrap;font-weight:700">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
   }).join('');
 
-  const assessBtn=readOnly?''
-    :alreadyThisMonth
-    ?`<div style="background:rgba(27,58,107,0.15);border:1px solid rgba(27,58,107,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.4);text-align:center">✅ Assessment submitted for ${fmtDateFull(last.date)}. Next submission available next month.</div>`
-    :`<button class="btn btn-full" onclick="startQuestionnaire()" style="padding:12px;font-size:14px">📝 Take this month's assessment</button>`;
+  const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
 
   const banner=adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`
@@ -2093,17 +2167,17 @@ function renderTechHome(t,opts){
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly}):"";
 
   container.innerHTML=banner+`
-    ${checklistHtml}
+    ${notesHtml}
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
         <div><div class="detail-name">${t.name}</div><div class="detail-sub">${t.nebb_status||'In Training'}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
-      <div class="my-bars">${myBars||'<div style="font-size:13px;color:rgba(255,255,255,0.3)">No scores yet — complete your first assessment below.</div>'}</div>
+      <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
+      <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
-    <div style="margin-bottom:14px">${assessBtn}</div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
+    ${checklistHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
 }
 
