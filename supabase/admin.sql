@@ -76,7 +76,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, latest_raw_scores jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -96,7 +96,16 @@ BEGIN
            (t.deleted_at IS NOT NULL) AS deleted,
            p.tech_id,
            t.nebb_status,
-           t.start_date
+           t.start_date,
+           (
+             SELECT a.raw_scores
+             FROM public.assessments a
+             WHERE (a.technician_id = t.id OR a.tech_id = t.id)
+               AND a.raw_scores IS NOT NULL
+               AND a.raw_scores <> '{}'::jsonb
+             ORDER BY a.date DESC
+             LIMIT 1
+           ) AS latest_raw_scores
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY

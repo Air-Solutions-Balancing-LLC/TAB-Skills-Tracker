@@ -226,6 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .score-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
 .sp{font-size:11px;padding:4px 9px;border-radius:8px;font-weight:700}
 .sp1{background:#E1F5EE;color:#0F6E56}
+.sp5{background:#F3E8FF;color:#6D28D9}
 .sp2{background:#E6EEF8;color:#1B3A6B}
 .sp3{background:#EEF4FF;color:#2d5a9e}
 .sp4{background:#f5f5f5;color:#888}
@@ -388,7 +389,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .rating-btn.selected-1{background:#FFF5F5;border-color:#e74c3c;color:#c0392b;font-weight:800}
 .rating-btn.selected-2{background:#FFF8F0;border-color:#e67e22;color:#d35400;font-weight:800}
 .rating-btn.selected-3{background:#EEF4FF;border-color:#4A90D9;color:#1B3A6B;font-weight:800}
-.rating-btn.selected-4{background:#E1F5EE;border-color:#1D9E75;color:#0F6E56;font-weight:800}
+.rating-btn.selected-4{background:#F3E8FF;border-color:#7C3AED;color:#6D28D9;font-weight:800}
 .rating-btn.selected-5{background:#E1F5EE;border-color:#085041;color:#085041;font-weight:800}
 .rating-label{font-size:10px;margin-top:3px;opacity:.7}
 .q-comment{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;min-height:90px;outline:none;background:#fafafa;color:#1a1a2e;transition:border-color .2s}
@@ -399,6 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .nebb-choice.selected{border-color:#1B3A6B;background:#EEF4FF}
 .nebb-choice input{margin-top:3px;flex-shrink:0;accent-color:#1B3A6B}
 .admin-nebb{margin-top:4px}
+.tech-status-bars{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .q-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;flex-wrap:wrap}
 .q-nav-actions{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
 .btn-outline{background:#fff;color:#1B3A6B;border:2px solid #1B3A6B}
@@ -409,6 +411,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .nebb-cp{background:#EEF4FF;color:#1B3A6B}
 .nebb-ct{background:#E1F5EE;color:#0F6E56}
 .nebb-tr{background:#f5f5f5;color:#888}
+.comp-badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700;background:#F3E8FF;color:#6D28D9}
 
 /* MOBILE */
 .mobile-menu-btn{display:none;align-items:center;justify-content:center;width:42px;height:42px;border:2px solid #1B3A6B;border-radius:10px;background:#EEF4FF;color:#1B3A6B;font-size:20px;cursor:pointer;flex-shrink:0;padding:0;line-height:1}
@@ -1697,6 +1700,7 @@ async function loadAdminLists(){
   const lists=[document.getElementById('list-admins'),document.getElementById('list-pms'),document.getElementById('list-techs'),document.getElementById('list-deleted')];
   lists.forEach(el=>el.innerHTML='<div class="admin-empty">Loading…</div>');
   try{
+    await ensureSkills();
     adminPeople=await rpc('app_admin_list_people',{})||[];
   }catch(e){
     lists.forEach(el=>el.innerHTML='');
@@ -1777,7 +1781,7 @@ function renderPeople(el,rows,opts){
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
       :`${viewBtn}${techEditBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
-    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div>${opts.showRegion&&p.nebb_status?`<div class="admin-nebb">${nebbBadge(p.nebb_status)}</div>`:''}<div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
+    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div>${opts.showRegion?`<div class="admin-nebb">${techStatusBarsHtml(p)}</div>`:''}<div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
   }).join('');
 }
 
@@ -1997,21 +2001,24 @@ async function deleteSkill(id){
 
 function scoreColor(v){
   if(v===null)return'rgba(255,255,255,0.2)';
-  if(v>=4)return'#1D9E75';
+  if(v>=5)return'#1D9E75';
+  if(v>=4)return'#7C3AED';
   if(v>=3)return'#4A90D9';
   if(v>=2)return'#9090c0';
   return'#6060a0';
 }
 function scoreBg(v){
   if(v===null)return'rgba(255,255,255,0.05)';
-  if(v>=4)return'rgba(29,158,117,0.3)';
+  if(v>=5)return'rgba(29,158,117,0.3)';
+  if(v>=4)return'rgba(124,58,237,0.28)';
   if(v>=3)return'rgba(27,58,107,0.4)';
   if(v>=2)return'rgba(80,80,110,0.4)';
   return'rgba(55,55,80,0.5)';
 }
 function spClass(v){
   if(v===null)return'sp4';
-  if(v>=4)return'sp1';
+  if(v>=5)return'sp1';
+  if(v>=4)return'sp5';
   if(v>=3)return'sp2';
   if(v>=2)return'sp3';
   return'sp4';
@@ -2026,11 +2033,67 @@ function parseDateOnly(d){
 function fmtDate(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}
 function fmtDateFull(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'—'}
 function techStartDate(t){return t&&t.start_date?t.start_date:null}
+const COMPETENCE_LABELS={safety:'Safety',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey'};
+function nebbStatusTier(stored){
+  if(!stored)return 'training';
+  const idx=NEBB_STATUS_OPTIONS.findIndex(o=>o.value===stored);
+  if(idx===0||idx===1)return 'cp';
+  if(idx===2||idx===3||idx===4)return 'ct';
+  if(idx>=0)return 'training';
+  const s=String(stored).toLowerCase();
+  if(s==='nebb cp'||s==='cp')return 'cp';
+  if(s==='nebb ct'||s==='ct')return 'ct';
+  return 'training';
+}
+function nebbStatusLabel(stored){
+  const tier=nebbStatusTier(stored);
+  if(tier==='cp')return 'NEBB CP';
+  if(tier==='ct')return 'NEBB CT';
+  return 'In Training';
+}
 function nebbBadge(s){
-  if(!s)return'<span class="nebb-badge nebb-tr">In Training</span>';
-  if(s.includes('CP'))return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
-  if(s.includes('CT'))return'<span class="nebb-badge nebb-ct">NEBB CT</span>';
+  const tier=nebbStatusTier(s);
+  if(tier==='cp')return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
+  if(tier==='ct')return'<span class="nebb-badge nebb-ct">NEBB CT</span>';
   return'<span class="nebb-badge nebb-tr">In Training</span>';
+}
+function latestRawScores(entity){
+  if(entity&&entity.latest_raw_scores!=null){
+    const raw=rawOf({raw_scores:entity.latest_raw_scores});
+    if(raw&&Object.keys(raw).length)return raw;
+  }
+  const assessments=entity&&entity.assessments?entity.assessments:[];
+  for(let i=assessments.length-1;i>=0;i--){
+    const raw=rawOf(assessments[i]);
+    if(raw&&Object.keys(raw).length)return raw;
+  }
+  return null;
+}
+function competentCategoryLabels(rawScores){
+  if(!rawScores||typeof rawScores!=='object')return [];
+  const out=[];
+  SKILL_CATS.forEach(cat=>{
+    const sec=QUESTIONNAIRE.find(s=>s.key===cat.skey);
+    if(!sec||!sec.skills.length)return;
+    const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
+    if(vals.length!==sec.skills.length)return;
+    if(vals.every(v=>Number(v)>=4))out.push(COMPETENCE_LABELS[cat.skey]||cat.label);
+  });
+  return out;
+}
+function competenceBadges(rawScores){
+  return competentCategoryLabels(rawScores).map(l=>`<span class="comp-badge">${adminEsc(l)}</span>`).join('');
+}
+function techStatusBarsHtml(entity){
+  const nebb=nebbBadge(entity.nebb_status);
+  const comp=competenceBadges(latestRawScores(entity));
+  return`<div class="tech-status-bars">${nebb}${comp}</div>`;
+}
+function techStatusSummaryText(entity){
+  const parts=[nebbStatusLabel(entity.nebb_status)];
+  const levels=competentCategoryLabels(latestRawScores(entity));
+  if(levels.length)parts.push(levels.join(', '));
+  return parts.join(' · ');
 }
 function matchNebbOption(stored){
   if(!stored)return'';
@@ -2180,7 +2243,7 @@ function renderTechGrid(techs){
     return`<div class="tcard" onclick="openTech(${idx})">
       <div class="tcard-top">
         <div class="av">${initials(t.name)}</div>
-        <div><div class="tcard-name">${t.name}</div><div class="tcard-sub">${nebbBadge(t.nebb_status)}${t.lead_tech?' · '+t.lead_tech.split(' ')[0]:''}</div></div>
+        <div><div class="tcard-name">${t.name}</div><div class="tcard-sub">${techStatusBarsHtml(t)}${t.lead_tech?' · '+t.lead_tech.split(' ')[0]:''}</div></div>
       </div>
       <div class="score-row">${scores||'<span style="font-size:11px;color:rgba(255,255,255,0.2)">No assessments yet</span>'}</div>
       <div class="dates-row">
@@ -2215,7 +2278,7 @@ function renderCompareView(techs){
       const v=last?last[c.key]:null;
       return v!==null?`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span></td>`:`<td style="color:rgba(255,255,255,0.2)">—</td>`;
     }).join('');
-    return`<tr><td><div class="ct-name">${t.name}</div><div class="ct-sub">${t.nebb_status||'In Training'}</div></td>${cells}</tr>`;
+    return`<tr><td><div class="ct-name">${t.name}</div><div class="ct-sub">${techStatusSummaryText(t)}</div></td>${cells}</tr>`;
   }).join('');
 }
 
@@ -2232,7 +2295,7 @@ async function openTech(idx){
   if(!t)return;
   document.getElementById('detail-av-initials').textContent=initials(t.name);
   document.getElementById('detail-tech-name').textContent=t.name;
-  document.getElementById('detail-tech-sub').textContent=(t.nebb_status||'In Training')+(t.lead_tech?' · Lead: '+t.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
+  document.getElementById('detail-tech-sub').textContent=techStatusSummaryText(t)+(t.lead_tech?' · Lead: '+t.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
   const vb=document.getElementById('detail-view-as');if(vb)vb.style.display=userIsAdmin?'':'none';
   await renderDetailView(t);
   setPMView('tech',null);
@@ -2521,7 +2584,7 @@ function renderTechHome(t,opts){
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
-        <div><div class="detail-name">${t.name}</div><div class="detail-sub">${t.nebb_status||'In Training'}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
+        <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
