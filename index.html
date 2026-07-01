@@ -154,7 +154,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .sb-nav.active{background:#4A90D9;color:#fff;font-weight:700}
 .sb-nav-assess{background:#E87722;color:#fff;font-weight:700;margin-bottom:4px}
 .sb-nav-assess:hover{background:#d96a1a;color:#fff}
-.sb-assess-done{font-size:11px;padding:10px 14px;border-radius:10px;color:rgba(255,255,255,0.45);line-height:1.4;margin-bottom:4px}
+.sb-assess-wrap{padding:12px 10px 4px}
+.sb-assess-btn{display:none;width:100%;padding:12px 14px;border:none;border-radius:10px;background:#E87722;color:#fff;font-size:13px;font-weight:700;cursor:pointer;text-align:left;line-height:1.35;transition:background .2s}
+.sb-assess-btn:hover{background:#d96a1a}
+.sb-assess-btn.visible{display:block}
+.sb-assess-done{display:none;font-size:11px;padding:10px 14px;border-radius:10px;color:rgba(255,255,255,0.55);line-height:1.4;background:rgba(255,255,255,0.06)}
+.sb-assess-done.visible{display:block}
 .sb-badge{background:rgba(255,255,255,0.2);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:auto}
 .sb-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08)}
 .sb-logout{font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:10px;transition:all .2s}
@@ -654,10 +659,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
+      <div class="sb-assess-wrap">
+        <button type="button" class="sb-assess-btn" id="tech-assess-nav" onclick="startQuestionnaire()">📝 Take this month's assessment</button>
+        <div class="sb-assess-done" id="tech-assess-done"></div>
+      </div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
-        <div class="sb-nav sb-nav-assess" id="tech-assess-nav" style="display:none" onclick="startQuestionnaire()">📝 Take this month's assessment</div>
-        <div class="sb-assess-done" id="tech-assess-done" style="display:none"></div>
         <div class="sb-nav active" onclick="showTechHome()">📊 My Progress</div>
       </div>
       <div class="sb-footer">
@@ -994,20 +1001,16 @@ function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
   if(!nav||!done)return;
-  if(readOnly){
-    nav.style.display='none';
-    done.style.display='none';
-    return;
-  }
-  const assessments=t.assessments||[];
+  nav.classList.remove('visible');
+  done.classList.remove('visible');
+  if(readOnly)return;
+  const assessments=t&&t.assessments?t.assessments:[];
   if(techAlreadySubmittedThisMonth(assessments)){
     const last=assessments[assessments.length-1];
-    nav.style.display='none';
-    done.style.display='block';
+    done.classList.add('visible');
     done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
   }else{
-    nav.style.display='flex';
-    done.style.display='none';
+    nav.classList.add('visible');
   }
 }
 function renderTechNotesHtml(t,opts){
@@ -1197,8 +1200,8 @@ async function chooseRole(role){
     const token=await rpc('app_tech_azure_login',{});
     if(!token){err.textContent='No access. Your profile has not been added to this tracker.';err.style.display='block';return;}
     currentRole='tech';currentToken=token;techViewMode=null;
-    await loadTechHome();
     showPage('pg-tech');
+    await loadTechHome();
   }catch(e){
     err.textContent=azureSetupError(e);
     err.style.display='block';
@@ -1464,7 +1467,7 @@ function renderPeople(el,rows,opts){
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
     const techEditBtn=opts.canTechEdit&&p.tech_id&&p.region
-      ?`<button type="button" class="admin-tech-edit" onclick="editTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Tech edit</button>`
+      ?`<button type="button" class="admin-tech-edit" onclick="editTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Tech View Editable</button>`
       :'';
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
@@ -1719,7 +1722,11 @@ function nebbBadge(s){
   if(s.includes('CT'))return'<span class="nebb-badge nebb-ct">NEBB CT</span>';
   return'<span class="nebb-badge nebb-tr">In Training</span>';
 }
-function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='pg-tech'&&currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
+}
 
 async function rpc(fn,args={}){
   // Send the signed user token when we have one so the DB can read the verified
@@ -2124,7 +2131,6 @@ function renderTechHome(t,opts){
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
-  updateTechAssessNav(t,readOnly);
 
   const myBars=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return'';
@@ -2167,7 +2173,6 @@ function renderTechHome(t,opts){
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly}):"";
 
   container.innerHTML=banner+`
-    ${notesHtml}
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
@@ -2177,13 +2182,16 @@ function renderTechHome(t,opts){
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
+    ${notesHtml}
     ${checklistHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
+  updateTechAssessNav(t,readOnly);
 }
 
 function showTechHome(){
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
+  if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
 }
 
 // QUESTIONNAIRE
