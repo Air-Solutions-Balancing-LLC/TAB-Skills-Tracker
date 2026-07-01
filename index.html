@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TAB Skills Tracker — Airadigm</title>
 <script src="config.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -376,6 +376,79 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .nebb-cp{background:#EEF4FF;color:#1B3A6B}
 .nebb-ct{background:#E1F5EE;color:#0F6E56}
 .nebb-tr{background:#f5f5f5;color:#888}
+
+/* MOBILE */
+.mobile-menu-btn{display:none;align-items:center;justify-content:center;width:42px;height:42px;border:2px solid #1B3A6B;border-radius:10px;background:#EEF4FF;color:#1B3A6B;font-size:20px;cursor:pointer;flex-shrink:0;padding:0;line-height:1}
+.mobile-assess-btn{display:none;align-items:center;justify-content:center;padding:10px 14px;border:none;border-radius:10px;background:#E87722;color:#fff;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;white-space:nowrap;line-height:1.2}
+.mobile-assess-btn:hover{background:#d96a1a}
+.topbar-grow{flex:1;min-width:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9}
+.sidebar-overlay.visible{display:block}
+.page-body{padding:14px 20px}
+body.mobile-nav-open{overflow:hidden}
+
+@media(max-width:768px){
+  .sidebar{width:min(280px,88vw);transform:translateX(-100%);transition:transform .25s ease;z-index:11}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .main-content{margin-left:0;width:100%}
+  .mobile-menu-btn{display:inline-flex}
+  .mobile-assess-btn.visible{display:inline-flex}
+  .sb-assess-wrap{display:none}
+  .topbar{padding:12px 14px;gap:10px;flex-wrap:wrap;align-items:center}
+  .topbar-title{font-size:16px}
+  .topbar-sub{font-size:11px}
+  .topbar-badge{margin-left:auto}
+  .detail-topbar{padding:12px 14px;flex-wrap:wrap;gap:10px}
+  .detail-topbar .back-btn{padding:8px 12px;font-size:11px}
+  .detail-topbar #detail-view-as{margin-left:0!important;width:100%;text-align:center}
+  .detail-name{font-size:15px}
+  .detail-body,.alerts-list,.compare-body,.page-body,.q-wrap{padding:12px 14px}
+  .metrics{padding:14px 14px 0;gap:8px}
+  .metric{padding:12px 14px}
+  .metric-val{font-size:22px}
+  .section-label,.pm-search-wrap{padding-left:14px;padding-right:14px}
+  .pm-search-wrap input{max-width:none}
+  .tech-grid{padding:0 14px 20px}
+  .dates-cards{grid-template-columns:1fr}
+  .comp-row{flex-direction:column;align-items:stretch;gap:6px}
+  .comp-label{width:auto}
+  .comp-trend{text-align:left;min-width:0}
+  .mod-head{flex-wrap:wrap;padding:12px 14px;gap:8px}
+  .mod-name{flex:1 1 100%;font-size:12px;line-height:1.35}
+  .mod-stats{margin-left:0;width:100%;justify-content:flex-end}
+  .my-brow{flex-wrap:wrap;gap:8px}
+  .my-label{width:100%}
+  .my-val{min-width:0;text-align:left}
+  .skill-row{align-items:flex-start}
+  .skill-name{font-size:11px}
+  .skill-prev,.skill-trend-icon{flex-shrink:0}
+  .rating-row{flex-wrap:wrap;gap:8px}
+  .rating-btn{flex:1 1 calc(50% - 4px);min-width:calc(50% - 4px);padding:12px 6px;font-size:16px}
+  .rating-label{font-size:9px;line-height:1.2}
+  .cl-rate-btn{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px);padding:10px 8px;font-size:12px}
+  .q-header{padding:16px}
+  .q-title{font-size:17px}
+  .q-nav{flex-direction:column-reverse;align-items:stretch}
+  .q-nav .btn,.q-nav .btn-outline{width:100%;text-align:center;padding:14px}
+  .admin-row{flex-wrap:wrap;align-items:flex-start}
+  .admin-row .who{flex:1 1 100%}
+  .admin-row .rg{margin-bottom:2px}
+  .admin-view,.admin-tech-edit,.admin-edit,.admin-del,.admin-restore,.admin-cancel{min-height:40px;padding:8px 10px;font-size:11px}
+  .report-head{align-items:flex-start}
+  .report-actions{width:100%}
+  .report-actions .btn{flex:1}
+  .alert-item{align-items:flex-start;flex-wrap:wrap}
+  .alert-item-score{margin-left:0;margin-top:6px}
+  .login-box{padding:1.75rem 1.25rem}
+  .field input,.field select,.tech-notes-input,.q-comment,.pm-search-wrap input,.admin-edit-field,.admin-add input,.admin-add select{font-size:16px}
+  .sb-footer{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .q-wrap{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:480px){
+  .rating-btn{flex:1 1 100%;min-width:100%}
+  .metrics{grid-template-columns:1fr 1fr}
+  .topbar-badge{font-size:10px;padding:4px 10px}
+}
 </style>
 </head>
 <body>
@@ -585,7 +658,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 <!-- PM APP -->
 <div id="pg-pm" class="page">
   <div class="app-shell">
-    <div class="sidebar">
+    <div class="sidebar-overlay" onclick="closeMobileNav()"></div>
+    <div class="sidebar" id="pm-sidebar">
       <div class="sb-brand">
         <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="sb-logo-fallback" style="display:block!important;font-size:13px;font-weight:700;color:#fff">Airadigm <span style="color:#4A90D9">Skills</span></div>
@@ -607,9 +681,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       </div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
-        <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this)">📊 Dashboard</div>
-        <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this)">⚠️ Alerts <span class="sb-badge" id="alert-count">0</span></div>
-        <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this)">📈 Compare</div>
+        <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">📊 Dashboard</div>
+        <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">⚠️ Alerts <span class="sb-badge" id="alert-count">0</span></div>
+        <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">📈 Compare</div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -618,7 +692,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
     <div class="main-content">
       <div id="pm-view-dashboard" class="view active">
         <div class="topbar">
-          <div><div class="topbar-title" id="pm-dash-title">Team Dashboard</div><div class="topbar-sub">Project Manager</div></div>
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title" id="pm-dash-title">Team Dashboard</div><div class="topbar-sub">Project Manager</div></div>
           <div class="topbar-badge" id="pm-region-badge">Region</div>
         </div>
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
@@ -631,15 +706,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
         <div class="tech-grid" id="tech-grid"><div class="loading">Loading...</div></div>
       </div>
       <div id="pm-view-alerts" class="view">
-        <div class="topbar"><div><div class="topbar-title">⚠️ Stalled Skills</div><div class="topbar-sub">Score ≤ 2 with no improvement across last 2 assessments</div></div></div>
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">⚠️ Stalled Skills</div><div class="topbar-sub">Score ≤ 2 with no improvement across last 2 assessments</div></div>
+        </div>
         <div class="alerts-list" id="alerts-list"><div class="loading">Loading...</div></div>
       </div>
       <div id="pm-view-compare" class="view">
-        <div class="topbar"><div><div class="topbar-title">📈 Team Comparison</div><div class="topbar-sub" id="compare-sub">Latest scores</div></div></div>
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">📈 Team Comparison</div><div class="topbar-sub" id="compare-sub">Latest scores</div></div>
+        </div>
         <div class="compare-body"><div style="overflow-x:auto"><table class="compare-table" id="compare-table"><thead></thead><tbody></tbody></table></div></div>
       </div>
       <div id="pm-view-tech" class="view">
         <div class="detail-topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="back-btn" onclick="setPMView('dashboard',document.getElementById('nav-dashboard'))">← Back</div>
           <div class="detail-av" id="detail-av-initials">--</div>
           <div><div class="detail-name" id="detail-tech-name">--</div><div class="detail-sub" id="detail-tech-sub">--</div></div>
@@ -654,7 +736,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 <!-- TECH APP -->
 <div id="pg-tech" class="page">
   <div class="app-shell">
-    <div class="sidebar">
+    <div class="sidebar-overlay" onclick="closeMobileNav()"></div>
+    <div class="sidebar" id="tech-sidebar">
       <div class="sb-brand">
         <img src="https://tse4.mm.bing.net/th/id/OIP.018HfDn1fMsF61srlSrz-wHaCP?rs=1&pid=ImgDetMain&o=7&rm=3" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       </div>
@@ -665,7 +748,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
       </div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
-        <div class="sb-nav active" onclick="showTechHome()">📊 My Progress</div>
+        <div class="sb-nav active" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -673,11 +756,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
     </div>
     <div class="main-content">
       <div id="tech-view-home" class="view active">
-        <div class="topbar"><div><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div></div>
-        <div style="padding:14px 20px" id="tech-home-body"><div class="loading">Loading...</div></div>
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div>
+          <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
+        </div>
+        <div class="page-body" id="tech-home-body"><div class="loading">Loading...</div></div>
       </div>
       <div id="tech-view-questionnaire" class="view">
-        <div class="topbar"><div><div class="topbar-title">📝 Self-Assessment</div><div class="topbar-sub">Rate each skill honestly</div></div><div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:5px 10px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div></div>
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">📝 Self-Assessment</div><div class="topbar-sub">Rate each skill honestly</div></div>
+          <div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div>
+        </div>
         <div class="q-wrap" id="q-content"></div>
       </div>
     </div>
@@ -1000,18 +1091,41 @@ function techAlreadySubmittedThisMonth(assessments){
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
-  if(!nav||!done)return;
-  nav.classList.remove('visible');
-  done.classList.remove('visible');
+  const mobile=document.getElementById('tech-assess-mobile');
+  if(nav)nav.classList.remove('visible');
+  if(done)done.classList.remove('visible');
+  if(mobile)mobile.classList.remove('visible');
   if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
   if(techAlreadySubmittedThisMonth(assessments)){
     const last=assessments[assessments.length-1];
-    done.classList.add('visible');
-    done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
+    if(done){
+      done.classList.add('visible');
+      done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
+    }
   }else{
-    nav.classList.add('visible');
+    if(nav)nav.classList.add('visible');
+    if(mobile)mobile.classList.add('visible');
   }
+}
+function toggleMobileNav(which){
+  const page=which==='pm'?'pg-pm':'pg-tech';
+  const shell=document.querySelector('#'+page+' .app-shell');
+  if(!shell)return;
+  const sidebar=shell.querySelector('.sidebar');
+  const overlay=shell.querySelector('.sidebar-overlay');
+  const open=sidebar&&!sidebar.classList.contains('mobile-open');
+  closeMobileNav();
+  if(open&&sidebar){
+    sidebar.classList.add('mobile-open');
+    if(overlay)overlay.classList.add('visible');
+    document.body.classList.add('mobile-nav-open');
+  }
+}
+function closeMobileNav(){
+  document.querySelectorAll('.sidebar.mobile-open').forEach(s=>s.classList.remove('mobile-open'));
+  document.querySelectorAll('.sidebar-overlay.visible').forEach(o=>o.classList.remove('visible'));
+  document.body.classList.remove('mobile-nav-open');
 }
 function renderTechNotesHtml(t,opts){
   const readOnly=!!opts.readOnly;
@@ -1723,6 +1837,7 @@ function nebbBadge(s){
   return'<span class="nebb-badge nebb-tr">In Training</span>';
 }
 function showPage(id){
+  closeMobileNav();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='pg-tech'&&currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
@@ -2189,6 +2304,7 @@ function renderTechHome(t,opts){
 }
 
 function showTechHome(){
+  closeMobileNav();
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
   if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
@@ -2203,6 +2319,7 @@ function sectionAvg(key){
 }
 
 async function startQuestionnaire(){
+  closeMobileNav();
   qAnswers={};
   await ensureSkills();
   document.getElementById('tech-view-home').classList.remove('active');
