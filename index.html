@@ -70,6 +70,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-row-edit{flex-wrap:wrap}
 .admin-edit-field{flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fff;outline:none}
 .admin-edit-field:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
+.admin-start-wrap{display:flex;flex-direction:column;gap:3px;flex:0 0 auto}
+.admin-start-lbl{font-size:10px;font-weight:700;color:#888;letter-spacing:.02em}
 .admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .admin-add input,.admin-add select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fafafa;outline:none}
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
@@ -1749,10 +1751,12 @@ function regionOptionsHtml(sel){
   return ADMIN_REGIONS.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${adminEsc(l)}</option>`).join('');
 }
 
+function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.length>=10?s.slice(0,10):'';}
+
 function editRowHtml(p){
   const name=adminEsc(p.full_name||'');
   const mid=p.role==='technician'
-    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select>`
+    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select><label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label>`
     :`<select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select>`;
   const email=adminEsc(p.email||'');
   return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
@@ -1785,9 +1789,13 @@ async function saveEdit(id,role){
   err.style.display='none';
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null};
-  if(role==='technician'){const r=document.getElementById('edit-region-'+id);args.p_region=r?r.value:null;}
-  else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null};
+  if(role==='technician'){
+    const r=document.getElementById('edit-region-'+id);
+    args.p_region=r?r.value:null;
+    const sd=document.getElementById('edit-start-'+id);
+    args.p_start_date=sd?sd.value:null;
+  }else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
   try{
     await rpc('app_admin_update_person',args);
     adminEditId=null;
@@ -2017,6 +2025,7 @@ function parseDateOnly(d){
 }
 function fmtDate(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}
 function fmtDateFull(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'—'}
+function techStartDate(t){return t&&t.start_date?t.start_date:null}
 function nebbBadge(s){
   if(!s)return'<span class="nebb-badge nebb-tr">In Training</span>';
   if(s.includes('CP'))return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
@@ -2161,7 +2170,7 @@ function renderTechGrid(techs){
   document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     const prev=t.assessments.length>1?t.assessments[t.assessments.length-2]:null;
-    const first=t.assessments.length?t.assessments[0]:null;
+    const startD=techStartDate(t);
     const scores=SKILL_CATS.map(c=>{
       if(!last||last[c.key]===null)return'';
       const v=last[c.key];
@@ -2175,7 +2184,7 @@ function renderTechGrid(techs){
       </div>
       <div class="score-row">${scores||'<span style="font-size:11px;color:rgba(255,255,255,0.2)">No assessments yet</span>'}</div>
       <div class="dates-row">
-        ${first?`<span class="date-chip first">🗓️ First: ${fmtDate(first.date)}</span>`:''}
+        ${startD?`<span class="date-chip first">🗓️ Start: ${fmtDate(startD)}</span>`:''}
         ${last?`<span class="date-chip last">✅ Last: ${fmtDate(last.date)}</span>`:''}
       </div>
     </div>`;
@@ -2327,7 +2336,7 @@ async function renderDetailView(t){
   const assessments=t.assessments||[];
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
-  const first=assessments.length?assessments[0]:null;
+  const startD=techStartDate(t);
   const completed=await loadChecklistForTech(t.id);
   t.checklist_completed=completed;
 
@@ -2399,7 +2408,7 @@ async function renderDetailView(t){
 
   document.getElementById('detail-body').innerHTML=`
     <div class="dates-cards">
-      <div class="date-card"><div class="date-card-icon">🗓️</div><div><div class="date-card-label">First assessment</div><div class="date-card-val">${fmtDateFull(first?first.date:null)}</div></div></div>
+      <div class="date-card"><div class="date-card-icon">🗓️</div><div><div class="date-card-label">Start date</div><div class="date-card-val">${fmtDateFull(startD)}</div></div></div>
       <div class="date-card"><div class="date-card-icon">✅</div><div><div class="date-card-label">Latest assessment</div><div class="date-card-val">${fmtDateFull(last?last.date:null)}</div></div></div>
       <div class="date-card"><div class="date-card-icon">📋</div><div><div class="date-card-label">Total submissions</div><div class="date-card-val">${assessments.length} assessment${assessments.length!==1?'s':''}</div></div></div>
     </div>

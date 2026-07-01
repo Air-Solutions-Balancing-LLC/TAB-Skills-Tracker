@@ -76,7 +76,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -95,7 +95,8 @@ BEGIN
            t.region,
            (t.deleted_at IS NOT NULL) AS deleted,
            p.tech_id,
-           t.nebb_status
+           t.nebb_status,
+           t.start_date
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY
@@ -250,14 +251,15 @@ $$;
 
 -- ── Admin: update a person (name, email, role for admin/pm, region for tech) ──
 -- Drop the older 4-arg signature so re-running this file leaves only one version.
-DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text);
 
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
-  p_id     bigint,
-  p_name   text DEFAULT NULL,
-  p_email  text DEFAULT NULL,
-  p_role   text DEFAULT NULL,
-  p_region text DEFAULT NULL
+  p_id         bigint,
+  p_name       text DEFAULT NULL,
+  p_email      text DEFAULT NULL,
+  p_role       text DEFAULT NULL,
+  p_region     text DEFAULT NULL,
+  p_start_date text DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -321,7 +323,12 @@ BEGIN
   IF v_role = 'technician' AND v_tech_id IS NOT NULL THEN
     UPDATE public.technicians
     SET region = CASE WHEN p_region IS NOT NULL AND trim(p_region) <> '' THEN p_region ELSE region END,
-        name   = COALESCE(NULLIF(trim(p_name), ''), name)
+        name   = COALESCE(NULLIF(trim(p_name), ''), name),
+        start_date = CASE
+          WHEN p_start_date IS NULL THEN start_date
+          WHEN trim(p_start_date) = '' THEN NULL
+          ELSE p_start_date::date
+        END
     WHERE id = v_tech_id AND deleted_at IS NULL;
   END IF;
 END;
@@ -334,4 +341,4 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text) TO authenticated;

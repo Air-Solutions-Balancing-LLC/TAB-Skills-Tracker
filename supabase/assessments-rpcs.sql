@@ -236,6 +236,7 @@ BEGIN
         t.region,
         t.nebb_status,
         t.lead_tech,
+        t.start_date,
         t.notes_to_tech,
         t.tech_comments,
         coalesce((

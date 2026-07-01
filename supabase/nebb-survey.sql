@@ -70,7 +70,7 @@ GRANT EXECUTE ON FUNCTION public.app_submit_assessment(text, jsonb) TO anon, aut
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -89,7 +89,8 @@ BEGIN
            t.region,
            (t.deleted_at IS NOT NULL) AS deleted,
            p.tech_id,
-           t.nebb_status
+           t.nebb_status,
+           t.start_date
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY
