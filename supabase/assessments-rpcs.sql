@@ -342,6 +342,7 @@ DECLARE
   v_join    text := app_assessment_join_sql('a', '$1');
   v_date    date := coalesce((p_payload->>'date')::date, current_date);
   v_exists  boolean;
+  v_nebb    text := nullif(trim(p_payload->>'nebb_status'), '');
 BEGIN
   SELECT s.tech_id
   INTO v_tech_id
@@ -352,6 +353,10 @@ BEGIN
 
   IF v_tech_id IS NULL OR v_join = 'false' THEN
     RAISE EXCEPTION 'INVALID_SESSION';
+  END IF;
+
+  IF v_nebb IS NULL THEN
+    RAISE EXCEPTION 'NEBB_STATUS_REQUIRED';
   END IF;
 
   EXECUTE format(
@@ -380,6 +385,11 @@ BEGIN
     nullif(p_payload->>'comment', ''),
     coalesce(p_payload->'raw_scores', '{}'::jsonb)
   );
+
+  UPDATE public.technicians
+  SET nebb_status = v_nebb,
+      assessment_draft = NULL
+  WHERE id = v_tech_id;
 END;
 $$;
 

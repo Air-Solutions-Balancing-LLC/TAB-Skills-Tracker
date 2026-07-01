@@ -391,7 +391,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .rating-label{font-size:10px;margin-top:3px;opacity:.7}
 .q-comment{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;min-height:90px;outline:none;background:#fafafa;color:#1a1a2e;transition:border-color .2s}
 .q-comment:focus{border-color:#1B3A6B;background:#fff}
-.q-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px}
+.nebb-choices{display:flex;flex-direction:column;gap:8px}
+.nebb-choice{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid #e8e8e8;border-radius:10px;cursor:pointer;transition:all .2s;font-size:12px;line-height:1.55;color:#333}
+.nebb-choice:hover{border-color:#b8d0f5;background:#f8faff}
+.nebb-choice.selected{border-color:#1B3A6B;background:#EEF4FF}
+.nebb-choice input{margin-top:3px;flex-shrink:0;accent-color:#1B3A6B}
+.admin-nebb{margin-top:4px}
+.q-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;flex-wrap:wrap}
+.q-nav-actions{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
 .btn-outline{background:#fff;color:#1B3A6B;border:2px solid #1B3A6B}
 .btn-outline:hover{background:#EEF4FF}
 .success-box{background:#E1F5EE;border-left:5px solid #1D9E75;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#0F6E56;font-weight:600}
@@ -974,6 +981,16 @@ let QUESTIONNAIRE=[
 ];
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+const NEBB_STATUS_OPTIONS=[
+  {value:'I am a NEBB Certified Professional and my CECs are complete for this year.',label:'I am a <strong>NEBB Certified Professional</strong> and my CECs are complete for this year.'},
+  {value:'I am a NEBB CP and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.',label:'I am a <strong>NEBB CP</strong> and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.'},
+  {value:'I am a NEBB Certified Technician and my CECs are complete for this year.',label:'I am a <strong>NEBB Certified Technician</strong> and my CECs are complete for this year.'},
+  {value:'I am a NEBB CT and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.',label:'I am a <strong>NEBB CT</strong> and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.'},
+  {value:'I received my CT certificate earlier this year. Therefore, I do not need to complete CECs this year.',label:'I received my CT certificate earlier this year. Therefore, I do not need to complete CECs this year.'},
+  {value:"I'm currently involved in the CT review process with Brenda, Brian, and NEBB.",label:"I'm currently involved in the CT review process with Brenda, Brian, and NEBB."},
+  {value:'I have completed my ATA lessons, but I have not yet begun the CT review process.',label:'I have completed my ATA lessons, but I have not yet begun the CT review process.'},
+  {value:"I'm still in the process of completing my ATA lessons. I'm not yet ready to become certified.",label:"I'm still in the process of completing my ATA lessons. I'm not yet ready to become certified."}
+];
 const RATING_SCALE_DEFS=[
   {n:1,label:'Beginner',text:'Not Seen/Not enough experience.'},
   {n:2,label:'Developing',text:'Has completed the skill a few times but still needs guidance and is not yet able to perform it independently.'},
@@ -1151,6 +1168,20 @@ function techAlreadySubmittedThisMonth(assessments){
   const d=new Date(last.date),now=new Date();
   return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
 }
+function currentAssessmentMonth(){
+  const now=new Date();
+  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+}
+function getAssessmentDraft(t){
+  const d=t&&t.assessment_draft;
+  if(!d)return null;
+  let draft=d;
+  if(typeof d==='string'){
+    try{draft=JSON.parse(d);}catch(e){return null;}
+  }
+  if(!draft||draft.month!==currentAssessmentMonth())return null;
+  return draft;
+}
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
@@ -1167,8 +1198,17 @@ function updateTechAssessNav(t,readOnly){
       done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
     }
   }else{
-    if(nav)nav.classList.add('visible');
-    if(mobile)mobile.classList.add('visible');
+    const draft=getAssessmentDraft(t);
+    if(nav){
+      nav.classList.add('visible');
+      nav.textContent=draft?'▶ Continue assessment':'📝 Take this month\'s assessment';
+      nav.onclick=draft?continueQuestionnaire:startQuestionnaire;
+    }
+    if(mobile){
+      mobile.classList.add('visible');
+      mobile.textContent=draft?'▶ Continue':'📝 Assess';
+      mobile.onclick=draft?continueQuestionnaire:startQuestionnaire;
+    }
   }
 }
 function syncMobileMenuBtns(open){
@@ -1289,7 +1329,7 @@ async function saveNotesToTech(){
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
-let regionTechs=[],qAnswers={},azureEmailAddr=null;
+let regionTechs=[],qAnswers={},qNebbStatus='',azureEmailAddr=null;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
 
@@ -1733,7 +1773,7 @@ function renderPeople(el,rows,opts){
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
       :`${viewBtn}${techEditBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Delete</button>`;
-    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div><div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
+    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div>${opts.showRegion&&p.nebb_status?`<div class="admin-nebb">${nebbBadge(p.nebb_status)}</div>`:''}<div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
   }).join('');
 }
 
@@ -1982,6 +2022,37 @@ function nebbBadge(s){
   if(s.includes('CP'))return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
   if(s.includes('CT'))return'<span class="nebb-badge nebb-ct">NEBB CT</span>';
   return'<span class="nebb-badge nebb-tr">In Training</span>';
+}
+function matchNebbOption(stored){
+  if(!stored)return'';
+  const exact=NEBB_STATUS_OPTIONS.find(o=>o.value===stored);
+  if(exact)return exact.value;
+  const s=stored.toLowerCase();
+  if(s==='nebb cp'||s==='cp')return NEBB_STATUS_OPTIONS[0].value;
+  if(s==='nebb ct'||s==='ct')return NEBB_STATUS_OPTIONS[2].value;
+  if(s.includes('training')||s.includes('ata'))return NEBB_STATUS_OPTIONS[7].value;
+  return'';
+}
+function nebbQuestionHtml(){
+  return`<div class="q-section" id="q-sec-nebb">
+    <div class="q-section-title">📋 NEBB CT/CP Status</div>
+    <div class="q-section-sub">What is your current NEBB CT/CP status? Select <strong>one</strong>. <span style="color:#c0392b">*</span></div>
+    <div class="nebb-choices" id="nebb-choices">
+      ${NEBB_STATUS_OPTIONS.map(o=>`<label class="nebb-choice ${qNebbStatus===o.value?'selected':''}" onclick="setNebbStatus(${JSON.stringify(o.value)})">
+        <input type="radio" name="nebb-status" value="" ${qNebbStatus===o.value?'checked':''} tabindex="-1">
+        <span>${o.label}</span>
+      </label>`).join('')}
+    </div>
+  </div>`;
+}
+function setNebbStatus(val){
+  qNebbStatus=val;
+  document.querySelectorAll('#nebb-choices .nebb-choice').forEach((el,i)=>{
+    const selected=NEBB_STATUS_OPTIONS[i]&&NEBB_STATUS_OPTIONS[i].value===val;
+    el.classList.toggle('selected',selected);
+    const inp=el.querySelector('input');
+    if(inp)inp.checked=selected;
+  });
 }
 function showPage(id){
   closeMobileNav();
@@ -2490,7 +2561,8 @@ function sectionAvg(key){
   return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
 }
 
-async function startQuestionnaire(){
+async function startQuestionnaire(opts){
+  opts=opts||{};
   closeMobileNav();
   await ensureSkills();
   if(currentToken){
@@ -2508,12 +2580,50 @@ async function startQuestionnaire(){
       }
     }catch(e){console.warn('Could not refresh assessments for pre-fill',e);}
   }
-  qAnswers=prefillQAnswersFromLast();
+  const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
+  let draftComment='';
+  if(draft){
+    qAnswers=draft.raw_scores&&typeof draft.raw_scores==='object'?{...draft.raw_scores}:{};
+    qNebbStatus=draft.nebb_status||'';
+    draftComment=draft.comment||'';
+  }else{
+    qAnswers=prefillQAnswersFromLast();
+    qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
+  }
   document.getElementById('tech-view-home').classList.remove('active');
   document.getElementById('tech-view-questionnaire').classList.add('active');
   renderQuestionnaire();
+  if(draftComment){
+    const el=document.getElementById('q-comment');
+    if(el)el.value=draftComment;
+  }
   renderTechSidebarNav();
   window.scrollTo(0,0);
+}
+function continueQuestionnaire(){startQuestionnaire({resume:true});}
+async function saveAssessmentDraft(){
+  const comment=document.getElementById('q-comment')?.value?.trim()||'';
+  const draft={
+    month:currentAssessmentMonth(),
+    raw_scores:qAnswers,
+    nebb_status:qNebbStatus||null,
+    comment:comment,
+    saved_at:new Date().toISOString()
+  };
+  try{
+    const saved=await rpc('app_save_assessment_draft',{p_token:currentToken,p_draft:draft});
+    if(currentTechData)currentTechData.assessment_draft=saved||draft;
+    updateTechAssessNav(currentTechData,techViewMode==='readonly');
+    showTechHome();
+    const body=document.getElementById('tech-home-body');
+    if(body){
+      body.insertAdjacentHTML('afterbegin','<div class="success-box">💾 Progress saved. Tap <strong>Continue assessment</strong> when you are ready.</div>');
+      setTimeout(()=>{const s=document.querySelector('.success-box');if(s)s.remove();},5000);
+    }
+  }catch(e){
+    console.error('saveAssessmentDraft',e);
+    alert('Could not save progress. Please try again.');
+  }
 }
 
 function renderQuestionnaire(){
@@ -2547,6 +2657,7 @@ function renderQuestionnaire(){
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
     </div>
+    ${nebbQuestionHtml()}
     ${sections}
     <div class="q-section">
       <div class="q-section-title">💬 Comments (optional)</div>
@@ -2554,8 +2665,11 @@ function renderQuestionnaire(){
       <textarea class="q-comment" id="q-comment" placeholder="Share any thoughts about this assessment period..."></textarea>
     </div>
     <div class="q-nav">
-      <button class="btn btn-outline" onclick="showTechHome()">Cancel</button>
-      <button class="btn" onclick="submitAssessment()">Submit assessment</button>
+      <button type="button" class="btn btn-outline" onclick="showTechHome()">Cancel</button>
+      <div class="q-nav-actions">
+        <button type="button" class="btn btn-outline" onclick="saveAssessmentDraft()">Save progress</button>
+        <button type="button" class="btn" onclick="submitAssessment()">Submit assessment</button>
+      </div>
     </div>`;
   updateProgress();
   renderTechSidebarNav();
@@ -2582,9 +2696,11 @@ function updateProgress(){
 }
 
 async function submitAssessment(){
-  const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
-  const done=Object.keys(qAnswers).length;
-  if(done<total&&!confirm(`You have ${total-done} skill(s) not rated. Submit anyway?`))return;
+  if(!qNebbStatus){
+    alert('Please select your NEBB CT/CP status before submitting.');
+    document.getElementById('q-sec-nebb')?.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
   const comment=document.getElementById('q-comment').value.trim();
   const payload={
     date:new Date().toISOString().split('T')[0],
@@ -2594,11 +2710,14 @@ async function submitAssessment(){
     advanced_avg:sectionAvg('advanced'),
     survey_avg:sectionAvg('survey'),
     comment:comment||null,
+    nebb_status:qNebbStatus,
     raw_scores:qAnswers
   };
   try{
     await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
     qAnswers={};
+    qNebbStatus='';
+    if(currentTechData)currentTechData.assessment_draft=null;
     await loadTechHome();
     showTechHome();
     window.scrollTo(0,0);
@@ -2609,6 +2728,8 @@ async function submitAssessment(){
     const raw=(e.message||'');
     const msg=raw.includes('ALREADY_SUBMITTED')
       ?'You have already submitted an assessment this month.'
+      :raw.includes('NEBB_STATUS_REQUIRED')
+      ?'Please select your NEBB CT/CP status before submitting.'
       :raw.includes('PGRST203')
       ?'Submit failed (server config). Contact your admin.'
       :'Error submitting. Please try again.';

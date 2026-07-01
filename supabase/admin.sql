@@ -76,7 +76,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -94,7 +94,8 @@ BEGIN
            p.role,
            t.region,
            (t.deleted_at IS NOT NULL) AS deleted,
-           p.tech_id
+           p.tech_id,
+           t.nebb_status
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY
