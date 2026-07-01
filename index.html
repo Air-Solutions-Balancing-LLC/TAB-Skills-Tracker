@@ -48,7 +48,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-sec-h.admin-sec-toggle[aria-expanded="false"] .admin-sec-chevron{transform:rotate(-90deg)}
 .admin-sec-body.collapsed{display:none}
 .admin-sec-h .ct{font-size:10px;background:#E6EEF8;color:#1B3A6B;padding:2px 8px;border-radius:10px}
-.admin-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.admin-sec-body .pm-search-wrap{padding:0 0 12px}
+.admin-sec-body .pm-search-wrap input{max-width:none}
 .admin-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:10px}
 .admin-row .who{flex:1;min-width:0}
 .admin-row .nm{font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -630,6 +631,10 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
+        <div class="pm-search-wrap">
+          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        </div>
         <div class="admin-list" id="list-techs"></div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
@@ -1635,6 +1640,9 @@ function exportAdminReportPdf(){
 function openAdmin(){
   currentRole='admin';
   adminEditId=null;
+  const searchEl=document.getElementById('admin-tech-search');
+  if(searchEl)searchEl.value='';
+  updateAdminTechSearchHint('',0,0);
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
@@ -1657,6 +1665,22 @@ async function loadAdminLists(){
   renderAdminLists();
 }
 
+function filterPeopleBySearch(people,query){
+  const q=(query||'').trim().toLowerCase();
+  if(!q)return people;
+  return people.filter(p=>((p.full_name||'')+' '+(p.email||'')).toLowerCase().includes(q));
+}
+
+function updateAdminTechSearchHint(query,shown,total){
+  const hint=document.getElementById('admin-tech-search-hint');
+  if(!hint)return;
+  const q=(query||'').trim();
+  if(!q){hint.textContent='';return;}
+  hint.textContent=shown===total?`${shown} match${shown===1?'':'es'}`:`Showing ${shown} of ${total}`;
+}
+
+function onAdminTechSearch(){renderAdminLists();}
+
 function renderAdminLists(){
   const admins=[],pms=[],techs=[],deleted=[];
   adminPeople.forEach(p=>{
@@ -1667,7 +1691,13 @@ function renderAdminLists(){
   });
   renderPeople(document.getElementById('list-admins'),admins,{showRegion:false,action:'delete'});
   renderPeople(document.getElementById('list-pms'),pms,{showRegion:false,action:'delete'});
-  renderPeople(document.getElementById('list-techs'),techs,{showRegion:true,action:'delete',canView:true,canTechEdit:true});
+  const techListEl=document.getElementById('list-techs');
+  const query=document.getElementById('admin-tech-search')?document.getElementById('admin-tech-search').value:'';
+  const filteredTechs=filterPeopleBySearch(techs,query);
+  updateAdminTechSearchHint(query,filteredTechs.length,techs.length);
+  if(!techs.length)renderPeople(techListEl,[],{showRegion:true,action:'delete',canView:true,canTechEdit:true});
+  else if(!filteredTechs.length)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';
+  else renderPeople(techListEl,filteredTechs,{showRegion:true,action:'delete',canView:true,canTechEdit:true});
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
