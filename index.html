@@ -2292,9 +2292,13 @@ async function submitAssessment(){
     body.insertAdjacentHTML('afterbegin','<div class="success-box">✅ Assessment submitted successfully! Your scores have been updated.</div>');
     setTimeout(()=>{const s=document.querySelector('.success-box');if(s)s.remove();},4000);
   }catch(e){
-    const msg=(e.message||'').includes('ALREADY_SUBMITTED')
+    const raw=(e.message||'');
+    const msg=raw.includes('ALREADY_SUBMITTED')
       ?'You have already submitted an assessment this month.'
+      :raw.includes('PGRST203')
+      ?'Submit failed (server config). Contact your admin.'
       :'Error submitting. Please try again.';
+    console.error('submitAssessment',e);
     alert(msg);
   }
 }

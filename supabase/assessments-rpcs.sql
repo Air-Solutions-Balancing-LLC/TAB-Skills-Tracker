@@ -328,6 +328,9 @@ END;
 $$;
 
 -- ── Submit monthly assessment ────────────────────────────────────────────────
+-- Drop legacy json overload so PostgREST can resolve the RPC (PGRST203).
+DROP FUNCTION IF EXISTS public.app_submit_assessment(text, json);
+
 CREATE OR REPLACE FUNCTION public.app_submit_assessment(p_token text, p_payload jsonb)
 RETURNS void
 LANGUAGE plpgsql
