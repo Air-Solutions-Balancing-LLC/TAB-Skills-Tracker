@@ -1112,8 +1112,17 @@ async function toggleChecklistItem(code,done){
   }catch(e){alert('Could not update task. Please try again.');console.error(e);}
 }
 function rawOf(a){
-  if(!a||!a.raw_scores)return null;
-  return typeof a.raw_scores==='string'?JSON.parse(a.raw_scores):a.raw_scores;
+  if(!a||a.raw_scores==null||a.raw_scores===undefined)return null;
+  let raw=a.raw_scores;
+  if(typeof raw==='string'){
+    try{raw=JSON.parse(raw);}catch(e){return null;}
+  }
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+  return raw;
+}
+function assessmentHasRawScores(a){
+  const raw=rawOf(a);
+  return !!(raw&&Object.keys(raw).length);
 }
 // Score for a section on one assessment: legacy avg column if present, else
 // computed from the per-skill raw_scores snapshot (works for new sections).
@@ -2427,14 +2436,18 @@ function showTechHome(){
 function lastAssessmentRawScores(){
   const assessments=currentTechData&&currentTechData.assessments;
   if(!assessments||!assessments.length)return {};
-  return rawOf(assessments[assessments.length-1])||{};
+  for(let i=assessments.length-1;i>=0;i--){
+    const raw=rawOf(assessments[i]);
+    if(raw&&Object.keys(raw).length)return raw;
+  }
+  return {};
 }
 function prefillQAnswersFromLast(){
   const raw=lastAssessmentRawScores();
   const filled={};
   QUESTIONNAIRE.forEach(sec=>{
     sec.skills.forEach(sk=>{
-      const n=Number(raw[sk.id]);
+      const n=Math.round(Number(raw[sk.id]));
       if(n>=1&&n<=5)filled[sk.id]=n;
     });
   });
@@ -2450,6 +2463,21 @@ function sectionAvg(key){
 async function startQuestionnaire(){
   closeMobileNav();
   await ensureSkills();
+  if(currentToken){
+    try{
+      const data=await rpc('app_tech_home',{p_token:currentToken});
+      if(data&&data.tech){
+        const t=data.tech;
+        t.assessments=data.assessments||[];
+        if(currentTechData){
+          t.checklist_completed=currentTechData.checklist_completed;
+          t.notes_to_tech=currentTechData.notes_to_tech;
+          t.tech_comments=currentTechData.tech_comments;
+        }
+        currentTechData=t;
+      }
+    }catch(e){console.warn('Could not refresh assessments for pre-fill',e);}
+  }
   qAnswers=prefillQAnswersFromLast();
   document.getElementById('tech-view-home').classList.remove('active');
   document.getElementById('tech-view-questionnaire').classList.add('active');
@@ -2473,7 +2501,7 @@ function renderQuestionnaire(){
           <div class="q-skill-cat">${sk.cat}</div>
           <div class="q-skill-name">${sk.name}</div>
           <div class="rating-row">
-            ${[1,2,3,4,5].map(v=>`<button class="rating-btn ${qAnswers[sk.id]===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
+            ${[1,2,3,4,5].map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
           </div>
         </div>`).join('')}
     </div>`).join('');
