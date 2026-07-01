@@ -243,7 +243,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .mod-head.open{border-radius:12px 12px 0 0}
 .mod-emoji{font-size:16px}
 .mod-name{font-size:13px;font-weight:700;color:#fff;flex:1}
-.mod-avg{font-size:12px;font-weight:700;min-width:80px;text-align:right}
+.mod-stats{display:flex;align-items:center;gap:10px;margin-left:auto}
+.mod-avg{font-size:12px;font-weight:700;text-align:right;white-space:nowrap}
+.mod-pct{font-size:12px;font-weight:800;text-align:right;min-width:36px;white-space:nowrap}
 .mod-tog{font-size:11px;color:rgba(255,255,255,0.6);margin-left:6px}
 .mod-skills{background:#fff;border:2px solid #E6EEF8;border-top:none;border-radius:0 0 12px 12px;padding:4px 16px 12px;display:none}
 .mod-skills.open{display:block}
@@ -960,6 +962,13 @@ function sectionScore(a,cat){
   if(!raw||!cat.codes||!cat.codes.length)return null;
   const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null);
   return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
+}
+function sectionProficiencyPct(avg){
+  return avg!==null&&avg!==undefined?Math.round((avg/5)*100):null;
+}
+function sectionRawAvg(rawScores,sec){
+  const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
+  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
@@ -1925,7 +1934,8 @@ async function renderDetailView(t){
   const moduleHTML=QUESTIONNAIRE.map(sec=>{
     const secKey=sec.key;
     const catKey=SKILL_CATS.find(c=>c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))||null;
-    const avg=last&&catKey?last[catKey.key]:null;
+    const avg=last?(catKey?sectionScore(last,catKey):sectionRawAvg(rawScores,sec)):null;
+    const pct=sectionProficiencyPct(avg);
     const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.25)';
     const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
     const warn=avg!==null&&avg<=2?' ⚠️':'';
@@ -1943,7 +1953,10 @@ async function renderDetailView(t){
       <div class="mod-head" onclick="toggleMod('${secKey}')">
         <span class="mod-emoji">${sec.emoji}</span>
         <span class="mod-name">${sec.section}</span>
-        <span class="mod-avg" style="color:${avgColor}">${avgLabel}${warn}</span>
+        <span class="mod-stats">
+          <span class="mod-avg" style="color:${avgColor}">${avgLabel}${warn}</span>
+          ${pct!==null?`<span class="mod-pct" style="color:${avgColor}">${pct}%</span>`:''}
+        </span>
         <span class="mod-tog" id="tog-${secKey}">▶</span>
       </div>
       <div class="mod-skills" id="mod-${secKey}">${skillRows}</div>
