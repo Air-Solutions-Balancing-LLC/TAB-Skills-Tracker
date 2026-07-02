@@ -92,6 +92,7 @@ BEGIN
     nullif(p_payload->>'intermediate_avg', '')::numeric,
     nullif(p_payload->>'advanced_avg', '')::numeric,
     nullif(p_payload->>'survey_avg', '')::numeric,
+    nullif(p_payload->>'national_accounts_avg', '')::numeric,
     nullif(p_payload->>'comment', ''),
     coalesce(p_payload->'raw_scores', '{}'::jsonb)
   );

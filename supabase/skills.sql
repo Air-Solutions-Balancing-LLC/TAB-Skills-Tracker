@@ -61,7 +61,8 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
   ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated', NULL),
   ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated', NULL),
   ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated', NULL),
-  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL)
+  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL),
+  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 8, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
       checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
@@ -75,6 +76,7 @@ UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated' WHERE sk
 UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'intermediate';
 UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'advanced';
 UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated' WHERE skey = 'survey';
+UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated' WHERE skey = 'national_accounts';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)

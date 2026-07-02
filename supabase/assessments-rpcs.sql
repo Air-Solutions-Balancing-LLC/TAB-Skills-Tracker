@@ -76,6 +76,8 @@ AS $$
 $$;
 
 -- ── Upsert one assessment row (dynamic SQL — works with technician_id and/or tech_id) ─
+DROP FUNCTION IF EXISTS public.app_upsert_assessment_for_tech(bigint, date, numeric, numeric, numeric, numeric, numeric, text, jsonb);
+
 CREATE OR REPLACE FUNCTION public.app_upsert_assessment_for_tech(
   p_tech_id bigint,
   p_date date,
@@ -84,6 +86,7 @@ CREATE OR REPLACE FUNCTION public.app_upsert_assessment_for_tech(
   p_intermediate_avg numeric,
   p_advanced_avg numeric,
   p_survey_avg numeric,
+  p_national_accounts_avg numeric,
   p_comment text,
   p_raw_scores jsonb
 )
@@ -117,28 +120,28 @@ BEGIN
     EXECUTE $sql$
       UPDATE public.assessments a
       SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-          survey_avg = $7, comment = $8, raw_scores = $9,
+          survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10,
           technician_id = coalesce(a.technician_id, $1),
           tech_id = coalesce(a.tech_id, $1)
       WHERE a.date = $2 AND (a.technician_id = $1 OR a.tech_id = $1)
     $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-              p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+              p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
   ELSIF v_has_technician_id THEN
     EXECUTE $sql$
       UPDATE public.assessments a
       SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-          survey_avg = $7, comment = $8, raw_scores = $9
+          survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10
       WHERE a.technician_id = $1 AND a.date = $2
     $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-              p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+              p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
   ELSE
     EXECUTE $sql$
       UPDATE public.assessments a
       SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-          survey_avg = $7, comment = $8, raw_scores = $9
+          survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10
       WHERE a.tech_id = $1 AND a.date = $2
     $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-              p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+              p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
   END IF;
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
@@ -151,54 +154,54 @@ BEGIN
       EXECUTE $sql$
         INSERT INTO public.assessments (
           technician_id, tech_id, date, safety_avg, basic_avg, intermediate_avg,
-          advanced_avg, survey_avg, comment, raw_scores
-        ) VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8, $9)
+          advanced_avg, survey_avg, national_accounts_avg, comment, raw_scores
+        ) VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     ELSIF v_has_technician_id THEN
       EXECUTE $sql$
         INSERT INTO public.assessments (
           technician_id, date, safety_avg, basic_avg, intermediate_avg,
-          advanced_avg, survey_avg, comment, raw_scores
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          advanced_avg, survey_avg, national_accounts_avg, comment, raw_scores
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     ELSE
       EXECUTE $sql$
         INSERT INTO public.assessments (
           tech_id, date, safety_avg, basic_avg, intermediate_avg,
-          advanced_avg, survey_avg, comment, raw_scores
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          advanced_avg, survey_avg, national_accounts_avg, comment, raw_scores
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     END IF;
   EXCEPTION WHEN unique_violation THEN
     IF v_has_technician_id AND v_has_tech_id THEN
       EXECUTE $sql$
         UPDATE public.assessments a
         SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-            survey_avg = $7, comment = $8, raw_scores = $9,
+            survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10,
             technician_id = coalesce(a.technician_id, $1),
             tech_id = coalesce(a.tech_id, $1)
         WHERE a.date = $2 AND (a.technician_id = $1 OR a.tech_id = $1)
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     ELSIF v_has_technician_id THEN
       EXECUTE $sql$
         UPDATE public.assessments a
         SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-            survey_avg = $7, comment = $8, raw_scores = $9
+            survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10
         WHERE a.technician_id = $1 AND a.date = $2
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     ELSE
       EXECUTE $sql$
         UPDATE public.assessments a
         SET safety_avg = $3, basic_avg = $4, intermediate_avg = $5, advanced_avg = $6,
-            survey_avg = $7, comment = $8, raw_scores = $9
+            survey_avg = $7, national_accounts_avg = $8, comment = $9, raw_scores = $10
         WHERE a.tech_id = $1 AND a.date = $2
       $sql$ USING p_tech_id, p_date, p_safety_avg, p_basic_avg, p_intermediate_avg,
-                p_advanced_avg, p_survey_avg, p_comment, p_raw_scores;
+                p_advanced_avg, p_survey_avg, p_national_accounts_avg, p_comment, p_raw_scores;
     END IF;
   END;
 END;
@@ -249,6 +252,7 @@ BEGIN
               a.intermediate_avg,
               a.advanced_avg,
               a.survey_avg,
+              a.national_accounts_avg,
               a.comment,
               a.raw_scores
             FROM assessments a
@@ -314,6 +318,7 @@ BEGIN
         a.intermediate_avg,
         a.advanced_avg,
         a.survey_avg,
+        a.national_accounts_avg,
         a.comment,
         a.raw_scores
       FROM assessments a
@@ -383,6 +388,7 @@ BEGIN
     nullif(p_payload->>'intermediate_avg', '')::numeric,
     nullif(p_payload->>'advanced_avg', '')::numeric,
     nullif(p_payload->>'survey_avg', '')::numeric,
+    nullif(p_payload->>'national_accounts_avg', '')::numeric,
     nullif(p_payload->>'comment', ''),
     coalesce(p_payload->'raw_scores', '{}'::jsonb)
   );
@@ -397,7 +403,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.app_assessment_join_sql(text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_assessments_fk_col() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_match_technician_id(text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.app_upsert_assessment_for_tech(bigint, date, numeric, numeric, numeric, numeric, numeric, text, jsonb) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_upsert_assessment_for_tech(bigint, date, numeric, numeric, numeric, numeric, numeric, numeric, text, jsonb) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_pm_dashboard(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_tech_home(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_submit_assessment(text, jsonb) TO anon, authenticated;

@@ -827,7 +827,7 @@ body.mobile-nav-open{overflow:hidden}
 </div>
 
 <script>
-// SKILL_CATS = the 5 core scored sections (PM dashboards read these avg columns).
+// SKILL_CATS = scored sections with section averages (PM dashboards read these avg columns).
 // TECH_CATS  = every section incl. admin-added ones (technician views).
 // Both are rebuilt from the database by buildSkillModel(); the values below are
 // the fallback used if the skills service can't be reached.
@@ -836,7 +836,8 @@ let SKILL_CATS=[
   {key:'basic_avg',skey:'basic',label:'Basic',emoji:'🟩',codes:[]},
   {key:'intermediate_avg',skey:'intermediate',label:'Intermediate',emoji:'🟦',codes:[]},
   {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[]},
-  {key:'survey_avg',skey:'survey',label:'TAB Survey',emoji:'🟪',codes:[]}
+  {key:'survey_avg',skey:'survey',label:'TAB Survey',emoji:'🟪',codes:[]},
+  {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:[]}
 ];
 let TECH_CATS=SKILL_CATS.slice();
 
@@ -2037,7 +2038,7 @@ function parseDateOnly(d){
 function fmtDate(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}
 function fmtDateFull(d){const dt=parseDateOnly(d);return dt?dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'—'}
 function techStartDate(t){return t&&t.start_date?t.start_date:null}
-const COMPETENCE_LABELS={safety:'Safety',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey'};
+const COMPETENCE_LABELS={safety:'Safety',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey',national_accounts:'National Accounts'};
 function nebbStatusTier(stored){
   if(!stored)return 'training';
   const idx=NEBB_STATUS_OPTIONS.findIndex(o=>o.value===stored);
@@ -2636,6 +2637,13 @@ function sectionAvg(key){
   const vals=sec.skills.map(sk=>qAnswers[sk.id]).filter(v=>v!==undefined);
   return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
 }
+function sectionAvgPayload(){
+  const out={};
+  QUESTIONNAIRE.forEach(sec=>{
+    if(sec.avg_field)out[sec.avg_field]=sectionAvg(sec.key);
+  });
+  return out;
+}
 
 async function startQuestionnaire(opts){
   opts=opts||{};
@@ -2780,11 +2788,7 @@ async function submitAssessment(){
   const comment=document.getElementById('q-comment').value.trim();
   const payload={
     date:new Date().toISOString().split('T')[0],
-    safety_avg:sectionAvg('safety'),
-    basic_avg:sectionAvg('basic'),
-    intermediate_avg:sectionAvg('intermediate'),
-    advanced_avg:sectionAvg('advanced'),
-    survey_avg:sectionAvg('survey'),
+    ...sectionAvgPayload(),
     comment:comment||null,
     nebb_status:qNebbStatus,
     raw_scores:qAnswers
