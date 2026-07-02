@@ -837,7 +837,7 @@ let SKILL_CATS=[
   {key:'intermediate_avg',skey:'intermediate',label:'Intermediate',emoji:'🟦',codes:[]},
   {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[]},
   {key:'survey_avg',skey:'survey',label:'TAB Survey',emoji:'🟪',codes:[]},
-  {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:[]}
+  {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:['na1']}
 ];
 let TECH_CATS=SKILL_CATS.slice();
 
@@ -983,10 +983,22 @@ let QUESTIONNAIRE=[
     {id:'sv7',cat:'SURVEY REPORTS',name:'USABalancer Proficiency — Survey reports'},
     {id:'sv8',cat:'SURVEY REPORTS',name:'Report Review Analysis'},
     {id:'sv9',cat:'JOB MANAGEMENT',name:'Customer Service: Punch List Protocol'}
+  ]},
+  {section:'National Accounts',emoji:'🏢',key:'national_accounts',color:'#5B7C99',avg_field:'national_accounts_avg',skills:[
+    {id:'na1',cat:'PROJECTS',name:'How many National Accounts projects have you completed?'}
   ]}
 ];
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+const NATIONAL_ACCOUNTS_OPTIONS=[
+  {v:1,label:'Assisted Only'},
+  {v:2,label:'Completed 1 to 2 Projects'},
+  {v:3,label:'Completed 3 to 5 Projects'},
+  {v:4,label:'Completed 6 to 9 Projects'},
+  {v:5,label:'Completed 10 or more Projects'}
+];
+function nationalAccountsLabel(v){const o=NATIONAL_ACCOUNTS_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
+function isNationalAccountsSection(sec){return sec&&sec.key==='national_accounts';}
 const NEBB_STATUS_OPTIONS=[
   {value:'I am a NEBB Certified Professional and my CECs are complete for this year.',label:'I am a <strong>NEBB Certified Professional</strong> and my CECs are complete for this year.'},
   {value:'I am a NEBB CP and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.',label:'I am a <strong>NEBB CP</strong> and I will complete my annual CECs ASAP. I understand that I risk decertification if I fail to complete my CECs on time.'},
@@ -2443,8 +2455,9 @@ async function renderDetailView(t){
       const pv=prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
       if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
       const trend=pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
-      const prevLabel=pv!==null?`was ${pv}`:'';
-      return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
+      const prevLabel=pv!==null?(isNationalAccountsSection(sec)?`was ${nationalAccountsLabel(pv)||pv}`:`was ${pv}`):'';
+      const naDetail=isNationalAccountsSection(sec)?`<div style="font-size:11px;opacity:.8;margin-top:2px">${nationalAccountsLabel(v)}</div>`:'';
+      return`<div class="skill-row"><span class="skill-name">${sk.name}${naDetail}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
     }).join('');
 
     return`<div class="mod-section">
@@ -2710,6 +2723,27 @@ async function saveAssessmentDraft(){
   }
 }
 
+function renderNationalAccountsSkill(sk){
+  const cur=Number(qAnswers[sk.id]);
+  return`<div class="q-skill">
+    <div class="q-skill-name">${sk.name}</div>
+    <div class="nebb-choices" id="na-choices-${sk.id}">
+      ${NATIONAL_ACCOUNTS_OPTIONS.map(o=>`<label class="nebb-choice ${cur===o.v?'selected':''}" onclick="setNationalAccountsRating('${sk.id}',${o.v})">
+        <input type="radio" tabindex="-1" ${cur===o.v?'checked':''}>
+        <span><strong>${o.v}.</strong> ${o.label}</span>
+      </label>`).join('')}
+    </div>
+  </div>`;
+}
+function setNationalAccountsRating(id,val){
+  setRating(id,val);
+  document.querySelectorAll(`#na-choices-${id} .nebb-choice`).forEach((el,i)=>{
+    const selected=NATIONAL_ACCOUNTS_OPTIONS[i]&&NATIONAL_ACCOUNTS_OPTIONS[i].v===val;
+    el.classList.toggle('selected',selected);
+    const inp=el.querySelector('input');
+    if(inp)inp.checked=selected;
+  });
+}
 function renderQuestionnaire(){
   const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
   const prefilled=Object.keys(qAnswers).length;
@@ -2719,19 +2753,27 @@ function renderQuestionnaire(){
     :hasPriorAssessments
     ?` We don't have your previous skill-by-skill ratings on file yet (only section averages from an older import). Please rate each skill — after you submit once, future assessments will pre-fill automatically.`
     :'';
-  const sections=QUESTIONNAIRE.map(sec=>`
-    <div class="q-section" id="q-sec-${sec.key}">
-      <div class="q-section-title">${sec.emoji} ${sec.section}</div>
-      <div class="q-section-sub">Rate each skill from 1 (Beginner) to 5 (Exceptional).</div>
-      ${sec.skills.map(sk=>`
+  const sections=QUESTIONNAIRE.map(sec=>{
+    const secSub=isNationalAccountsSection(sec)
+      ?'Select the option that best describes your National Accounts project experience.'
+      :'Rate each skill from 1 (Beginner) to 5 (Exceptional).';
+    const skillHtml=isNationalAccountsSection(sec)
+      ?sec.skills.map(sk=>renderNationalAccountsSkill(sk)).join('')
+      :sec.skills.map(sk=>`
         <div class="q-skill">
           <div class="q-skill-cat">${sk.cat}</div>
           <div class="q-skill-name">${sk.name}</div>
           <div class="rating-row">
             ${[1,2,3,4,5].map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
           </div>
-        </div>`).join('')}
-    </div>`).join('');
+        </div>`).join('');
+    return`
+    <div class="q-section" id="q-sec-${sec.key}">
+      <div class="q-section-title">${sec.emoji} ${sec.section}</div>
+      <div class="q-section-sub">${secSub}</div>
+      ${skillHtml}
+    </div>`;
+  }).join('');
 
   document.getElementById('q-content').innerHTML=`
     <div class="q-header">

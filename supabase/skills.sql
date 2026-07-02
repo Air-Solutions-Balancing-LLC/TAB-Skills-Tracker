@@ -213,7 +213,8 @@ FROM (VALUES
   ('sv6','survey','JOB MANAGEMENT','Job Approach: Work a job to estimated hours',6),
   ('sv7','survey','SURVEY REPORTS','USABalancer Proficiency — Survey reports',7),
   ('sv8','survey','SURVEY REPORTS','Report Review Analysis',8),
-  ('sv9','survey','JOB MANAGEMENT','Customer Service: Punch List Protocol',9)
+  ('sv9','survey','JOB MANAGEMENT','Customer Service: Punch List Protocol',9),
+  ('na1','national_accounts','PROJECTS','How many National Accounts projects have you completed?',1)
 ) AS v(code, skey, cat, name, ord)
 JOIN public.skill_sections sec ON sec.skey = v.skey
 ON CONFLICT (skill_code) DO NOTHING;
