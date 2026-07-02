@@ -70,7 +70,7 @@ GRANT EXECUTE ON FUNCTION public.app_submit_assessment(text, jsonb) TO anon, aut
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, latest_raw_scores jsonb)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -93,6 +93,7 @@ BEGIN
            p.tech_id,
            t.nebb_status,
            t.start_date,
+           t.bootcamp_start_date,
            (
              SELECT a.raw_scores::jsonb
              FROM public.assessments a

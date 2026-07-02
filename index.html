@@ -1086,6 +1086,7 @@ function renderChecklistItemHtml(sk,completed,sec,readOnly){
 function renderChecklistHtml(completed,opts){
   opts=opts||{};
   const readOnly=!!opts.readOnly;
+  const bootcampStartDate=opts.bootcampStartDate||null;
   if(!CHECKLIST_SECTIONS.length)return'';
   const prog=checklistProgress(completed);
   const sections=CHECKLIST_SECTIONS.map(sec=>{
@@ -1117,7 +1118,8 @@ function renderChecklistHtml(completed,opts){
   if(prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
   else if(prog.total)progNote=` <strong>${prog.done}/${prog.total}</strong> done.`;
   const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
-  return`<div class="cl-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
+  const bootcampDateLabel=bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
+  return`<div class="cl-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
 }
 function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
 async function setChecklistRating(code,level){
@@ -1760,7 +1762,7 @@ function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.lengt
 function editRowHtml(p){
   const name=adminEsc(p.full_name||'');
   const mid=p.role==='technician'
-    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select><label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label>`
+    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select><label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label><label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>`
     :`<select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select>`;
   const email=adminEsc(p.email||'');
   return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
@@ -1793,12 +1795,14 @@ async function saveEdit(id,role){
   err.style.display='none';
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null};
   if(role==='technician'){
     const r=document.getElementById('edit-region-'+id);
     args.p_region=r?r.value:null;
     const sd=document.getElementById('edit-start-'+id);
     args.p_start_date=sd?sd.value:null;
+    const bsd=document.getElementById('edit-bootcamp-start-'+id);
+    args.p_bootcamp_start_date=bsd?bsd.value:null;
   }else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
   try{
     await rpc('app_admin_update_person',args);
@@ -2247,7 +2251,7 @@ function renderTechGrid(techs){
       </div>
       <div class="score-row">${scores||'<span style="font-size:11px;color:rgba(255,255,255,0.2)">No assessments yet</span>'}</div>
       <div class="dates-row">
-        ${startD?`<span class="date-chip first">🗓️ Start: ${fmtDate(startD)}</span>`:''}
+        ${startD?`<span class="date-chip first">🗓️ Employment Start Date: ${fmtDate(startD)}</span>`:''}
         ${last?`<span class="date-chip last">✅ Last: ${fmtDate(last.date)}</span>`:''}
       </div>
     </div>`;
@@ -2422,7 +2426,7 @@ async function renderDetailView(t){
 
   const rawScores=last&&last.raw_scores?last.raw_scores:{};
   const prevRawScores=prev&&prev.raw_scores?prev.raw_scores:{};
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true}):'';
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true,bootcampStartDate:t.bootcamp_start_date}):'';
 
   const moduleHTML=QUESTIONNAIRE.map(sec=>{
     const secKey=sec.key;
@@ -2471,7 +2475,7 @@ async function renderDetailView(t){
 
   document.getElementById('detail-body').innerHTML=`
     <div class="dates-cards">
-      <div class="date-card"><div class="date-card-icon">🗓️</div><div><div class="date-card-label">Start date</div><div class="date-card-val">${fmtDateFull(startD)}</div></div></div>
+      <div class="date-card"><div class="date-card-icon">🗓️</div><div><div class="date-card-label">Employment Start Date</div><div class="date-card-val">${fmtDateFull(startD)}</div></div></div>
       <div class="date-card"><div class="date-card-icon">✅</div><div><div class="date-card-label">Latest assessment</div><div class="date-card-val">${fmtDateFull(last?last.date:null)}</div></div></div>
       <div class="date-card"><div class="date-card-icon">📋</div><div><div class="date-card-label">Total submissions</div><div class="date-card-val">${assessments.length} assessment${assessments.length!==1?'s':''}</div></div></div>
     </div>
@@ -2578,7 +2582,7 @@ function renderTechHome(t,opts){
   const banner=adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`
     :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly}):"";
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date}):"";
 
   container.innerHTML=banner+`
     <div class="my-scores">

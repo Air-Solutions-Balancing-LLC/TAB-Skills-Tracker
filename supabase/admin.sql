@@ -76,7 +76,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, latest_raw_scores jsonb)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -99,6 +99,7 @@ BEGIN
            p.tech_id,
            t.nebb_status,
            t.start_date,
+           t.bootcamp_start_date,
            (
              SELECT a.raw_scores::jsonb
              FROM public.assessments a
@@ -263,7 +264,7 @@ $$;
 
 -- ── Admin: update a person (name, email, role for admin/pm, region for tech) ──
 -- Drop the older 4-arg signature so re-running this file leaves only one version.
-DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text);
 
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_id         bigint,
@@ -271,7 +272,8 @@ CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_email      text DEFAULT NULL,
   p_role       text DEFAULT NULL,
   p_region     text DEFAULT NULL,
-  p_start_date text DEFAULT NULL
+  p_start_date text DEFAULT NULL,
+  p_bootcamp_start_date text DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -340,6 +342,11 @@ BEGIN
           WHEN p_start_date IS NULL THEN start_date
           WHEN trim(p_start_date) = '' THEN NULL
           ELSE p_start_date::date
+        END,
+        bootcamp_start_date = CASE
+          WHEN p_bootcamp_start_date IS NULL THEN bootcamp_start_date
+          WHEN trim(p_bootcamp_start_date) = '' THEN NULL
+          ELSE p_bootcamp_start_date::date
         END
     WHERE id = v_tech_id AND deleted_at IS NULL;
   END IF;
@@ -353,4 +360,4 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text) TO authenticated;
