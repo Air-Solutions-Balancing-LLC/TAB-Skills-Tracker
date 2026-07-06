@@ -61,7 +61,7 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
   ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated', NULL),
   ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated', NULL),
   ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated', NULL),
-  ('survey',       'TAB Survey Skills',                '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL),
+  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL),
   ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 8, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
@@ -75,7 +75,7 @@ UPDATE public.skill_sections SET sort_order = 3, section_type = 'rated' WHERE sk
 UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated' WHERE skey = 'basic';
 UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'intermediate';
 UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'advanced';
-UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated' WHERE skey = 'survey';
+UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
 UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated' WHERE skey = 'national_accounts';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
@@ -204,17 +204,7 @@ FROM (VALUES
   ('a25','advanced','SPECIALTY TESTING','Temperature Differential Analysis / BTU Calculations',25),
   ('a26','advanced','SPECIALTY TESTING','Coil Water Carry Over',26),
   ('a27','advanced','TROUBLESHOOTING','Makeup Water / PRVs',27),
-  ('a28','advanced','TROUBLESHOOTING','Piping Systems Comprehension',28),
-  ('sv1','survey','UNIT TESTING','Ability to accurately measure Wire Size',1),
-  ('sv2','survey','UNIT TESTING','Ability to calculate Carrier unit tonnage',2),
-  ('sv3','survey','UNIT TESTING','Ability to accurately measure Gas and Condenser Pipe Size',3),
-  ('sv4','survey','UNIT TESTING','Ability to identify Hot Gas Reheat Coils',4),
-  ('sv5','survey','SURVEY PROJECTS','Can complete Surveys independently',5),
-  ('sv6','survey','JOB MANAGEMENT','Job Approach: Work a job to estimated hours',6),
-  ('sv7','survey','SURVEY REPORTS','USABalancer Proficiency — Survey reports',7),
-  ('sv8','survey','SURVEY REPORTS','Report Review Analysis',8),
-  ('sv9','survey','JOB MANAGEMENT','Customer Service: Punch List Protocol',9),
-  ('na1','national_accounts','PROJECTS','How many National Accounts projects have you completed?',1)
+  ('a28','advanced','TROUBLESHOOTING','Piping Systems Comprehension',28)
 ) AS v(code, skey, cat, name, ord)
 JOIN public.skill_sections sec ON sec.skey = v.skey
 ON CONFLICT (skill_code) DO NOTHING;
