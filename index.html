@@ -448,11 +448,18 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
 .tech-res-meta strong{color:#1B3A6B}
 .tech-assessment-cover{margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #E6EEF8}
-.tech-cover-title{font-size:18px;font-weight:800;color:#1B3A6B;margin-bottom:8px}
-.tech-cover-meta{font-size:13px;color:#444;line-height:1.65}
-.tech-cover-meta div{margin-bottom:2px}
-.tech-cover-meta strong{color:#1B3A6B;font-weight:700}
+.tech-cover-title{font-size:18px;font-weight:800;color:#1B3A6B;margin-bottom:10px}
+.tech-cover-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.tech-cover-col{font-size:13px;color:#444;line-height:1.65}
+.tech-cover-col div{margin-bottom:3px}
+.tech-cover-col strong{color:#1B3A6B;font-weight:700}
+.tech-cover-col-right{text-align:right}
+.tech-cover-comments{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px;border-top:4px solid #E87722;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-cover-comments .tech-notes-title{margin-bottom:6px}
+.tech-tenure-info{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-tenure-info strong{color:#1B3A6B;font-weight:700}
 .tech-notes-export{margin-bottom:14px}
+@media(max-width:640px){.tech-cover-columns{grid-template-columns:1fr}.tech-cover-col-right{text-align:left}}
 .tech-pdf-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:99998;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#1B3A6B}
 .tech-pdf-overlay.visible{display:flex}
 .tech-res-summary{margin-bottom:14px}
@@ -2184,6 +2191,18 @@ function employmentTenureDays(t){
   start.setHours(0,0,0,0);
   return Math.floor((todayDateOnly()-start)/86400000);
 }
+function yearsEmployedText(t){
+  const days=employmentTenureDays(t);
+  if(days===null)return null;
+  if(days<30)return'Less than 1 month';
+  const years=days/365.25;
+  if(years<1){
+    const months=Math.max(1,Math.round(days/30.44));
+    return months+' month'+(months===1?'':'s');
+  }
+  const rounded=Math.round(years*10)/10;
+  return rounded+' year'+(rounded===1?'':'s');
+}
 function isBeforeBootcamp(t){
   const boot=parseDateOnly(t&&t.bootcamp_start_date);
   if(!boot)return true;
@@ -2678,22 +2697,37 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
 
 function buildTechAssessmentNotesHtml(t){
   const notesToTech=(t.notes_to_tech||'').trim();
-  const techComments=(t.tech_comments||'').trim();
-  if(!notesToTech&&!techComments)return'';
+  if(!notesToTech)return'';
   return`<div class="tech-notes-grid tech-notes-export">
-    ${notesToTech?`<div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div><div class="tech-notes-body">${adminEsc(notesToTech)}</div></div>`:''}
-    ${techComments?`<div class="tech-notes-box comments"><div class="tech-notes-title">💬 Tech Comments</div><div class="tech-notes-body">${adminEsc(techComments)}</div></div>`:''}
+    <div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div><div class="tech-notes-body">${adminEsc(notesToTech)}</div></div>
+  </div>`;
+}
+
+function buildTechCommentsBlockHtml(t){
+  const techComments=(t.tech_comments||'').trim();
+  return`<div class="tech-cover-comments">
+    <div class="tech-notes-title">💬 Tech Comments</div>
+    <div class="tech-notes-body">${techComments?adminEsc(techComments):'<span class="no-comment">No comments yet.</span>'}</div>
   </div>`;
 }
 
 function buildTechAssessmentCoverSection(t,assessment){
+  const tenure=yearsEmployedText(t);
+  const startD=techStartDate(t);
   return`<div class="tech-assessment-cover">
     <div class="tech-cover-title">TAB Skills Assessment</div>
-    <div class="tech-cover-meta">
-      <div><strong>Technician:</strong> ${adminEsc(t.name)}</div>
-      <div><strong>Assessment date:</strong> ${fmtDateFull(assessment.date)}</div>
-      <div><strong>Certification:</strong> ${nebbStatusLabel(t.nebb_status)}</div>
+    <div class="tech-cover-columns">
+      <div class="tech-cover-col">
+        <div><strong>Technician:</strong> ${adminEsc(t.name)}</div>
+        <div><strong>Assessment date:</strong> ${fmtDateFull(assessment.date)}</div>
+      </div>
+      <div class="tech-cover-col tech-cover-col-right">
+        <div><strong>Years employed:</strong> ${tenure||'—'}</div>
+        <div><strong>Employed since:</strong> ${fmtDateFull(startD)}</div>
+        <div><strong>Certification:</strong> ${nebbStatusLabel(t.nebb_status)}</div>
+      </div>
     </div>
+    ${buildTechCommentsBlockHtml(t)}
     ${buildTechAssessmentNotesHtml(t)}
   </div>`;
 }
@@ -2769,20 +2803,47 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     y+=opts.gap==null?6:opts.gap;
   }
 
-  addBlock('TAB Skills Assessment',{size:18,bold:true,color:[27,58,107],gap:8});
-  addBlock('Technician: '+t.name,{bold:true,gap:2});
-  addBlock('Assessment date: '+fmtDateFull(assessment.date),{gap:2});
-  addBlock('Certification: '+nebbStatusLabel(t.nebb_status),{gap:14});
+  function addColBlock(text,x,width,opts,startY){
+    opts=opts||{};
+    const size=opts.size||10;
+    const font=opts.bold?'bold':'normal';
+    const color=opts.color||[50,50,50];
+    doc.setFontSize(size);
+    doc.setFont('helvetica',font);
+    doc.setTextColor(color[0],color[1],color[2]);
+    const lines=doc.splitTextToSize(pdfSafeText(text),width);
+    let cy=startY;
+    lines.forEach(line=>{
+      needPage(lh);
+      if(cy+lh>pageH-margin){cy=margin;}
+      doc.text(line,x,cy);
+      cy+=lh;
+    });
+    return cy+(opts.gap==null?4:opts.gap);
+  }
+
+  addBlock('TAB Skills Assessment',{size:18,bold:true,color:[27,58,107],gap:10});
+  const colSplit=margin+contentW*0.52;
+  const leftW=contentW*0.48;
+  const rightW=contentW*0.48;
+  const headerStart=y;
+  const tenure=yearsEmployedText(t);
+  const startD=techStartDate(t);
+  let yLeft=addColBlock('Technician: '+t.name,margin,leftW,{bold:true,gap:2},headerStart);
+  yLeft=addColBlock('Assessment date: '+fmtDateFull(assessment.date),margin,leftW,{gap:2},yLeft);
+  let yRight=addColBlock('Years employed: '+(tenure||'—'),colSplit,rightW,{bold:true,gap:2},headerStart);
+  yRight=addColBlock('Employed since: '+fmtDateFull(startD),colSplit,rightW,{gap:2},yRight);
+  yRight=addColBlock('Certification: '+nebbStatusLabel(t.nebb_status),colSplit,rightW,{gap:2},yRight);
+  y=Math.max(yLeft,yRight)+10;
+
+  const techComments=(t.tech_comments||'').trim();
+  addBlock('Tech Comments',{bold:true,color:[27,58,107],gap:2});
+  addBlock(techComments||'No comments yet.',{size:10,gap:12});
 
   const notes=(t.notes_to_tech||'').trim();
-  const techComments=(t.tech_comments||'').trim();
   if(notes){
     addBlock('Notes to Tech',{bold:true,color:[27,58,107],gap:2});
     addBlock(notes,{size:10,gap:12});
-  }
-  if(techComments){
-    addBlock('Tech Comments',{bold:true,color:[27,58,107],gap:2});
-    addBlock(techComments,{size:10,gap:12});
   }
 
   const raw=rawOf(assessment)||{};
@@ -3122,6 +3183,11 @@ function renderTechHome(t,opts){
   }).join('');
 
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
+  const tenure=yearsEmployedText(t);
+  const tenureHtml=`<div class="tech-tenure-info">
+    <span><strong>Years employed:</strong> ${tenure||'—'}</span>
+    <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+  </div>`;
 
   const banner=adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`
@@ -3134,6 +3200,7 @@ function renderTechHome(t,opts){
         <div class="detail-av">${initials(t.name)}</div>
         <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
+      ${tenureHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
