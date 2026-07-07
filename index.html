@@ -2603,6 +2603,7 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   opts=opts||{};
   const idPrefix=opts.idPrefix||'';
   const startOpen=!!opts.startOpen;
+  const sortByRating=!!opts.sortByRating;
   const showTrend=opts.showTrend!==false&&!!prevAssessment;
   const rawScores=rawOf(assessment)||{};
   const prevRawScores=prevAssessment?(rawOf(prevAssessment)||{}):{};
@@ -2615,7 +2616,18 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.55)';
     const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
     const warn=avg!==null&&avg<=2?' ⚠️':'';
-    const skillRows=sec.skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
+    let skills=sec.skills;
+    if(sortByRating){
+      skills=skills.slice().sort((a,b)=>{
+        const va=rawScores[a.id]!==undefined?Number(rawScores[a.id]):null;
+        const vb=rawScores[b.id]!==undefined?Number(rawScores[b.id]):null;
+        if(va===null&&vb===null)return 0;
+        if(va===null)return 1;
+        if(vb===null)return -1;
+        return va-vb;
+      });
+    }
+    const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
     const openCls=startOpen?' open':'';
     const togChar=startOpen?'▼':'▶';
     return`<div class="mod-section">
@@ -2633,13 +2645,17 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   }).join('');
 }
 
-function buildAssessmentSummaryBars(assessment){
-  return SKILL_CATS.map(c=>{
-    const v=sectionScore(assessment,c);
-    if(v===null)return'';
-    const pct=Math.round((v/5)*100),col=scoreColor(v);
-    return`<div class="my-brow"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
-  }).join('');
+function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
+  opts=opts||{};
+  const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{idPrefix:'tech-res-',startOpen:false,sortByRating:true,showTrend:!!prevAssessment});
+  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
+  const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
+  const scaleHtml=opts.omitScaleSummary?'':assessmentResultsScaleSummaryHtml();
+  return`${submittedNote}
+    <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
+    ${scaleHtml}
+    ${modules}
+    ${comment}`;
 }
 
 function assessmentResultsScaleSummaryHtml(){
@@ -2658,21 +2674,6 @@ function assessmentResultsScaleSummaryHtml(){
       ${projRows}
     </div>
   </div>`;
-}
-
-function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
-  opts=opts||{};
-  const summary=buildAssessmentSummaryBars(assessment);
-  const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{idPrefix:'tech-res-',startOpen:true,showTrend:!!prevAssessment});
-  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
-  const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
-  const scaleHtml=opts.omitScaleSummary?'':assessmentResultsScaleSummaryHtml();
-  return`${submittedNote}
-    <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
-    ${scaleHtml}
-    ${summary?`<div class="my-scores tech-res-summary"><div style="font-size:11px;color:#999;margin-bottom:8px">Section averages</div><div class="my-bars">${summary}</div></div>`:''}
-    ${modules}
-    ${comment}`;
 }
 
 function viewLatestAssessment(){
