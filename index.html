@@ -441,39 +441,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-filter-btn[data-rating="4"].active{border-color:#7C3AED;background:#7C3AED}
 .tech-res-filter-btn[data-rating="5"].active{border-color:#1D9E75;background:#1D9E75}
 .tech-res-empty{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;font-size:13px;color:#888;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-#tech-assessment-pdf-root{position:fixed;left:0;top:0;width:794px;max-width:100vw;padding:24px;background:#fff;z-index:99999;pointer-events:none;opacity:1;visibility:visible}
-#tech-assessment-pdf-root:not(.pdf-capturing){opacity:0;height:0;overflow:hidden;pointer-events:none;z-index:-1}
-#tech-assessment-pdf-root .tech-assessment-cover{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #E6EEF8}
-#tech-assessment-pdf-root .tech-cover-title{font-size:22px;font-weight:800;color:#1B3A6B;margin-bottom:10px}
-#tech-assessment-pdf-root .tech-cover-meta{font-size:13px;color:#444;line-height:1.7}
-#tech-assessment-pdf-root .tech-cover-meta strong{color:#1B3A6B;font-weight:700}
-#tech-assessment-pdf-root .tech-notes-export{margin-top:14px;margin-bottom:0}
-#tech-assessment-pdf-root .tech-notes-box{background:#f8faff;border-radius:10px;padding:12px 14px;border-top:4px solid #1B3A6B;margin-bottom:10px}
-#tech-assessment-pdf-root .tech-notes-box.comments{border-top-color:#E87722}
-#tech-assessment-pdf-root .tech-notes-title{font-size:12px;font-weight:800;color:#1B3A6B;margin-bottom:6px}
-#tech-assessment-pdf-root .tech-notes-body{font-size:12px;color:#444;line-height:1.55;white-space:pre-wrap}
-#tech-assessment-pdf-root .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
-#tech-assessment-pdf-root .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
-#tech-assessment-pdf-root .tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
-#tech-assessment-pdf-root .tech-res-meta strong{color:#1B3A6B}
-#tech-assessment-pdf-root .tech-res-comment{background:#EEF4FF;border-left:4px solid #1B3A6B;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#1B3A6B;line-height:1.55}
-#tech-assessment-pdf-root .mod-section{margin-bottom:10px;page-break-inside:avoid}
-#tech-assessment-pdf-root .mod-head{display:flex;align-items:center;gap:10px;padding:13px 16px;background:#1B3A6B;border-radius:12px 12px 0 0}
-#tech-assessment-pdf-root .mod-emoji{font-size:16px}
-#tech-assessment-pdf-root .mod-name{font-size:13px;font-weight:700;color:#fff;flex:1}
-#tech-assessment-pdf-root .mod-stats{display:flex;align-items:center;gap:10px;margin-left:auto}
-#tech-assessment-pdf-root .mod-avg,#tech-assessment-pdf-root .mod-pct{font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
-#tech-assessment-pdf-root .mod-tog{display:none}
-#tech-assessment-pdf-root .mod-skills{background:#fff;border:2px solid #E6EEF8;border-top:none;border-radius:0 0 12px 12px;padding:4px 16px 12px;display:block}
-#tech-assessment-pdf-root .skill-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
-#tech-assessment-pdf-root .skill-row:last-child{border-bottom:none}
-#tech-assessment-pdf-root .skill-name{font-size:12px;color:#333;flex:1;line-height:1.5;font-weight:500}
-#tech-assessment-pdf-root .skill-rating-label{font-size:11px;font-weight:700;color:#555;min-width:76px;text-align:right;flex-shrink:0}
-#tech-assessment-pdf-root .skill-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
-#tech-assessment-pdf-root .skill-prev{font-size:10px;color:#bbb;min-width:36px;text-align:center}
-#tech-assessment-pdf-root .skill-trend-icon{font-size:12px;min-width:16px;text-align:center;font-weight:700}
-#tech-assessment-pdf-root .trend-up{color:#1D9E75;font-weight:700}
-#tech-assessment-pdf-root .trend-dn{color:#c0392b;font-weight:700}
 .tech-results-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
 .tech-results-footer{flex-shrink:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e8e8}
 .tech-results-footer .btn{flex:1;min-height:44px}
@@ -942,7 +909,6 @@ body.mobile-nav-open{overflow:hidden}
   </div>
 </div>
 
-<div id="tech-assessment-pdf-root" aria-hidden="true"></div>
 <div class="tech-pdf-overlay" id="tech-pdf-overlay" aria-live="polite">Generating PDF…</div>
 
 <div id="tech-results-print" aria-hidden="true"></div>
@@ -2660,7 +2626,6 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   const idPrefix=opts.idPrefix||'';
   const startOpen=!!opts.startOpen;
   const sortByRating=!!opts.sortByRating;
-  const printMode=!!opts.printMode;
   const ratingFilter=opts.ratingFilter!=null?Number(opts.ratingFilter):null;
   const expandIfFiltered=!!ratingFilter;
   const showTrend=opts.showTrend!==false&&!!prevAssessment;
@@ -2694,8 +2659,8 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
       });
     }
     const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
-    const openCls=(startOpen||expandIfFiltered||printMode)?' open':'';
-    const togChar=(startOpen||expandIfFiltered||printMode)?'▼':'▶';
+    const openCls=(startOpen||expandIfFiltered)?' open':'';
+    const togChar=(startOpen||expandIfFiltered)?'▼':'▶';
     return`<div class="mod-section">
       <div class="mod-head${openCls}" onclick="toggleMod('${modId}')">
         <span class="mod-emoji">${sec.emoji}</span>
@@ -2735,41 +2700,162 @@ function buildTechAssessmentCoverSection(t,assessment){
 
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
-  const printMode=!!opts.printMode;
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
-    idPrefix:printMode?'print-':'tech-res-',
-    startOpen:printMode,
-    sortByRating:!printMode,
-    printMode:printMode,
-    ratingFilter:printMode?null:opts.ratingFilter,
+    idPrefix:'tech-res-',
+    startOpen:false,
+    sortByRating:true,
+    ratingFilter:opts.ratingFilter,
     showTrend:!!prevAssessment
   });
   const comment=assessment.comment?`<div class="tech-res-comment"><strong>Assessment comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
-  const emptyMsg=!printMode&&opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
-  const cover=opts.omitCover?'':buildTechAssessmentCoverSection(t,assessment);
+  const emptyMsg=opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
+  const cover=buildTechAssessmentCoverSection(t,assessment);
   return`${submittedNote}
     ${cover}
     ${emptyMsg||modules}
     ${comment}`;
 }
 
-function buildTechAssessmentExportContent(t,assessment,prev){
-  return buildTechAssessmentResultsHtml(t,assessment,prev,{printMode:true});
+function pdfSafeText(s){
+  return String(s==null?'':s)
+    .replace(/[\u2013\u2014]/g,'-')
+    .replace(/[\u2018\u2019]/g,"'")
+    .replace(/[\u201C\u201D]/g,'"')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
 }
 
-let html2pdfLoading=null;
-function ensureHtml2Pdf(){
-  if(window.html2pdf)return Promise.resolve(window.html2pdf);
-  if(html2pdfLoading)return html2pdfLoading;
-  html2pdfLoading=new Promise((resolve,reject)=>{
+function pdfSkillRatingLabel(sec,v){
+  const n=Number(v);
+  if(!(n>=1&&n<=5))return'N/R';
+  return isJobAccountsSection(sec)?(jobAccountsLabel(n)||String(n)):(RATING_LABELS[n]||String(n));
+}
+
+function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
+  const margin=44;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const lh=13;
+
+  function needPage(h){
+    if(y+h>pageH-margin){
+      doc.addPage();
+      y=margin;
+    }
+  }
+
+  function addBlock(text,opts){
+    opts=opts||{};
+    const size=opts.size||10;
+    const font=opts.bold?'bold':'normal';
+    const color=opts.color||[50,50,50];
+    doc.setFontSize(size);
+    doc.setFont('helvetica',font);
+    doc.setTextColor(color[0],color[1],color[2]);
+    const lines=doc.splitTextToSize(pdfSafeText(text),contentW);
+    lines.forEach(line=>{
+      needPage(lh);
+      doc.text(line,margin,y);
+      y+=lh;
+    });
+    y+=opts.gap==null?6:opts.gap;
+  }
+
+  addBlock('TAB Skills Assessment',{size:18,bold:true,color:[27,58,107],gap:8});
+  addBlock('Technician: '+t.name,{bold:true,gap:2});
+  addBlock('Assessment date: '+fmtDateFull(assessment.date),{gap:2});
+  addBlock('Certification: '+nebbStatusLabel(t.nebb_status),{gap:14});
+
+  const notes=(t.notes_to_tech||'').trim();
+  const techComments=(t.tech_comments||'').trim();
+  if(notes){
+    addBlock('Notes to Tech',{bold:true,color:[27,58,107],gap:2});
+    addBlock(notes,{size:10,gap:12});
+  }
+  if(techComments){
+    addBlock('Tech Comments',{bold:true,color:[27,58,107],gap:2});
+    addBlock(techComments,{size:10,gap:12});
+  }
+
+  const raw=rawOf(assessment)||{};
+  const prevRaw=prevAssessment?(rawOf(prevAssessment)||{}):{};
+
+  QUESTIONNAIRE.forEach(sec=>{
+    const catKey=SKILL_CATS.find(c=>c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))||null;
+    const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(raw,sec);
+    const pct=sectionProficiencyPct(avg);
+    const skills=sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
+    if(!skills.length)return;
+
+    let head=pdfSafeText(sec.section);
+    if(avg!==null)head+='  avg '+avg.toFixed(1)+(pct!=null?' ('+pct+'%)':'');
+    needPage(28);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    doc.text(head,margin+6,y+4,{maxWidth:contentW-12});
+    y+=24;
+
+    const nameColW=contentW*0.62;
+    const rateColX=margin+nameColW+8;
+
+    skills.forEach(sk=>{
+      const v=Number(raw[sk.id]);
+      const label=pdfSkillRatingLabel(sec,v);
+      const pv=prevRaw[sk.id]!==undefined?Number(prevRaw[sk.id]):null;
+      let rateLine=label+' ('+v+')';
+      if(pv!==null){
+        rateLine+=v>pv?'  was '+pv+' up':v<pv?'  was '+pv+' down':'  was '+pv+' same';
+      }
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(40,40,40);
+      const nameLines=doc.splitTextToSize(pdfSafeText(sk.name),nameColW);
+      const rateLines=doc.splitTextToSize(pdfSafeText(rateLine),contentW-nameColW-12);
+      const rowH=Math.max(nameLines.length,rateLines.length,1)*12;
+
+      needPage(rowH+8);
+
+      nameLines.forEach((line,i)=>{doc.text(line,margin+4,y+i*12);});
+      doc.setFont('helvetica','bold');
+      rateLines.forEach((line,i)=>{doc.text(line,rateColX,y+i*12);});
+
+      y+=rowH+6;
+      doc.setDrawColor(230,230,230);
+      doc.line(margin,y-3,margin+contentW,y-3);
+    });
+    y+=8;
+  });
+
+  if(assessment.comment&&String(assessment.comment).trim()){
+    addBlock('Assessment comment',{bold:true,color:[27,58,107],gap:2});
+    addBlock(assessment.comment,{gap:0});
+  }
+
+  return doc;
+}
+
+let jsPdfLoading=null;
+function ensureJsPdf(){
+  if(window.jspdf)return Promise.resolve(window.jspdf);
+  if(jsPdfLoading)return jsPdfLoading;
+  jsPdfLoading=new Promise((resolve,reject)=>{
     const script=document.createElement('script');
-    script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
-    script.onload=()=>resolve(window.html2pdf);
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+    script.onload=()=>resolve(window.jspdf);
     script.onerror=()=>reject(new Error('PDF library failed to load'));
     document.head.appendChild(script);
   });
-  return html2pdfLoading;
+  return jsPdfLoading;
 }
 
 function updateTechResultsFilterUi(){
@@ -2845,10 +2931,6 @@ function downloadFilename(name,date){
   return'TAB-Assessment-'+safe+'-'+iso+'.pdf';
 }
 
-function waitForPdfLayout(ms){
-  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,ms||150))));
-}
-
 async function downloadTechAssessment(){
   if(!techResultsAssessment||!currentTechData){
     alert('Open your assessment results first.');
@@ -2865,34 +2947,14 @@ async function downloadTechAssessment(){
   const assessments=currentTechData.assessments||[];
   const idx=assessments.indexOf(techResultsAssessment);
   const prev=idx>0?assessments[idx-1]:null;
-  const root=document.getElementById('tech-assessment-pdf-root');
-  if(!root){
-    alert('Could not prepare PDF export.');
-    if(btn){btn.disabled=false;btn.textContent=prevText;}
-    if(overlay)overlay.classList.remove('visible');
-    return;
-  }
-  root.innerHTML=buildTechAssessmentExportContent(currentTechData,techResultsAssessment,prev);
-  root.classList.add('pdf-capturing');
-  root.setAttribute('aria-hidden','false');
   try{
-    await waitForPdfLayout(200);
-    const html2pdf=await ensureHtml2Pdf();
-    await html2pdf().set({
-      margin:[10,10,10,10],
-      filename:downloadFilename(currentTechData.name,techResultsAssessment.date),
-      image:{type:'jpeg',quality:0.92},
-      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
-      jsPDF:{unit:'mm',format:'letter',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy'],avoid:'.mod-section'}
-    }).from(root).save();
+    await ensureJsPdf();
+    const doc=buildTechAssessmentPdfDoc(currentTechData,techResultsAssessment,prev);
+    doc.save(downloadFilename(currentTechData.name,techResultsAssessment.date));
   }catch(e){
     console.error(e);
     alert('Could not create PDF. Check your connection and try again.');
   }finally{
-    root.classList.remove('pdf-capturing');
-    root.innerHTML='';
-    root.setAttribute('aria-hidden','true');
     if(overlay)overlay.classList.remove('visible');
     if(btn){
       btn.disabled=false;
