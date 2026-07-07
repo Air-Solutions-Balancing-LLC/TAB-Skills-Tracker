@@ -429,10 +429,18 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-results-header-grow{flex:1;min-width:0}
 .tech-results-title{font-size:17px;font-weight:800;color:#1B3A6B}
 .tech-results-sub{font-size:12px;color:#888;margin-top:2px}
-.tech-results-legend{flex-shrink:0;padding:10px 16px 12px;background:#fff;border-bottom:1px solid #e8e8e8;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
-.tech-results-legend .tech-res-scale-box{margin-bottom:0}
-.tech-results-legend .tech-res-scale-col{padding:10px 12px}
-.tech-results-legend .tech-res-scale-row{padding:2px 0;font-size:11px}
+.tech-results-filter{flex-shrink:0;padding:10px 16px 12px;background:#fff;border-bottom:1px solid #e8e8e8}
+.tech-results-filter-label{display:block;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.tech-res-filter-btns{display:flex;flex-wrap:wrap;gap:8px}
+.tech-res-filter-btn{padding:8px 12px;border:2px solid #e0e0e0;border-radius:999px;background:#fafafa;color:#555;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1.2;transition:all .15s}
+.tech-res-filter-btn:hover{border-color:#b8d0f5;background:#f8faff}
+.tech-res-filter-btn.active{border-color:#1B3A6B;background:#1B3A6B;color:#fff}
+.tech-res-filter-btn[data-rating="1"].active{border-color:#888;background:#888}
+.tech-res-filter-btn[data-rating="2"].active{border-color:#4A90D9;background:#4A90D9}
+.tech-res-filter-btn[data-rating="3"].active{border-color:#7aaedd;background:#7aaedd}
+.tech-res-filter-btn[data-rating="4"].active{border-color:#7C3AED;background:#7C3AED}
+.tech-res-filter-btn[data-rating="5"].active{border-color:#1D9E75;background:#1D9E75}
+.tech-res-empty{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;font-size:13px;color:#888;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-results-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
 .tech-results-footer{flex-shrink:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e8e8}
 .tech-results-footer .btn{flex:1;min-height:44px}
@@ -445,13 +453,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 #sb-nav-view-assessment{background:#1D9E75;color:#fff;font-weight:700}
 #sb-nav-view-assessment:hover{background:#178f69;color:#fff}
 #sb-nav-view-assessment.disabled,#sb-nav-view-assessment:disabled{opacity:.4;background:#1D9E75;color:#fff}
-.tech-res-scale-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.tech-res-scale-col{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.tech-res-scale-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;line-height:1.35}
-.tech-res-scale-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;font-size:12px;line-height:1.35}
-.tech-res-scale-label{color:#444;flex:1}
-.tech-res-scale-num{font-weight:800;color:#1B3A6B;min-width:20px;text-align:right}
-@media(max-width:640px){.tech-res-scale-box{grid-template-columns:1fr}}
 .loading{text-align:center;padding:3rem;color:#bbb;font-size:13px}
 .nebb-badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700}
 .nebb-cp{background:#EEF4FF;color:#1B3A6B}
@@ -882,7 +883,17 @@ body.mobile-nav-open{overflow:hidden}
     </div>
     <button type="button" class="btn btn-outline" style="min-height:44px;padding:10px 16px" onclick="closeTechResultsView()">Close</button>
   </div>
-  <div class="tech-results-legend" id="tech-results-legend" aria-label="Rating scale guide"></div>
+  <div class="tech-results-filter" id="tech-results-filter">
+    <span class="tech-results-filter-label">Show only</span>
+    <div class="tech-res-filter-btns">
+      <button type="button" class="tech-res-filter-btn active" data-rating="all" onclick="setTechResultsRatingFilter(null)">All</button>
+      <button type="button" class="tech-res-filter-btn" data-rating="1" onclick="setTechResultsRatingFilter(1)">1 · Beginner</button>
+      <button type="button" class="tech-res-filter-btn" data-rating="2" onclick="setTechResultsRatingFilter(2)">2 · Developing</button>
+      <button type="button" class="tech-res-filter-btn" data-rating="3" onclick="setTechResultsRatingFilter(3)">3 · Experienced</button>
+      <button type="button" class="tech-res-filter-btn" data-rating="4" onclick="setTechResultsRatingFilter(4)">4 · Proficient</button>
+      <button type="button" class="tech-res-filter-btn" data-rating="5" onclick="setTechResultsRatingFilter(5)">5 · Exceptional</button>
+    </div>
+  </div>
   <div class="tech-results-body" id="tech-results-body"></div>
   <div class="tech-results-footer">
     <button type="button" class="btn btn-outline" onclick="closeTechResultsView()">Close</button>
@@ -2585,8 +2596,6 @@ function exitTechView(){
   setPMView('tech',null);
 }
 
-let techResultsAssessment=null;
-
 function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
   const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
   const pv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
@@ -2598,12 +2607,17 @@ function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
   return`<div class="skill-row"><span class="skill-name">${sk.name}</span>${labelHtml}<div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
 }
 
+let techResultsAssessment=null;
+let techResultsRatingFilter=null;
+
 function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   if(!assessment)return'';
   opts=opts||{};
   const idPrefix=opts.idPrefix||'';
   const startOpen=!!opts.startOpen;
   const sortByRating=!!opts.sortByRating;
+  const ratingFilter=opts.ratingFilter!=null?Number(opts.ratingFilter):null;
+  const expandIfFiltered=!!ratingFilter;
   const showTrend=opts.showTrend!==false&&!!prevAssessment;
   const rawScores=rawOf(assessment)||{};
   const prevRawScores=prevAssessment?(rawOf(prevAssessment)||{}):{};
@@ -2617,6 +2631,13 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
     const warn=avg!==null&&avg<=2?' ⚠️':'';
     let skills=sec.skills;
+    if(ratingFilter){
+      skills=skills.filter(sk=>{
+        const v=rawScores[sk.id]!==undefined?Number(rawScores[sk.id]):null;
+        return v===ratingFilter;
+      });
+      if(!skills.length)return'';
+    }
     if(sortByRating){
       skills=skills.slice().sort((a,b)=>{
         const va=rawScores[a.id]!==undefined?Number(rawScores[a.id]):null;
@@ -2628,8 +2649,8 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
       });
     }
     const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
-    const openCls=startOpen?' open':'';
-    const togChar=startOpen?'▼':'▶';
+    const openCls=(startOpen||expandIfFiltered)?' open':'';
+    const togChar=(startOpen||expandIfFiltered)?'▼':'▶';
     return`<div class="mod-section">
       <div class="mod-head${openCls}" onclick="toggleMod('${modId}')">
         <span class="mod-emoji">${sec.emoji}</span>
@@ -2647,33 +2668,46 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
 
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
-  const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{idPrefix:'tech-res-',startOpen:false,sortByRating:true,showTrend:!!prevAssessment});
+  const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
+    idPrefix:'tech-res-',
+    startOpen:false,
+    sortByRating:true,
+    ratingFilter:opts.ratingFilter,
+    showTrend:!!prevAssessment
+  });
   const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
-  const scaleHtml=opts.omitScaleSummary?'':assessmentResultsScaleSummaryHtml();
+  const emptyMsg=opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
   return`${submittedNote}
     <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
-    ${scaleHtml}
-    ${modules}
+    ${emptyMsg||modules}
     ${comment}`;
 }
 
-function assessmentResultsScaleSummaryHtml(){
-  const skillRows=[5,4,3,2,1].map(n=>`<div class="tech-res-scale-row"><span class="tech-res-scale-label">${RATING_LABELS[n]}</span><span class="tech-res-scale-num">${n}</span></div>`).join('');
-  const projRows=[5,4,3,2,1].map(n=>{
-    const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===n);
-    return`<div class="tech-res-scale-row"><span class="tech-res-scale-label">${o?o.label:''}</span><span class="tech-res-scale-num">${n}</span></div>`;
-  }).join('');
-  return`<div class="tech-res-scale-box">
-    <div class="tech-res-scale-col">
-      <div class="tech-res-scale-title">Skill ratings</div>
-      ${skillRows}
-    </div>
-    <div class="tech-res-scale-col">
-      <div class="tech-res-scale-title">National & Survey Accounts — project experience</div>
-      ${projRows}
-    </div>
-  </div>`;
+function updateTechResultsFilterUi(){
+  document.querySelectorAll('.tech-res-filter-btn').forEach(btn=>{
+    const r=btn.dataset.rating;
+    const active=(r==='all'&&techResultsRatingFilter===null)||Number(r)===techResultsRatingFilter;
+    btn.classList.toggle('active',active);
+  });
+}
+
+function setTechResultsRatingFilter(rating){
+  techResultsRatingFilter=rating==null?null:Number(rating);
+  refreshTechResultsView();
+}
+
+function refreshTechResultsView(){
+  if(!techResultsAssessment||!currentTechData)return;
+  const assessments=currentTechData.assessments||[];
+  const idx=assessments.indexOf(techResultsAssessment);
+  const prev=idx>0?assessments[idx-1]:null;
+  const body=document.getElementById('tech-results-body');
+  if(body){
+    body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,techResultsAssessment,prev,{ratingFilter:techResultsRatingFilter});
+    body.scrollTop=0;
+  }
+  updateTechResultsFilterUi();
 }
 
 function viewLatestAssessment(){
@@ -2690,18 +2724,18 @@ function openTechResultsView(assessment,opts){
   opts=opts||{};
   if(!assessment||!currentTechData)return;
   techResultsAssessment=assessment;
+  techResultsRatingFilter=null;
   const assessments=currentTechData.assessments||[];
   const idx=assessments.indexOf(assessment);
   const prev=idx>0?assessments[idx-1]:null;
   const body=document.getElementById('tech-results-body');
-  const legendEl=document.getElementById('tech-results-legend');
   const dateEl=document.getElementById('tech-results-date');
   if(dateEl)dateEl.textContent='Submitted '+fmtDateFull(assessment.date);
-  if(legendEl)legendEl.innerHTML=assessmentResultsScaleSummaryHtml();
   if(body){
-    body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,assessment,prev,Object.assign({omitScaleSummary:true},opts));
+    body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,assessment,prev,opts);
     body.scrollTop=0;
   }
+  updateTechResultsFilterUi();
   const overlay=document.getElementById('tech-results-overlay');
   if(overlay){
     overlay.classList.add('visible');
@@ -2711,8 +2745,7 @@ function openTechResultsView(assessment,opts){
 
 function closeTechResultsView(){
   const overlay=document.getElementById('tech-results-overlay');
-  const legendEl=document.getElementById('tech-results-legend');
-  if(legendEl)legendEl.innerHTML='';
+  techResultsRatingFilter=null;
   if(overlay)overlay.classList.remove('visible');
   document.body.style.overflow='';
 }
