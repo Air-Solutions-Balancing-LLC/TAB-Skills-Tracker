@@ -114,6 +114,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   .report-table td.days-red,.days-red{color:#c0392b!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
   .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
+  body.printing-report #tech-results-print,
+  body.printing-report #tech-results-print *{visibility:visible}
+  body.printing-report #tech-results-print{display:block!important;position:absolute;left:0;top:0;width:100%;padding:24px;background:#fff}
+  #tech-results-print{display:none}
 }
 
 /* SKILLS BOARD */
@@ -153,6 +157,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .sb-nav-wrap{padding:16px 10px;flex:1;display:flex;flex-direction:column;gap:4px}
 .sb-section{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;padding:10px 8px 6px;font-weight:600}
 .sb-nav{font-size:13px;padding:11px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500}
+button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;text-align:left}
 .sb-nav:hover{background:rgba(255,255,255,0.08);color:#fff}
 .sb-nav.active{background:#4A90D9;color:#fff;font-weight:700}
 .sb-nav-assess{background:#E87722;color:#fff;font-weight:700;margin-bottom:4px}
@@ -416,6 +421,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .assess-modal p{margin:0 0 18px;font-size:14px;line-height:1.55;color:#444}
 .assess-modal-msg{font-size:15px;font-weight:700;color:#1B3A6B;background:#EEF4FF;border-radius:10px;padding:12px 14px;margin-bottom:18px;line-height:1.45}
 .assess-modal-actions{display:flex;justify-content:flex-end}
+.tech-results-overlay{display:none;position:fixed;inset:0;background:#f0f2f5;z-index:110;flex-direction:column}
+.tech-results-overlay.visible{display:flex}
+.tech-results-header{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e8e8e8;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-results-header-grow{flex:1;min-width:0}
+.tech-results-title{font-size:17px;font-weight:800;color:#1B3A6B}
+.tech-results-sub{font-size:12px;color:#888;margin-top:2px}
+.tech-results-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
+.tech-results-footer{flex-shrink:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e8e8}
+.tech-results-footer .btn{flex:1;min-height:44px}
+.tech-results-footer .btn-outline{flex:0 0 auto;min-width:88px}
+.tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
+.tech-res-meta strong{color:#1B3A6B}
+.tech-res-summary{margin-bottom:14px}
+.tech-res-comment{background:#EEF4FF;border-left:4px solid #1B3A6B;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#1B3A6B;line-height:1.55}
+.sb-nav.disabled,.sb-nav:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .loading{text-align:center;padding:3rem;color:#bbb;font-size:13px}
 .nebb-badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700}
 .nebb-cp{background:#EEF4FF;color:#1B3A6B}
@@ -805,6 +825,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="sb-sidebar-close" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
         </div>
         <div class="sb-nav active" id="sb-nav-home" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
+        <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
         <button type="button" class="sb-section-toggle" id="sb-skill-toggle" onclick="toggleSbSkillSections()" aria-expanded="true">
           <span class="sb-section">Skill sections</span>
           <span class="sb-section-chevron" id="sb-skill-chevron">▼</span>
@@ -835,6 +856,23 @@ body.mobile-nav-open{overflow:hidden}
     </div>
   </div>
 </div>
+
+<div class="tech-results-overlay" id="tech-results-overlay" role="dialog" aria-modal="true" aria-labelledby="tech-results-title">
+  <div class="tech-results-header">
+    <div class="tech-results-header-grow">
+      <div class="tech-results-title" id="tech-results-title">Assessment Results</div>
+      <div class="tech-results-sub" id="tech-results-date"></div>
+    </div>
+    <button type="button" class="btn btn-outline" style="min-height:44px;padding:10px 16px" onclick="closeTechResultsView()">Close</button>
+  </div>
+  <div class="tech-results-body" id="tech-results-body"></div>
+  <div class="tech-results-footer">
+    <button type="button" class="btn btn-outline" onclick="closeTechResultsView()">Close</button>
+    <button type="button" class="btn" onclick="exportTechAssessmentPdf()">Save / Print PDF</button>
+  </div>
+</div>
+
+<div id="tech-results-print" aria-hidden="true"></div>
 
 <div class="assess-modal-overlay" id="assess-start-modal" role="dialog" aria-modal="true" aria-labelledby="assess-start-title">
   <div class="assess-modal">
@@ -1243,6 +1281,7 @@ function updateTechAssessNav(t,readOnly){
   if(nav)nav.classList.remove('visible');
   if(done)done.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
+  updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
   if(techAlreadySubmittedThisMonth(assessments)){
@@ -1264,6 +1303,18 @@ function updateTechAssessNav(t,readOnly){
       mobile.onclick=draft?continueQuestionnaire:startQuestionnaire;
     }
   }
+}
+function updateTechViewAssessmentNav(t,readOnly){
+  const btn=document.getElementById('sb-nav-view-assessment');
+  if(!btn)return;
+  if(readOnly){
+    btn.style.display='none';
+    return;
+  }
+  btn.style.display='';
+  const has=!!(t&&t.assessments&&t.assessments.length);
+  btn.disabled=!has;
+  btn.classList.toggle('disabled',!has);
 }
 function syncMobileMenuBtns(open){
   document.querySelectorAll('#pg-tech .mobile-menu-btn').forEach(btn=>{
@@ -2517,6 +2568,132 @@ function exitTechView(){
   setPMView('tech',null);
 }
 
+let techResultsAssessment=null;
+
+function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
+  const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
+  const pv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
+  if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
+  const trend=showTrend&&pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
+  const prevLabel=showTrend&&pv!==null?(isJobAccountsSection(sec)?`was ${jobAccountsLabel(pv)||pv}`:`was ${pv}`):'';
+  const jaDetail=isJobAccountsSection(sec)?`<div style="font-size:11px;opacity:.8;margin-top:2px">${jobAccountsLabel(v)}</div>`:'';
+  return`<div class="skill-row"><span class="skill-name">${sk.name}${jaDetail}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
+}
+
+function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
+  if(!assessment)return'';
+  opts=opts||{};
+  const idPrefix=opts.idPrefix||'';
+  const startOpen=!!opts.startOpen;
+  const showTrend=opts.showTrend!==false&&!!prevAssessment;
+  const rawScores=rawOf(assessment)||{};
+  const prevRawScores=prevAssessment?(rawOf(prevAssessment)||{}):{};
+  return QUESTIONNAIRE.map(sec=>{
+    const secKey=sec.key;
+    const modId=idPrefix+secKey;
+    const catKey=SKILL_CATS.find(c=>c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))||null;
+    const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(rawScores,sec);
+    const pct=sectionProficiencyPct(avg);
+    const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.55)';
+    const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
+    const warn=avg!==null&&avg<=2?' ⚠️':'';
+    const skillRows=sec.skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
+    const openCls=startOpen?' open':'';
+    const togChar=startOpen?'▼':'▶';
+    return`<div class="mod-section">
+      <div class="mod-head${openCls}" onclick="toggleMod('${modId}')">
+        <span class="mod-emoji">${sec.emoji}</span>
+        <span class="mod-name">${sec.section}</span>
+        <span class="mod-stats">
+          <span class="mod-avg" style="color:${avgColor}">${avgLabel}${warn}</span>
+          ${pct!==null?`<span class="mod-pct" style="color:${avgColor}">${pct}%</span>`:''}
+        </span>
+        <span class="mod-tog" id="tog-${modId}">${togChar}</span>
+      </div>
+      <div class="mod-skills${openCls}" id="mod-${modId}">${skillRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildAssessmentSummaryBars(assessment){
+  return SKILL_CATS.map(c=>{
+    const v=sectionScore(assessment,c);
+    if(v===null)return'';
+    const pct=Math.round((v/5)*100),col=scoreColor(v);
+    return`<div class="my-brow"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
+  }).join('');
+}
+
+function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
+  opts=opts||{};
+  const summary=buildAssessmentSummaryBars(assessment);
+  const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{idPrefix:'tech-res-',startOpen:true,showTrend:!!prevAssessment});
+  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
+  const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
+  return`${submittedNote}
+    <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
+    ${summary?`<div class="my-scores tech-res-summary"><div style="font-size:11px;color:#999;margin-bottom:8px">Section averages</div><div class="my-bars">${summary}</div></div>`:''}
+    ${modules}
+    ${comment}`;
+}
+
+function viewLatestAssessment(){
+  closeMobileNav();
+  const assessments=currentTechData&&currentTechData.assessments;
+  if(!assessments||!assessments.length){
+    alert('Complete your first assessment to view results.');
+    return;
+  }
+  openTechResultsView(assessments[assessments.length-1]);
+}
+
+function openTechResultsView(assessment,opts){
+  opts=opts||{};
+  if(!assessment||!currentTechData)return;
+  techResultsAssessment=assessment;
+  const assessments=currentTechData.assessments||[];
+  const idx=assessments.indexOf(assessment);
+  const prev=idx>0?assessments[idx-1]:null;
+  const body=document.getElementById('tech-results-body');
+  const dateEl=document.getElementById('tech-results-date');
+  if(dateEl)dateEl.textContent='Submitted '+fmtDateFull(assessment.date);
+  if(body)body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,assessment,prev,opts);
+  const overlay=document.getElementById('tech-results-overlay');
+  if(overlay){
+    overlay.classList.add('visible');
+    document.body.style.overflow='hidden';
+  }
+}
+
+function closeTechResultsView(){
+  const overlay=document.getElementById('tech-results-overlay');
+  if(overlay)overlay.classList.remove('visible');
+  document.body.style.overflow='';
+}
+
+function exportTechAssessmentPdf(){
+  const printEl=document.getElementById('tech-results-print');
+  if(!printEl||!techResultsAssessment||!currentTechData){
+    alert('Open your assessment results first.');
+    return;
+  }
+  const assessments=currentTechData.assessments||[];
+  const idx=assessments.indexOf(techResultsAssessment);
+  const prev=idx>0?assessments[idx-1]:null;
+  const prevTitle=document.title;
+  document.title='Assessment Results — '+currentTechData.name+' — '+fmtDateFull(techResultsAssessment.date);
+  printEl.innerHTML=`<div class="report-print-title">TAB Skills Assessment Results</div>
+    <div class="report-print-meta">${adminEsc(currentTechData.name)} · ${fmtDateFull(techResultsAssessment.date)} · ${nebbStatusLabel(currentTechData.nebb_status)}</div>
+    ${buildTechAssessmentResultsHtml(currentTechData,techResultsAssessment,prev)}`;
+  document.body.classList.add('printing-report');
+  window.print();
+  setTimeout(()=>{
+    document.body.classList.remove('printing-report');
+    printEl.innerHTML='';
+    document.title=prevTitle;
+  },500);
+}
+
 async function renderDetailView(t){
   const assessments=t.assessments||[];
   const last=assessments.length?assessments[assessments.length-1]:null;
@@ -2542,42 +2719,9 @@ async function renderDetailView(t){
     </div>`;
   }).join('');
 
-  const rawScores=last&&last.raw_scores?last.raw_scores:{};
-  const prevRawScores=prev&&prev.raw_scores?prev.raw_scores:{};
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true,bootcampStartDate:t.bootcamp_start_date}):'';
 
-  const moduleHTML=QUESTIONNAIRE.map(sec=>{
-    const secKey=sec.key;
-    const catKey=SKILL_CATS.find(c=>c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))||null;
-    const avg=last?(catKey?sectionScore(last,catKey):sectionRawAvg(rawScores,sec)):null;
-    const pct=sectionProficiencyPct(avg);
-    const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.25)';
-    const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
-    const warn=avg!==null&&avg<=2?' ⚠️':'';
-
-    const skillRows=sec.skills.map(sk=>{
-      const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
-      const pv=prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
-      if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
-      const trend=pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
-      const prevLabel=pv!==null?(isJobAccountsSection(sec)?`was ${jobAccountsLabel(pv)||pv}`:`was ${pv}`):'';
-      const jaDetail=isJobAccountsSection(sec)?`<div style="font-size:11px;opacity:.8;margin-top:2px">${jobAccountsLabel(v)}</div>`:'';
-      return`<div class="skill-row"><span class="skill-name">${sk.name}${jaDetail}</span><div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
-    }).join('');
-
-    return`<div class="mod-section">
-      <div class="mod-head" onclick="toggleMod('${secKey}')">
-        <span class="mod-emoji">${sec.emoji}</span>
-        <span class="mod-name">${sec.section}</span>
-        <span class="mod-stats">
-          <span class="mod-avg" style="color:${avgColor}">${avgLabel}${warn}</span>
-          ${pct!==null?`<span class="mod-pct" style="color:${avgColor}">${pct}%</span>`:''}
-        </span>
-        <span class="mod-tog" id="tog-${secKey}">▶</span>
-      </div>
-      <div class="mod-skills" id="mod-${secKey}">${skillRows}</div>
-    </div>`;
-  }).join('');
+  const moduleHTML=buildAssessmentModulesHtml(last,prev,{idPrefix:'',startOpen:false,showTrend:!!prev});
 
   const visCats=SKILL_CATS.filter(c=>assessments.some(a=>a[c.key]!==null));
   const histRows=[...assessments].reverse().map((a,ri,arr)=>{
@@ -2722,6 +2866,7 @@ function renderTechHome(t,opts){
 
 function showTechHome(){
   closeMobileNav();
+  closeTechResultsView();
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
   if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
@@ -2934,9 +3079,11 @@ async function submitAssessment(){
     await loadTechHome();
     showTechHome();
     window.scrollTo(0,0);
-    const body=document.getElementById('tech-home-body');
-    body.insertAdjacentHTML('afterbegin','<div class="success-box">✅ Assessment submitted successfully! Your scores have been updated.</div>');
-    setTimeout(()=>{const s=document.querySelector('.success-box');if(s)s.remove();},4000);
+    if(currentTechData&&currentTechData.assessments&&currentTechData.assessments.length){
+      openTechResultsView(currentTechData.assessments[currentTechData.assessments.length-1],{
+        submittedNote:'✅ Assessment submitted successfully! Your scores are shown below.'
+      });
+    }
   }catch(e){
     const raw=(e.message||'');
     const msg=raw.includes('ALREADY_SUBMITTED')
