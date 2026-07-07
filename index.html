@@ -2867,30 +2867,44 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     doc.text(head,margin+6,y+4,{maxWidth:contentW-12});
     y+=24;
 
-    const nameColW=contentW*0.62;
-    const rateColX=margin+nameColW+8;
+    const nameColW=contentW*0.54;
+    const prevColW=contentW*0.20;
+    const currColW=contentW*0.22;
+    const prevColX=margin+nameColW+6;
+    const currColX=margin+nameColW+prevColW+10;
+
+    needPage(16);
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(120,120,120);
+    doc.text('Previous',prevColX+prevColW-4,y,{align:'right',maxWidth:prevColW});
+    doc.text('Current',currColX+currColW-4,y,{align:'right',maxWidth:currColW});
+    y+=14;
 
     skills.forEach(sk=>{
       const v=Number(raw[sk.id]);
-      const label=pdfSkillRatingLabel(sec,v);
+      const currLabel=pdfSkillRatingLabel(sec,v);
+      const currText=currLabel+' ('+v+')';
       const pv=prevRaw[sk.id]!==undefined?Number(prevRaw[sk.id]):null;
-      let rateLine=label+' ('+v+')';
-      if(pv!==null){
-        rateLine+=v>pv?'  was '+pv+' up':v<pv?'  was '+pv+' down':'  was '+pv+' same';
-      }
+      const prevText=pv!==null?(pdfSkillRatingLabel(sec,pv)+' ('+pv+')'):'—';
 
       doc.setFontSize(9);
       doc.setFont('helvetica','normal');
       doc.setTextColor(40,40,40);
       const nameLines=doc.splitTextToSize(pdfSafeText(sk.name),nameColW);
-      const rateLines=doc.splitTextToSize(pdfSafeText(rateLine),contentW-nameColW-12);
-      const rowH=Math.max(nameLines.length,rateLines.length,1)*12;
+      const prevLines=doc.splitTextToSize(pdfSafeText(prevText),prevColW);
+      const currLines=doc.splitTextToSize(pdfSafeText(currText),currColW);
+      const rowH=Math.max(nameLines.length,prevLines.length,currLines.length,1)*12;
 
       needPage(rowH+8);
 
       nameLines.forEach((line,i)=>{doc.text(line,margin+4,y+i*12);});
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(100,100,100);
+      prevLines.forEach((line,i)=>{doc.text(line,prevColX+prevColW-4,y+i*12,{align:'right',maxWidth:prevColW});});
       doc.setFont('helvetica','bold');
-      rateLines.forEach((line,i)=>{doc.text(line,rateColX,y+i*12);});
+      doc.setTextColor(40,40,40);
+      currLines.forEach((line,i)=>{doc.text(line,currColX+currColW-4,y+i*12,{align:'right',maxWidth:currColW});});
 
       y+=rowH+6;
       doc.setDrawColor(230,230,230);
