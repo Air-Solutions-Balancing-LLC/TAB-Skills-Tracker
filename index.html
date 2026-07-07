@@ -441,7 +441,17 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-filter-btn[data-rating="4"].active{border-color:#7C3AED;background:#7C3AED}
 .tech-res-filter-btn[data-rating="5"].active{border-color:#1D9E75;background:#1D9E75}
 .tech-res-empty{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;font-size:13px;color:#888;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-#tech-assessment-pdf-root{position:fixed;left:-10000px;top:0;width:760px;padding:24px;background:#fff;z-index:-1;pointer-events:none}
+#tech-assessment-pdf-root{position:fixed;left:0;top:0;width:794px;max-width:100vw;padding:24px;background:#fff;z-index:99999;pointer-events:none;opacity:1;visibility:visible}
+#tech-assessment-pdf-root:not(.pdf-capturing){opacity:0;height:0;overflow:hidden;pointer-events:none;z-index:-1}
+#tech-assessment-pdf-root .tech-assessment-cover{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #E6EEF8}
+#tech-assessment-pdf-root .tech-cover-title{font-size:22px;font-weight:800;color:#1B3A6B;margin-bottom:10px}
+#tech-assessment-pdf-root .tech-cover-meta{font-size:13px;color:#444;line-height:1.7}
+#tech-assessment-pdf-root .tech-cover-meta strong{color:#1B3A6B;font-weight:700}
+#tech-assessment-pdf-root .tech-notes-export{margin-top:14px;margin-bottom:0}
+#tech-assessment-pdf-root .tech-notes-box{background:#f8faff;border-radius:10px;padding:12px 14px;border-top:4px solid #1B3A6B;margin-bottom:10px}
+#tech-assessment-pdf-root .tech-notes-box.comments{border-top-color:#E87722}
+#tech-assessment-pdf-root .tech-notes-title{font-size:12px;font-weight:800;color:#1B3A6B;margin-bottom:6px}
+#tech-assessment-pdf-root .tech-notes-body{font-size:12px;color:#444;line-height:1.55;white-space:pre-wrap}
 #tech-assessment-pdf-root .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
 #tech-assessment-pdf-root .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
 #tech-assessment-pdf-root .tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
@@ -470,6 +480,14 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-results-footer .btn-outline{flex:0 0 auto;min-width:88px}
 .tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
 .tech-res-meta strong{color:#1B3A6B}
+.tech-assessment-cover{margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #E6EEF8}
+.tech-cover-title{font-size:18px;font-weight:800;color:#1B3A6B;margin-bottom:8px}
+.tech-cover-meta{font-size:13px;color:#444;line-height:1.65}
+.tech-cover-meta div{margin-bottom:2px}
+.tech-cover-meta strong{color:#1B3A6B;font-weight:700}
+.tech-notes-export{margin-bottom:14px}
+.tech-pdf-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:99998;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#1B3A6B}
+.tech-pdf-overlay.visible{display:flex}
 .tech-res-summary{margin-bottom:14px}
 .tech-res-comment{background:#EEF4FF;border-left:4px solid #1B3A6B;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#1B3A6B;line-height:1.55}
 .sb-nav.disabled,.sb-nav:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
@@ -925,6 +943,7 @@ body.mobile-nav-open{overflow:hidden}
 </div>
 
 <div id="tech-assessment-pdf-root" aria-hidden="true"></div>
+<div class="tech-pdf-overlay" id="tech-pdf-overlay" aria-live="polite">Generating PDF…</div>
 
 <div id="tech-results-print" aria-hidden="true"></div>
 
@@ -2692,6 +2711,28 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   }).join('');
 }
 
+function buildTechAssessmentNotesHtml(t){
+  const notesToTech=(t.notes_to_tech||'').trim();
+  const techComments=(t.tech_comments||'').trim();
+  if(!notesToTech&&!techComments)return'';
+  return`<div class="tech-notes-grid tech-notes-export">
+    ${notesToTech?`<div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div><div class="tech-notes-body">${adminEsc(notesToTech)}</div></div>`:''}
+    ${techComments?`<div class="tech-notes-box comments"><div class="tech-notes-title">💬 Tech Comments</div><div class="tech-notes-body">${adminEsc(techComments)}</div></div>`:''}
+  </div>`;
+}
+
+function buildTechAssessmentCoverSection(t,assessment){
+  return`<div class="tech-assessment-cover">
+    <div class="tech-cover-title">TAB Skills Assessment</div>
+    <div class="tech-cover-meta">
+      <div><strong>Technician:</strong> ${adminEsc(t.name)}</div>
+      <div><strong>Assessment date:</strong> ${fmtDateFull(assessment.date)}</div>
+      <div><strong>Certification:</strong> ${nebbStatusLabel(t.nebb_status)}</div>
+    </div>
+    ${buildTechAssessmentNotesHtml(t)}
+  </div>`;
+}
+
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
   const printMode=!!opts.printMode;
@@ -2703,19 +2744,18 @@ function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
     ratingFilter:printMode?null:opts.ratingFilter,
     showTrend:!!prevAssessment
   });
-  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
+  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Assessment comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
   const emptyMsg=!printMode&&opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
+  const cover=opts.omitCover?'':buildTechAssessmentCoverSection(t,assessment);
   return`${submittedNote}
-    <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
+    ${cover}
     ${emptyMsg||modules}
     ${comment}`;
 }
 
 function buildTechAssessmentExportContent(t,assessment,prev){
-  return`<div class="report-print-title">TAB Skills Assessment Results</div>
-    <div class="report-print-meta">${adminEsc(t.name)} · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
-    ${buildTechAssessmentResultsHtml(t,assessment,prev,{printMode:true})}`;
+  return buildTechAssessmentResultsHtml(t,assessment,prev,{printMode:true});
 }
 
 let html2pdfLoading=null;
@@ -2805,17 +2845,23 @@ function downloadFilename(name,date){
   return'TAB-Assessment-'+safe+'-'+iso+'.pdf';
 }
 
+function waitForPdfLayout(ms){
+  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,ms||150))));
+}
+
 async function downloadTechAssessment(){
   if(!techResultsAssessment||!currentTechData){
     alert('Open your assessment results first.');
     return;
   }
   const btn=document.getElementById('tech-download-btn');
+  const overlay=document.getElementById('tech-pdf-overlay');
   const prevText=btn?btn.textContent:'Download PDF';
   if(btn){
     btn.disabled=true;
     btn.textContent='Generating PDF…';
   }
+  if(overlay)overlay.classList.add('visible');
   const assessments=currentTechData.assessments||[];
   const idx=assessments.indexOf(techResultsAssessment);
   const prev=idx>0?assessments[idx-1]:null;
@@ -2823,16 +2869,20 @@ async function downloadTechAssessment(){
   if(!root){
     alert('Could not prepare PDF export.');
     if(btn){btn.disabled=false;btn.textContent=prevText;}
+    if(overlay)overlay.classList.remove('visible');
     return;
   }
   root.innerHTML=buildTechAssessmentExportContent(currentTechData,techResultsAssessment,prev);
+  root.classList.add('pdf-capturing');
+  root.setAttribute('aria-hidden','false');
   try{
+    await waitForPdfLayout(200);
     const html2pdf=await ensureHtml2Pdf();
     await html2pdf().set({
       margin:[10,10,10,10],
       filename:downloadFilename(currentTechData.name,techResultsAssessment.date),
       image:{type:'jpeg',quality:0.92},
-      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
+      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'letter',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:'.mod-section'}
     }).from(root).save();
@@ -2840,7 +2890,10 @@ async function downloadTechAssessment(){
     console.error(e);
     alert('Could not create PDF. Check your connection and try again.');
   }finally{
+    root.classList.remove('pdf-capturing');
     root.innerHTML='';
+    root.setAttribute('aria-hidden','true');
+    if(overlay)overlay.classList.remove('visible');
     if(btn){
       btn.disabled=false;
       btn.textContent=prevText;
