@@ -2616,6 +2616,7 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   const idPrefix=opts.idPrefix||'';
   const startOpen=!!opts.startOpen;
   const sortByRating=!!opts.sortByRating;
+  const printMode=!!opts.printMode;
   const ratingFilter=opts.ratingFilter!=null?Number(opts.ratingFilter):null;
   const expandIfFiltered=!!ratingFilter;
   const showTrend=opts.showTrend!==false&&!!prevAssessment;
@@ -2649,8 +2650,8 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
       });
     }
     const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
-    const openCls=(startOpen||expandIfFiltered)?' open':'';
-    const togChar=(startOpen||expandIfFiltered)?'▼':'▶';
+    const openCls=(startOpen||expandIfFiltered||printMode)?' open':'';
+    const togChar=(startOpen||expandIfFiltered||printMode)?'▼':'▶';
     return`<div class="mod-section">
       <div class="mod-head${openCls}" onclick="toggleMod('${modId}')">
         <span class="mod-emoji">${sec.emoji}</span>
@@ -2668,20 +2669,60 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
 
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
+  const printMode=!!opts.printMode;
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
-    idPrefix:'tech-res-',
-    startOpen:false,
-    sortByRating:true,
-    ratingFilter:opts.ratingFilter,
+    idPrefix:printMode?'print-':'tech-res-',
+    startOpen:printMode,
+    sortByRating:!printMode,
+    printMode:printMode,
+    ratingFilter:printMode?null:opts.ratingFilter,
     showTrend:!!prevAssessment
   });
   const comment=assessment.comment?`<div class="tech-res-comment"><strong>Your comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
-  const emptyMsg=opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
+  const emptyMsg=!printMode&&opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
   return`${submittedNote}
     <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
     ${emptyMsg||modules}
     ${comment}`;
+}
+
+function techAssessmentPrintStyles(){
+  return`<style>
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:#1a1a2e;padding:24px;margin:0;background:#fff}
+    .report-print-title{font-size:20px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
+    .report-print-meta{font-size:12px;color:#666;margin-bottom:16px}
+    .tech-res-meta{font-size:13px;color:#555;margin-bottom:14px;line-height:1.5}
+    .tech-res-meta strong{color:#1B3A6B}
+    .tech-res-comment{background:#EEF4FF;border-left:4px solid #1B3A6B;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#1B3A6B;line-height:1.55}
+    .mod-section{margin-bottom:10px;page-break-inside:avoid}
+    .mod-head{display:flex;align-items:center;gap:10px;padding:13px 16px;background:#1B3A6B;border-radius:12px 12px 0 0}
+    .mod-emoji{font-size:16px}
+    .mod-name{font-size:13px;font-weight:700;color:#fff;flex:1}
+    .mod-stats{display:flex;align-items:center;gap:10px;margin-left:auto}
+    .mod-avg,.mod-pct{font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
+    .mod-tog{display:none}
+    .mod-skills{background:#fff;border:2px solid #E6EEF8;border-top:none;border-radius:0 0 12px 12px;padding:4px 16px 12px;display:block}
+    .skill-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+    .skill-row:last-child{border-bottom:none}
+    .skill-name{font-size:12px;color:#333;flex:1;line-height:1.5;font-weight:500}
+    .skill-rating-label{font-size:11px;font-weight:700;color:#555;min-width:76px;text-align:right;flex-shrink:0}
+    .skill-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .skill-prev{font-size:10px;color:#bbb;min-width:36px;text-align:center}
+    .skill-trend-icon{font-size:12px;min-width:16px;text-align:center;font-weight:700}
+    .trend-up{color:#1D9E75;font-weight:700}
+    .trend-dn{color:#c0392b;font-weight:700}
+    @media print{body{padding:0}}
+  </style>`;
+}
+
+function buildTechAssessmentPrintDocument(t,assessment,prev){
+  const bodyHtml=`<div class="report-print-title">TAB Skills Assessment Results</div>
+    <div class="report-print-meta">${adminEsc(t.name)} · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
+    ${buildTechAssessmentResultsHtml(t,assessment,prev,{printMode:true})}`;
+  const title='Assessment Results — '+t.name+' — '+fmtDateFull(assessment.date);
+  return`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${adminEsc(title)}</title>${techAssessmentPrintStyles()}</head><body>${bodyHtml}</body></html>`;
 }
 
 function updateTechResultsFilterUi(){
@@ -2751,26 +2792,41 @@ function closeTechResultsView(){
 }
 
 function exportTechAssessmentPdf(){
-  const printEl=document.getElementById('tech-results-print');
-  if(!printEl||!techResultsAssessment||!currentTechData){
+  if(!techResultsAssessment||!currentTechData){
     alert('Open your assessment results first.');
     return;
   }
   const assessments=currentTechData.assessments||[];
   const idx=assessments.indexOf(techResultsAssessment);
   const prev=idx>0?assessments[idx-1]:null;
-  const prevTitle=document.title;
-  document.title='Assessment Results — '+currentTechData.name+' — '+fmtDateFull(techResultsAssessment.date);
-  printEl.innerHTML=`<div class="report-print-title">TAB Skills Assessment Results</div>
-    <div class="report-print-meta">${adminEsc(currentTechData.name)} · ${fmtDateFull(techResultsAssessment.date)} · ${nebbStatusLabel(currentTechData.nebb_status)}</div>
-    ${buildTechAssessmentResultsHtml(currentTechData,techResultsAssessment,prev)}`;
-  document.body.classList.add('printing-report');
-  window.print();
-  setTimeout(()=>{
-    document.body.classList.remove('printing-report');
-    printEl.innerHTML='';
-    document.title=prevTitle;
-  },500);
+  const docHtml=buildTechAssessmentPrintDocument(currentTechData,techResultsAssessment,prev);
+  let printWin=null;
+  let blobUrl=null;
+  try{
+    blobUrl=URL.createObjectURL(new Blob([docHtml],{type:'text/html;charset=utf-8'}));
+    printWin=window.open(blobUrl,'_blank','noopener,noreferrer');
+  }catch(e){
+    printWin=null;
+  }
+  if(!printWin){
+    if(blobUrl)URL.revokeObjectURL(blobUrl);
+    alert('Pop-ups are blocked. Allow pop-ups for this site, or open the app in Chrome/Safari and try again.');
+    return;
+  }
+  printWin.focus();
+  let printed=false;
+  const triggerPrint=()=>{
+    if(printed)return;
+    printed=true;
+    try{
+      printWin.print();
+    }catch(e){
+      alert('Use Print in the new tab (Cmd+P or Ctrl+P) and choose Save as PDF.');
+    }
+    if(blobUrl)setTimeout(()=>URL.revokeObjectURL(blobUrl),60000);
+  };
+  printWin.onload=()=>setTimeout(triggerPrint,300);
+  setTimeout(triggerPrint,1500);
 }
 
 async function renderDetailView(t){
