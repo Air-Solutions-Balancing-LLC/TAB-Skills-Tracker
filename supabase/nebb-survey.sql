@@ -12,7 +12,6 @@ DECLARE
   v_tech_id bigint;
   v_join    text := app_assessment_join_sql('a', '$1');
   v_date    date := coalesce((p_payload->>'date')::date, current_date);
-  v_exists  boolean;
   v_nebb    text := nullif(trim(p_payload->>'nebb_status'), '');
 BEGIN
   SELECT s.tech_id
@@ -28,21 +27,6 @@ BEGIN
 
   IF v_nebb IS NULL THEN
     RAISE EXCEPTION 'NEBB_STATUS_REQUIRED';
-  END IF;
-
-  EXECUTE format(
-    'SELECT EXISTS (
-       SELECT 1 FROM assessments a
-       WHERE %s
-         AND date_trunc(''month'', a.date) = date_trunc(''month'', $2::date)
-     )',
-    replace(v_join, '$1', '$1')
-  )
-  INTO v_exists
-  USING v_tech_id, v_date;
-
-  IF v_exists THEN
-    RAISE EXCEPTION 'ALREADY_SUBMITTED';
   END IF;
 
   PERFORM app_upsert_assessment_for_tech(

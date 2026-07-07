@@ -436,6 +436,16 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-summary{margin-bottom:14px}
 .tech-res-comment{background:#EEF4FF;border-left:4px solid #1B3A6B;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px;color:#1B3A6B;line-height:1.55}
 .sb-nav.disabled,.sb-nav:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+#sb-nav-view-assessment{background:#1D9E75;color:#fff;font-weight:700}
+#sb-nav-view-assessment:hover{background:#178f69;color:#fff}
+#sb-nav-view-assessment.disabled,#sb-nav-view-assessment:disabled{opacity:.4;background:#1D9E75;color:#fff}
+.tech-res-scale-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.tech-res-scale-col{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-res-scale-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;line-height:1.35}
+.tech-res-scale-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;font-size:12px;line-height:1.35}
+.tech-res-scale-label{color:#444;flex:1}
+.tech-res-scale-num{font-weight:800;color:#1B3A6B;min-width:20px;text-align:right}
+@media(max-width:640px){.tech-res-scale-box{grid-template-columns:1fr}}
 .loading{text-align:center;padding:3rem;color:#bbb;font-size:13px}
 .nebb-badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700}
 .nebb-cp{background:#EEF4FF;color:#1B3A6B}
@@ -1038,11 +1048,11 @@ let QUESTIONNAIRE=[
 
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
 const JOB_ACCOUNTS_RATING_OPTIONS=[
-  {v:1,label:'No Experience',btn:'No Exp'},
-  {v:2,label:'Completed 1 to 2 Projects',btn:'1–2'},
-  {v:3,label:'Completed 3 to 5 Projects',btn:'3–5'},
-  {v:4,label:'Completed 6 to 9 Projects',btn:'6–9'},
-  {v:5,label:'Completed 10 or more Projects',btn:'10+'}
+  {v:1,label:'No experience',btn:'No Exp'},
+  {v:2,label:'One to two jobs',btn:'1–2'},
+  {v:3,label:'Three to five jobs',btn:'3–5'},
+  {v:4,label:'Six to nine jobs',btn:'6–9'},
+  {v:5,label:'Ten plus jobs',btn:'10+'}
 ];
 function jobAccountsLabel(v){const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function isJobAccountsSection(sec){return sec&&(sec.key==='national_accounts'||sec.key==='survey');}
@@ -1284,24 +1294,23 @@ function updateTechAssessNav(t,readOnly){
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
-  if(techAlreadySubmittedThisMonth(assessments)){
+  const draft=getAssessmentDraft(t);
+  const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
+  const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update this month\'s assessment':'📝 Take this month\'s assessment');
+  if(nav){
+    nav.classList.add('visible');
+    nav.textContent=btnLabel;
+    nav.onclick=draft?continueQuestionnaire:startQuestionnaire;
+  }
+  if(mobile){
+    mobile.classList.add('visible');
+    mobile.textContent=draft?'▶ Continue':(submittedThisMonth?'📝 Update':'📝 Assess');
+    mobile.onclick=draft?continueQuestionnaire:startQuestionnaire;
+  }
+  if(submittedThisMonth&&done){
     const last=assessments[assessments.length-1];
-    if(done){
-      done.classList.add('visible');
-      done.textContent='✅ Assessment submitted for '+fmtDateFull(last.date)+'. Next submission available next month.';
-    }
-  }else{
-    const draft=getAssessmentDraft(t);
-    if(nav){
-      nav.classList.add('visible');
-      nav.textContent=draft?'▶ Continue assessment':'📝 Take this month\'s assessment';
-      nav.onclick=draft?continueQuestionnaire:startQuestionnaire;
-    }
-    if(mobile){
-      mobile.classList.add('visible');
-      mobile.textContent=draft?'▶ Continue':'📝 Assess';
-      mobile.onclick=draft?continueQuestionnaire:startQuestionnaire;
-    }
+    done.classList.add('visible');
+    done.textContent='Last submitted '+fmtDateFull(last.date)+'. You can update anytime.';
   }
 }
 function updateTechViewAssessmentNav(t,readOnly){
@@ -2624,6 +2633,24 @@ function buildAssessmentSummaryBars(assessment){
   }).join('');
 }
 
+function assessmentResultsScaleSummaryHtml(){
+  const skillRows=[5,4,3,2,1].map(n=>`<div class="tech-res-scale-row"><span class="tech-res-scale-label">${RATING_LABELS[n]}</span><span class="tech-res-scale-num">${n}</span></div>`).join('');
+  const projRows=[5,4,3,2,1].map(n=>{
+    const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===n);
+    return`<div class="tech-res-scale-row"><span class="tech-res-scale-label">${o?o.label:''}</span><span class="tech-res-scale-num">${n}</span></div>`;
+  }).join('');
+  return`<div class="tech-res-scale-box">
+    <div class="tech-res-scale-col">
+      <div class="tech-res-scale-title">Skill ratings</div>
+      ${skillRows}
+    </div>
+    <div class="tech-res-scale-col">
+      <div class="tech-res-scale-title">National & Survey Accounts — project experience</div>
+      ${projRows}
+    </div>
+  </div>`;
+}
+
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
   const summary=buildAssessmentSummaryBars(assessment);
@@ -2632,6 +2659,7 @@ function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
   return`${submittedNote}
     <div class="tech-res-meta"><strong>${adminEsc(t.name)}</strong> · ${fmtDateFull(assessment.date)} · ${nebbStatusLabel(t.nebb_status)}</div>
+    ${assessmentResultsScaleSummaryHtml()}
     ${summary?`<div class="my-scores tech-res-summary"><div style="font-size:11px;color:#999;margin-bottom:8px">Section averages</div><div class="my-bars">${summary}</div></div>`:''}
     ${modules}
     ${comment}`;
