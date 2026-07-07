@@ -2734,7 +2734,9 @@ function pdfSkillRatingLabel(sec,v){
 }
 
 function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
-  const {jsPDF}=window.jspdf;
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
   const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
   const margin=44;
   const pageW=doc.internal.pageSize.getWidth();
@@ -2846,13 +2848,22 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
 
 let jsPdfLoading=null;
 function ensureJsPdf(){
-  if(window.jspdf)return Promise.resolve(window.jspdf);
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve(window.jspdf);
   if(jsPdfLoading)return jsPdfLoading;
   jsPdfLoading=new Promise((resolve,reject)=>{
     const script=document.createElement('script');
-    script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
-    script.onload=()=>resolve(window.jspdf);
-    script.onerror=()=>reject(new Error('PDF library failed to load'));
+    script.src='vendor/jspdf.umd.min.js';
+    script.onload=()=>{
+      if(window.jspdf&&window.jspdf.jsPDF)resolve(window.jspdf);
+      else{
+        jsPdfLoading=null;
+        reject(new Error('PDF library loaded but jsPDF was not found'));
+      }
+    };
+    script.onerror=()=>{
+      jsPdfLoading=null;
+      reject(new Error('PDF library failed to load'));
+    };
     document.head.appendChild(script);
   });
   return jsPdfLoading;
@@ -2948,12 +2959,13 @@ async function downloadTechAssessment(){
   const idx=assessments.indexOf(techResultsAssessment);
   const prev=idx>0?assessments[idx-1]:null;
   try{
+    await ensureSkills();
     await ensureJsPdf();
     const doc=buildTechAssessmentPdfDoc(currentTechData,techResultsAssessment,prev);
     doc.save(downloadFilename(currentTechData.name,techResultsAssessment.date));
   }catch(e){
-    console.error(e);
-    alert('Could not create PDF. Check your connection and try again.');
+    console.error('PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
   }finally{
     if(overlay)overlay.classList.remove('visible');
     if(btn){
