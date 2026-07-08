@@ -15,6 +15,8 @@
 -- dashboards) and stashed in prev_region so Restore can put it back.
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS deleted_at  timestamptz;
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS prev_region text;
+ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS cert_expires_on date;
+ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS cecs_complete boolean NOT NULL DEFAULT false;
 
 -- ── Unified people registry ──────────────────────────────────────────────────
 -- email is always stored lower-cased; UNIQUE(email) lets the RPCs upsert safely.
@@ -23,6 +25,10 @@ CREATE TABLE IF NOT EXISTS public.app_people (
   email      text NOT NULL UNIQUE,
   role       text NOT NULL CHECK (role IN ('admin','pm','technician')),
   full_name  text,
+  region     text,
+  nebb_status text,
+  cert_expires_on date,
+  cecs_complete boolean NOT NULL DEFAULT false,
   tech_id    bigint REFERENCES public.technicians(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -76,7 +82,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, cert_expires_on date, cecs_complete boolean, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -94,10 +100,12 @@ BEGIN
            p.email,
            COALESCE(p.full_name, t.name) AS full_name,
            p.role,
-           t.region,
+           CASE WHEN p.role='technician' THEN t.region ELSE p.region END AS region,
            (t.deleted_at IS NOT NULL) AS deleted,
            p.tech_id,
-           t.nebb_status,
+           CASE WHEN p.role='technician' THEN t.nebb_status ELSE p.nebb_status END AS nebb_status,
+           CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END AS cert_expires_on,
+           CASE WHEN p.role='technician' THEN coalesce(t.cecs_complete,false) ELSE coalesce(p.cecs_complete,false) END AS cecs_complete,
            t.start_date,
            t.bootcamp_start_date,
            (
@@ -175,11 +183,15 @@ BEGIN
     END IF;
   END IF;
 
-  INSERT INTO public.app_people (email, role, full_name, tech_id)
-  VALUES (v_email, p_role, NULLIF(trim(p_name), ''), v_tech_id)
+  INSERT INTO public.app_people (email, role, full_name, region, tech_id)
+  VALUES (v_email, p_role, NULLIF(trim(p_name), ''), NULLIF(trim(p_region), ''), v_tech_id)
   ON CONFLICT (email) DO UPDATE
     SET role      = EXCLUDED.role,
         full_name = COALESCE(EXCLUDED.full_name, public.app_people.full_name),
+        region    = CASE
+                      WHEN EXCLUDED.role = 'technician' THEN public.app_people.region
+                      ELSE COALESCE(EXCLUDED.region, public.app_people.region)
+                    END,
         tech_id   = COALESCE(EXCLUDED.tech_id, public.app_people.tech_id)
   RETURNING id INTO v_person_id;
 
@@ -263,8 +275,9 @@ END;
 $$;
 
 -- ── Admin: update a person (name, email, role for admin/pm, region for tech) ──
--- Drop the older 4-arg signature so re-running this file leaves only one version.
+-- Drop older signatures so re-running leaves only one version.
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text);
 
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_id         bigint,
@@ -273,7 +286,10 @@ CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_role       text DEFAULT NULL,
   p_region     text DEFAULT NULL,
   p_start_date text DEFAULT NULL,
-  p_bootcamp_start_date text DEFAULT NULL
+  p_bootcamp_start_date text DEFAULT NULL,
+  p_nebb_status text DEFAULT NULL,
+  p_cert_expires_on text DEFAULT NULL,
+  p_cecs_complete boolean DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -333,6 +349,28 @@ BEGIN
     UPDATE public.app_people SET role = p_role WHERE id = p_id;
   END IF;
 
+  -- Admin/PM profile fields (region + NEBB certification metadata).
+  IF v_role IN ('admin','pm') THEN
+    UPDATE public.app_people
+    SET region = CASE
+                   WHEN p_region IS NULL THEN region
+                   WHEN trim(p_region) = '' THEN NULL
+                   ELSE p_region
+                 END,
+        nebb_status = CASE
+                        WHEN p_nebb_status IS NULL THEN nebb_status
+                        WHEN trim(p_nebb_status) = '' THEN NULL
+                        ELSE p_nebb_status
+                      END,
+        cert_expires_on = CASE
+                            WHEN p_cert_expires_on IS NULL THEN cert_expires_on
+                            WHEN trim(p_cert_expires_on) = '' THEN NULL
+                            ELSE p_cert_expires_on::date
+                          END,
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete)
+    WHERE id = p_id;
+  END IF;
+
   -- Region + name on the technician record (active technicians only).
   IF v_role = 'technician' AND v_tech_id IS NOT NULL THEN
     UPDATE public.technicians
@@ -347,7 +385,18 @@ BEGIN
           WHEN p_bootcamp_start_date IS NULL THEN bootcamp_start_date
           WHEN trim(p_bootcamp_start_date) = '' THEN NULL
           ELSE p_bootcamp_start_date::date
-        END
+        END,
+        nebb_status = CASE
+          WHEN p_nebb_status IS NULL THEN nebb_status
+          WHEN trim(p_nebb_status) = '' THEN NULL
+          ELSE p_nebb_status
+        END,
+        cert_expires_on = CASE
+          WHEN p_cert_expires_on IS NULL THEN cert_expires_on
+          WHEN trim(p_cert_expires_on) = '' THEN NULL
+          ELSE p_cert_expires_on::date
+        END,
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete)
     WHERE id = v_tech_id AND deleted_at IS NULL;
   END IF;
 END;
@@ -360,4 +409,4 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean) TO authenticated;

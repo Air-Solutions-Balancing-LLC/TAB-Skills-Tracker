@@ -53,6 +53,7 @@ BEGIN
           )
         END AS skills_changed
       FROM public.technicians t
+      JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'
       LEFT JOIN LATERAL (
         SELECT
           r.date AS last_update_date,
@@ -90,3 +91,57 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.app_admin_technician_activity_report() TO authenticated;
+
+-- ── NEBB certified roster (CP/CT only across admins, PMs, technicians) ───────
+CREATE OR REPLACE FUNCTION public.app_admin_nebb_certified_report()
+RETURNS json
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  IF NOT app_is_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  SELECT coalesce(json_agg(row_to_json(x) ORDER BY x.name, x.region NULLS LAST), '[]'::json)
+  INTO v_result
+  FROM (
+    SELECT
+      p.id AS person_id,
+      coalesce(p.full_name, t.name, p.email) AS name,
+      p.role,
+      coalesce(CASE WHEN p.role='technician' THEN t.region ELSE p.region END, '') AS region,
+      CASE
+        WHEN p.role='technician' THEN t.nebb_status
+        ELSE p.nebb_status
+      END AS nebb_status,
+      CASE
+        WHEN p.role='technician' THEN t.cert_expires_on
+        ELSE p.cert_expires_on
+      END AS cert_expires_on,
+      CASE
+        WHEN p.role='technician' THEN coalesce(t.cecs_complete,false)
+        ELSE coalesce(p.cecs_complete,false)
+      END AS cecs_complete,
+      CASE
+        WHEN (CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END) IS NULL THEN NULL
+        ELSE ((CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END) - current_date)::int
+      END AS days_until_expiry
+    FROM public.app_people p
+    LEFT JOIN public.technicians t ON t.id = p.tech_id
+    WHERE (p.role <> 'technician' OR t.deleted_at IS NULL)
+      AND (
+        lower(coalesce(CASE WHEN p.role='technician' THEN t.nebb_status ELSE p.nebb_status END,'')) LIKE '%cp%'
+        OR lower(coalesce(CASE WHEN p.role='technician' THEN t.nebb_status ELSE p.nebb_status END,'')) LIKE '%ct%'
+      )
+  ) x;
+
+  RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.app_admin_nebb_certified_report() TO authenticated;

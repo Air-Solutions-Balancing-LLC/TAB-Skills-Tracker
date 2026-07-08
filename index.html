@@ -700,6 +700,47 @@ body.mobile-nav-open{overflow:hidden}
               </div>
             </div>
           </div>
+          <div class="report-item" id="report-nebb">
+            <div class="report-head">
+              <button type="button" class="report-toggle" id="report-toggle-nebb" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('nebb')"><span class="admin-sec-chevron">▼</span></button>
+              <div class="report-head-main">
+                <div class="report-title">NEBB Certified</div>
+                <div class="report-meta">Report date: <span id="admin-nebb-report-date-label">—</span></div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn" style="background:#888" onclick="loadAdminNebbReport()">Refresh</button>
+                <button type="button" class="btn" id="admin-nebb-download-btn" onclick="downloadAdminNebbReportPdf()">Download PDF</button>
+              </div>
+            </div>
+            <div class="report-table-body collapsed" id="report-table-nebb">
+              <div class="err" id="admin-nebb-report-err" style="display:none"></div>
+              <div class="report-filters">
+                <div class="pm-search-wrap">
+                  <input type="search" id="admin-nebb-search" placeholder="Search by name…" autocomplete="off" oninput="onAdminNebbFilterChange()">
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-nebb-region">Region</label>
+                  <select id="admin-nebb-region" onchange="onAdminNebbFilterChange()">
+                    <option value="">All regions</option>
+                    <option value="IM">Intermountain</option>
+                    <option value="KES">KES</option>
+                    <option value="MA">Mid-Atlantic</option>
+                    <option value="MW">Midwest</option>
+                    <option value="National">National</option>
+                    <option value="NE">New England</option>
+                    <option value="PC">Pacific Coast</option>
+                    <option value="RM">Rocky Mountain</option>
+                    <option value="SE">Southeast</option>
+                    <option value="SW">Southwest</option>
+                  </select>
+                </div>
+              </div>
+              <div class="report-filter-hint" id="admin-nebb-filter-hint"></div>
+              <div class="report-wrap" id="admin-nebb-report-wrap">
+                <div class="admin-empty" style="padding:12px">Loading…</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -712,6 +753,19 @@ body.mobile-nav-open{overflow:hidden}
         <div class="admin-add">
           <input id="add-admin-name" placeholder="Full name">
           <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
+          <select id="add-admin-region">
+            <option value="">Region (optional)</option>
+            <option value="IM">Intermountain</option>
+            <option value="KES">KES</option>
+            <option value="MA">Mid-Atlantic</option>
+            <option value="MW">Midwest</option>
+            <option value="National">National</option>
+            <option value="NE">New England</option>
+            <option value="PC">Pacific Coast</option>
+            <option value="RM">Rocky Mountain</option>
+            <option value="SE">Southeast</option>
+            <option value="SW">Southwest</option>
+          </select>
           <button type="button" class="btn" onclick="addPerson('admin')">Add</button>
         </div>
         </div>
@@ -726,6 +780,19 @@ body.mobile-nav-open{overflow:hidden}
         <div class="admin-add">
           <input id="add-pm-name" placeholder="Full name">
           <input id="add-pm-email" type="email" placeholder="name@airadigmsolutions.com">
+          <select id="add-pm-region">
+            <option value="">Region (optional)</option>
+            <option value="IM">Intermountain</option>
+            <option value="KES">KES</option>
+            <option value="MA">Mid-Atlantic</option>
+            <option value="MW">Midwest</option>
+            <option value="National">National</option>
+            <option value="NE">New England</option>
+            <option value="PC">Pacific Coast</option>
+            <option value="RM">Rocky Mountain</option>
+            <option value="SE">Southeast</option>
+            <option value="SW">Southwest</option>
+          </select>
           <button type="button" class="btn" onclick="addPerson('pm')">Add</button>
         </div>
         </div>
@@ -1729,10 +1796,11 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='';
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
+const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
 const adminSecOpen={admins:false,pms:false,techs:false,deleted:false};
-const reportTableOpen={activity:false};
+const reportTableOpen={activity:false,nebb:false};
 
 function toggleReportTable(key){
   if(!(key in reportTableOpen))return;
@@ -1825,6 +1893,14 @@ function onAdminReportFilterChange(){
   renderAdminActivityReport();
 }
 
+function reportCertDaysClass(days){
+  const n=days===null||days===undefined||days===''?null:Number(days);
+  if(n===null||Number.isNaN(n))return 'days-red';
+  if(n<=60)return 'days-red';
+  if(n<=120)return 'days-yellow';
+  return 'days-green';
+}
+
 function buildAdminReportTableHtml(rows){
   if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians match the current filters.</div>';
   const body=rows.map(r=>{
@@ -1855,6 +1931,100 @@ function renderAdminActivityReport(){
   const filtered=filteredAdminReportRows();
   updateAdminReportFilterHint(filtered.length,adminReportRows.length);
   wrap.innerHTML=buildAdminReportTableHtml(filtered);
+}
+
+function sortAdminNebbRows(rows){
+  return(rows||[]).slice().sort((a,b)=>{
+    const an=String(a.name||'').toLowerCase();
+    const bn=String(b.name||'').toLowerCase();
+    if(an!==bn)return an.localeCompare(bn);
+    return String(a.region||'').localeCompare(String(b.region||''));
+  });
+}
+
+function filteredAdminNebbRows(){
+  const q=adminNebbSearch.trim().toLowerCase();
+  const region=adminNebbRegion;
+  return sortAdminNebbRows(adminNebbRows).filter(r=>{
+    if(region&&r.region!==region)return false;
+    if(!q)return true;
+    return String(r.name||'').toLowerCase().includes(q);
+  });
+}
+
+function updateAdminNebbFilterHint(shown,total){
+  const hint=document.getElementById('admin-nebb-filter-hint');
+  if(!hint)return;
+  if(!total){hint.textContent='';return;}
+  if(shown===total&&!adminNebbSearch.trim()&&!adminNebbRegion){
+    hint.textContent=total+' certified employee'+(total===1?'':'s');
+    return;
+  }
+  hint.textContent='Showing '+shown+' of '+total;
+}
+
+function onAdminNebbFilterChange(){
+  const searchEl=document.getElementById('admin-nebb-search');
+  const regionEl=document.getElementById('admin-nebb-region');
+  adminNebbSearch=searchEl?searchEl.value:'';
+  adminNebbRegion=regionEl?regionEl.value:'';
+  renderAdminNebbReport();
+}
+
+function buildAdminNebbTableHtml(rows){
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No certified employees match the current filters.</div>';
+  const body=rows.map(r=>{
+    const exp=r.cert_expires_on?fmtDate(r.cert_expires_on):'—';
+    const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
+    const deadlineCls=reportCertDaysClass(r.days_until_expiry);
+    const cecs=r.cecs_complete?'☑ Yes':'☐ No';
+    return `<tr>
+      <td>${adminEsc(r.name)}</td>
+      <td>${adminEsc(String(r.role||'').toUpperCase())}</td>
+      <td>${adminEsc(regionLabel(r.region))}</td>
+      <td>${adminEsc(r.nebb_status)}</td>
+      <td>${adminEsc(exp)}</td>
+      <td>${adminEsc(cecs)}</td>
+      <td class="${deadlineCls}">${adminEsc(deadline)}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="report-table">
+    <thead><tr>
+      <th>Name</th><th>Role</th><th>Region</th><th>Certification</th><th>Expiration date</th><th>CECs complete</th><th>Cert deadline (days)</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function renderAdminNebbReport(){
+  const wrap=document.getElementById('admin-nebb-report-wrap');
+  if(!wrap)return;
+  const filtered=filteredAdminNebbRows();
+  updateAdminNebbFilterHint(filtered.length,adminNebbRows.length);
+  wrap.innerHTML=buildAdminNebbTableHtml(filtered);
+}
+
+async function loadAdminNebbReport(){
+  const wrap=document.getElementById('admin-nebb-report-wrap');
+  const err=document.getElementById('admin-nebb-report-err');
+  if(!wrap)return;
+  if(err)err.style.display='none';
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  adminNebbReportDate=new Date();
+  const dateLabel=document.getElementById('admin-nebb-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminNebbReportDate.toISOString().slice(0,10));
+  try{
+    adminNebbRows=sortAdminNebbRows(await rpc('app_admin_nebb_certified_report',{})||[]);
+  }catch(e){
+    wrap.innerHTML='';
+    updateAdminNebbFilterHint(0,0);
+    if(err){
+      err.textContent='Could not load report. '+(e.message||'Run supabase/admin-reports.sql in Supabase.');
+      err.style.display='block';
+    }
+    return;
+  }
+  renderAdminNebbReport();
 }
 
 async function loadAdminActivityReport(){
@@ -2025,6 +2195,119 @@ async function downloadAdminReportPdf(){
   }
 }
 
+function adminNebbPdfFilename(reportDateIso){
+  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const parts=['NEBB-Certified-Report',iso];
+  if(adminNebbRegion)parts.push(adminNebbRegion);
+  if(adminNebbSearch.trim())parts.push('filtered');
+  return parts.join('-')+'.pdf';
+}
+
+function buildAdminNebbPdfDoc(rows,reportDateText){
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=36;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const lh=12;
+  const cols=[
+    {label:'Name',w:contentW*0.20},
+    {label:'Role',w:contentW*0.10},
+    {label:'Region',w:contentW*0.14},
+    {label:'Certification',w:contentW*0.14},
+    {label:'Expiration',w:contentW*0.15},
+    {label:'CECs complete',w:contentW*0.11},
+    {label:'Cert deadline (days)',w:contentW*0.16}
+  ];
+  function needPage(h){
+    if(y+h>pageH-margin){
+      doc.addPage();
+      y=margin;
+      return true;
+    }
+    return false;
+  }
+  function drawHeader(){
+    needPage(28);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    let x=margin+4;
+    cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});
+    y+=22;
+  }
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,58,107);
+  doc.text('NEBB Certified',margin,y);
+  y+=18;
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
+  const meta=doc.splitTextToSize(pdfSafeText([
+    'Report date: '+reportDateText,
+    adminNebbSearch.trim()?('Search: '+adminNebbSearch.trim()):'',
+    adminNebbRegion?('Region: '+regionLabel(adminNebbRegion)):'',
+    'Showing '+rows.length+' employee'+(rows.length===1?'':'s')
+  ].filter(Boolean).join('  ·  ')),contentW);
+  meta.forEach(line=>{doc.text(line,margin,y);y+=lh;});
+  y+=10;
+  drawHeader();
+  rows.forEach((r,idx)=>{
+    const exp=r.cert_expires_on?fmtDate(r.cert_expires_on):'—';
+    const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
+    const values=[pdfSafeText(r.name),pdfSafeText(String(r.role||'').toUpperCase()),pdfSafeText(regionLabel(r.region)),pdfSafeText(r.nebb_status),pdfSafeText(exp),r.cecs_complete?'Yes':'No',pdfSafeText(deadline)];
+    const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+    const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*11+6;
+    if(needPage(rowH+4))drawHeader();
+    if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-8,contentW,rowH,'F');}
+    let x=margin+4;
+    lineSets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===0?'bold':'normal');
+      if(i===5){
+        const n=r.days_until_expiry===null||r.days_until_expiry===undefined?null:Number(r.days_until_expiry);
+        if(n===null||Number.isNaN(n)||n<=60)doc.setTextColor(192,57,43);
+        else if(n<=120)doc.setTextColor(201,160,0);
+        else doc.setTextColor(15,110,86);
+      }else doc.setTextColor(40,40,40);
+      lines.forEach((line,li)=>doc.text(line,x,y+li*11,{maxWidth:cols[i].w-8}));
+      x+=cols[i].w;
+    });
+    y+=rowH;
+    doc.setDrawColor(230,230,230);
+    doc.line(margin,y-4,margin+contentW,y-4);
+  });
+  return doc;
+}
+
+async function downloadAdminNebbReportPdf(){
+  const rows=filteredAdminNebbRows();
+  if(!rows.length){
+    alert(adminNebbRows.length?'No certified employees match the current filters.':'Load the report first.');
+    return;
+  }
+  const btn=document.getElementById('admin-nebb-download-btn');
+  const prevText=btn?btn.textContent:'Download PDF';
+  if(btn){btn.disabled=true;btn.textContent='Generating PDF…';}
+  const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+  try{
+    await ensureJsPdf();
+    const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
+    doc.save(adminNebbPdfFilename(iso));
+  }catch(e){
+    console.error('NEBB report PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=prevText;}
+  }
+}
+
 function openAdmin(){
   currentRole='admin';
   adminEditId=null;
@@ -2033,14 +2316,20 @@ function openAdmin(){
   updateAdminTechSearchHint('',0,0);
   adminReportSearch='';
   adminReportRegion='';
+  adminNebbSearch='';
+  adminNebbRegion='';
   const reportSearch=document.getElementById('admin-report-search');
   const reportRegion=document.getElementById('admin-report-region');
+  const nebbSearch=document.getElementById('admin-nebb-search');
+  const nebbRegion=document.getElementById('admin-nebb-region');
   if(reportSearch)reportSearch.value='';
   if(reportRegion)reportRegion.value='';
+  if(nebbSearch)nebbSearch.value='';
+  if(nebbRegion)nebbRegion.value='';
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport()]);
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminNebbReport()]);
 }
 
 async function loadAdminLists(){
@@ -2104,13 +2393,27 @@ function regionOptionsHtml(sel){
   return ADMIN_REGIONS.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${adminEsc(l)}</option>`).join('');
 }
 
+function regionOptionsWithBlankHtml(sel){
+  return `<option value="">Not set</option>`+regionOptionsHtml(sel);
+}
+
+function nebbOptionsHtml(sel){
+  return ADMIN_NEBB_OPTIONS.map(([v,l])=>`<option value="${adminEsc(v)}"${v===sel?' selected':''}>${adminEsc(l)}</option>`).join('');
+}
+
 function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.length>=10?s.slice(0,10):'';}
 
 function editRowHtml(p){
   const name=adminEsc(p.full_name||'');
-  const mid=p.role==='technician'
-    ?`<select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select><label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label><label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>`
-    :`<select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select>`;
+  const mid=(p.role==='technician'
+    ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label>`
+    :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`)
+    +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>`
+    +`<label class="admin-start-wrap"><span class="admin-start-lbl">Cert expiration</span><input type="date" id="edit-cert-exp-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.cert_expires_on)}"></label>`
+    +`<label class="admin-start-wrap"><span class="admin-start-lbl">CECs complete</span><select id="edit-cecs-${p.id}" class="admin-edit-field"><option value="false"${p.cecs_complete?'':' selected'}>No</option><option value="true"${p.cecs_complete?' selected':''}>Yes</option></select></label>`
+    +(p.role==='technician'
+      ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label><label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>`
+      :'');
   const email=adminEsc(p.email||'');
   return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
 }
@@ -2142,7 +2445,13 @@ async function saveEdit(id,role){
   err.style.display='none';
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null};
+  const nebb=document.getElementById('edit-nebb-'+id);
+  const certExp=document.getElementById('edit-cert-exp-'+id);
+  const cecs=document.getElementById('edit-cecs-'+id);
+  args.p_nebb_status=nebb?nebb.value:null;
+  args.p_cert_expires_on=certExp?certExp.value:null;
+  args.p_cecs_complete=cecs?cecs.value==='true':null;
   if(role==='technician'){
     const r=document.getElementById('edit-region-'+id);
     args.p_region=r?r.value:null;
@@ -2150,7 +2459,12 @@ async function saveEdit(id,role){
     args.p_start_date=sd?sd.value:null;
     const bsd=document.getElementById('edit-bootcamp-start-'+id);
     args.p_bootcamp_start_date=bsd?bsd.value:null;
-  }else{const r=document.getElementById('edit-role-'+id);args.p_role=r?r.value:null;}
+  }else{
+    const r=document.getElementById('edit-role-'+id);
+    const rr=document.getElementById('edit-region-'+id);
+    args.p_role=r?r.value:null;
+    args.p_region=rr?rr.value:null;
+  }
   try{
     await rpc('app_admin_update_person',args);
     adminEditId=null;
@@ -2162,15 +2476,15 @@ async function addPerson(role){
   const err=document.getElementById('admin-err');
   err.style.display='none';
   let email,name,region=null;
-  if(role==='admin'){name=document.getElementById('add-admin-name').value;email=document.getElementById('add-admin-email').value;}
-  else if(role==='pm'){name=document.getElementById('add-pm-name').value;email=document.getElementById('add-pm-email').value;}
+  if(role==='admin'){name=document.getElementById('add-admin-name').value;email=document.getElementById('add-admin-email').value;region=document.getElementById('add-admin-region').value||null;}
+  else if(role==='pm'){name=document.getElementById('add-pm-name').value;email=document.getElementById('add-pm-email').value;region=document.getElementById('add-pm-region').value||null;}
   else{name=document.getElementById('add-tech-name').value;email=document.getElementById('add-tech-email').value;region=document.getElementById('add-tech-region').value;}
   email=(email||'').trim();
   if(!email){err.textContent='Enter an email address.';err.style.display='block';return;}
   try{
     await rpc('app_admin_add_person',{p_email:email,p_role:role,p_name:(name||'').trim()||null,p_region:region});
-    if(role==='admin'){document.getElementById('add-admin-name').value='';document.getElementById('add-admin-email').value='';}
-    else if(role==='pm'){document.getElementById('add-pm-name').value='';document.getElementById('add-pm-email').value='';}
+    if(role==='admin'){document.getElementById('add-admin-name').value='';document.getElementById('add-admin-email').value='';document.getElementById('add-admin-region').value='';}
+    else if(role==='pm'){document.getElementById('add-pm-name').value='';document.getElementById('add-pm-email').value='';document.getElementById('add-pm-region').value='';}
     else{document.getElementById('add-tech-name').value='';document.getElementById('add-tech-email').value='';}
     await loadAdminLists();
   }catch(e){err.textContent='Could not add: '+(e.message||'try again');err.style.display='block';}
