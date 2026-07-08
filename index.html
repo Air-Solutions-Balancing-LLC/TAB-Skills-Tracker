@@ -93,6 +93,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .report-actions{display:flex;gap:8px;flex-shrink:0}
 .report-actions .btn{padding:8px 14px;font-size:12px}
 .report-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px;background:#fafafa}
+.report-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.report-filters .pm-search-wrap{padding:0;flex:1;min-width:180px}
+.report-filters .pm-search-wrap input{max-width:none}
+.report-filter-field{display:flex;flex-direction:column;gap:4px;min-width:160px}
+.report-filter-field label{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px}
+.report-filter-field select{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff;color:#1a1a2e;outline:none}
+.report-filter-field select:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
+.report-filter-hint{font-size:11px;color:#aaa;margin:0 0 8px}
 .report-table{width:100%;border-collapse:collapse;font-size:12px}
 .report-table th{text-align:left;padding:10px 12px;background:#EEF4FF;color:#1B3A6B;font-weight:700;border-bottom:1px solid #dce7fb;white-space:nowrap}
 .report-table td{padding:9px 12px;border-bottom:1px solid #eee;color:#1a1a2e}
@@ -665,6 +673,28 @@ body.mobile-nav-open{overflow:hidden}
             </div>
             <div class="report-table-body collapsed" id="report-table-activity">
               <div class="err" id="admin-report-err" style="display:none"></div>
+              <div class="report-filters">
+                <div class="pm-search-wrap">
+                  <input type="search" id="admin-report-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminReportFilterChange()">
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-report-region">Region</label>
+                  <select id="admin-report-region" onchange="onAdminReportFilterChange()">
+                    <option value="">All regions</option>
+                    <option value="IM">Intermountain</option>
+                    <option value="KES">KES</option>
+                    <option value="MA">Mid-Atlantic</option>
+                    <option value="MW">Midwest</option>
+                    <option value="National">National</option>
+                    <option value="NE">New England</option>
+                    <option value="PC">Pacific Coast</option>
+                    <option value="RM">Rocky Mountain</option>
+                    <option value="SE">Southeast</option>
+                    <option value="SW">Southwest</option>
+                  </select>
+                </div>
+              </div>
+              <div class="report-filter-hint" id="admin-report-filter-hint"></div>
               <div class="report-wrap" id="admin-report-wrap">
                 <div class="admin-empty" style="padding:12px">Loading…</div>
               </div>
@@ -1699,7 +1729,7 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null;
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const adminSecOpen={admins:false,pms:false,techs:false,deleted:false};
 const reportTableOpen={activity:false};
@@ -1754,8 +1784,49 @@ function reportDaysClass(days){
   return 'days-red';
 }
 
+function sortAdminReportRows(rows){
+  return(rows||[]).slice().sort((a,b)=>{
+    const an=String(a.name||'').toLowerCase();
+    const bn=String(b.name||'').toLowerCase();
+    if(an!==bn)return an.localeCompare(bn);
+    return String(a.region||'').localeCompare(String(b.region||''));
+  });
+}
+
+function filteredAdminReportRows(){
+  const q=adminReportSearch.trim().toLowerCase();
+  const region=adminReportRegion;
+  return sortAdminReportRows(adminReportRows).filter(r=>{
+    if(region&&r.region!==region)return false;
+    if(!q)return true;
+    return String(r.name||'').toLowerCase().includes(q);
+  });
+}
+
+function updateAdminReportFilterHint(shown,total){
+  const hint=document.getElementById('admin-report-filter-hint');
+  if(!hint)return;
+  if(!total){
+    hint.textContent='';
+    return;
+  }
+  if(shown===total&&!adminReportSearch.trim()&&!adminReportRegion){
+    hint.textContent=total+' technician'+(total===1?'':'s');
+    return;
+  }
+  hint.textContent='Showing '+shown+' of '+total;
+}
+
+function onAdminReportFilterChange(){
+  const searchEl=document.getElementById('admin-report-search');
+  const regionEl=document.getElementById('admin-report-region');
+  adminReportSearch=searchEl?searchEl.value:'';
+  adminReportRegion=regionEl?regionEl.value:'';
+  renderAdminActivityReport();
+}
+
 function buildAdminReportTableHtml(rows){
-  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No active technicians.</div>';
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians match the current filters.</div>';
   const body=rows.map(r=>{
     const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
     const days=r.days_since_update;
@@ -1781,7 +1852,9 @@ function buildAdminReportTableHtml(rows){
 function renderAdminActivityReport(){
   const wrap=document.getElementById('admin-report-wrap');
   if(!wrap)return;
-  wrap.innerHTML=buildAdminReportTableHtml(adminReportRows);
+  const filtered=filteredAdminReportRows();
+  updateAdminReportFilterHint(filtered.length,adminReportRows.length);
+  wrap.innerHTML=buildAdminReportTableHtml(filtered);
 }
 
 async function loadAdminActivityReport(){
@@ -1794,9 +1867,10 @@ async function loadAdminActivityReport(){
   const dateLabel=document.getElementById('admin-report-date-label');
   if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDate.toISOString().slice(0,10));
   try{
-    adminReportRows=await rpc('app_admin_technician_activity_report',{})||[];
+    adminReportRows=sortAdminReportRows(await rpc('app_admin_technician_activity_report',{})||[]);
   }catch(e){
     wrap.innerHTML='';
+    updateAdminReportFilterHint(0,0);
     if(err){
       err.textContent='Could not load report. '+(e.message||'Run supabase/admin-reports.sql in Supabase.');
       err.style.display='block';
@@ -1808,16 +1882,21 @@ async function loadAdminActivityReport(){
 
 function exportAdminReportPdf(){
   const printEl=document.getElementById('admin-report-print');
-  if(!printEl||!adminReportRows.length){
+  const rows=filteredAdminReportRows();
+  if(!printEl||!rows.length){
     alert('Load the report first.');
     return;
   }
   const reportDate=adminReportDate?fmtDateFull(adminReportDate.toISOString().slice(0,10)):fmtDateFull(new Date().toISOString().slice(0,10));
   const prevTitle=document.title;
   document.title='Technician Activity Report — '+reportDate;
+  const filterNote=[
+    adminReportSearch.trim()?('Search: '+adminReportSearch.trim()):'',
+    adminReportRegion?('Region: '+regionLabel(adminReportRegion)):'',
+  ].filter(Boolean).join(' · ');
   printEl.innerHTML=`<div class="report-print-title">Technician Activity Report</div>
-    <div class="report-print-meta">Report date: ${adminEsc(reportDate)}</div>
-    ${buildAdminReportTableHtml(adminReportRows)}`;
+    <div class="report-print-meta">Report date: ${adminEsc(reportDate)}${filterNote?' · '+adminEsc(filterNote):''}</div>
+    ${buildAdminReportTableHtml(rows)}`;
   document.body.classList.add('printing-report');
   window.print();
   setTimeout(()=>{
@@ -1833,6 +1912,12 @@ function openAdmin(){
   const searchEl=document.getElementById('admin-tech-search');
   if(searchEl)searchEl.value='';
   updateAdminTechSearchHint('',0,0);
+  adminReportSearch='';
+  adminReportRegion='';
+  const reportSearch=document.getElementById('admin-report-search');
+  const reportRegion=document.getElementById('admin-report-region');
+  if(reportSearch)reportSearch.value='';
+  if(reportRegion)reportRegion.value='';
   showPage('pg-admin');
   initAdminSections();
   initReportTables();

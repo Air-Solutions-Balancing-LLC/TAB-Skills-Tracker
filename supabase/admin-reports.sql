@@ -24,7 +24,7 @@ BEGIN
   END IF;
 
   EXECUTE format($q$
-    SELECT coalesce(json_agg(row_to_json(x) ORDER BY x.region NULLS LAST, x.name), '[]'::json)
+    SELECT coalesce(json_agg(row_to_json(x) ORDER BY x.name, x.region NULLS LAST), '[]'::json)
     FROM (
       SELECT
         t.id AS tech_id,
