@@ -652,7 +652,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
         </div>
       </div>
-      <div class="login-sub" style="color:#666">Add or remove Admins, Project Managers, and Technicians</div>
+      <div class="login-sub" style="color:#666">Add or remove Admins, PMs/APMs, and Technicians</div>
       <button type="button" class="btn btn-full" style="background:#0F6E56;margin-bottom:4px" onclick="openSkills()">🧩 Manage Skills &amp; Categories</button>
       <div class="err" id="admin-err"></div>
 
@@ -773,7 +773,7 @@ body.mobile-nav-open{overflow:hidden}
 
       <div class="admin-sec">
         <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-pms" aria-expanded="false" onclick="toggleAdminSection('pms')">
-          <span class="admin-sec-chevron">▼</span> Project Managers <span class="ct" id="ct-pms">0</span>
+          <span class="admin-sec-chevron">▼</span> PMs/APMs <span class="ct" id="ct-pms">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-pms">
         <div class="admin-list" id="list-pms"></div>
@@ -1974,23 +1974,25 @@ function onAdminNebbFilterChange(){
 function buildAdminNebbTableHtml(rows){
   if(!rows.length)return '<div class="admin-empty" style="padding:12px">No certified employees match the current filters.</div>';
   const body=rows.map(r=>{
-    const exp=r.cert_expires_on?fmtDate(r.cert_expires_on):'—';
+    const expVal=adminDateInputValue(r.cert_expires_on);
     const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
     const deadlineCls=reportCertDaysClass(r.days_until_expiry);
-    const cecs=r.cecs_complete?'☑ Yes':'☐ No';
+    const expEditor=`<input type="date" id="nebb-exp-${r.person_id}" class="admin-edit-field" value="${expVal}" style="min-width:140px">`;
+    const cecsEditor=`<label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input type="checkbox" id="nebb-cecs-${r.person_id}" ${r.cecs_complete?'checked':''}> <span>${r.cecs_complete?'Yes':'No'}</span></label>`;
     return `<tr>
       <td>${adminEsc(r.name)}</td>
       <td>${adminEsc(String(r.role||'').toUpperCase())}</td>
       <td>${adminEsc(regionLabel(r.region))}</td>
       <td>${adminEsc(r.nebb_status)}</td>
-      <td>${adminEsc(exp)}</td>
-      <td>${adminEsc(cecs)}</td>
+      <td>${expEditor}</td>
+      <td>${cecsEditor}</td>
       <td class="${deadlineCls}">${adminEsc(deadline)}</td>
+      <td><button type="button" class="btn" style="padding:6px 10px;font-size:11px" onclick="saveNebbReportRow(${r.person_id})">Save</button></td>
     </tr>`;
   }).join('');
   return `<table class="report-table">
     <thead><tr>
-      <th>Name</th><th>Role</th><th>Region</th><th>Certification</th><th>Expiration date</th><th>CECs complete</th><th>Cert deadline (days)</th>
+      <th>Name</th><th>Role</th><th>Region</th><th>Certification</th><th>Expiration date</th><th>CECs complete</th><th>Cert deadline (days)</th><th>Action</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -2025,6 +2027,34 @@ async function loadAdminNebbReport(){
     return;
   }
   renderAdminNebbReport();
+}
+
+async function saveNebbReportRow(personId){
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  const exp=document.getElementById('nebb-exp-'+personId);
+  const cecs=document.getElementById('nebb-cecs-'+personId);
+  try{
+    await rpc('app_admin_update_person',{
+      p_id:personId,
+      p_name:null,
+      p_email:null,
+      p_role:null,
+      p_region:null,
+      p_start_date:null,
+      p_bootcamp_start_date:null,
+      p_nebb_status:null,
+      p_cert_expires_on:exp?exp.value:null,
+      p_cecs_complete:cecs?!!cecs.checked:null
+    });
+    await loadAdminNebbReport();
+    await loadAdminLists();
+  }catch(e){
+    if(err){
+      err.textContent='Could not save certification updates. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
 }
 
 async function loadAdminActivityReport(){
@@ -2407,7 +2437,7 @@ function editRowHtml(p){
   const name=adminEsc(p.full_name||'');
   const mid=(p.role==='technician'
     ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label>`
-    :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>Project Manager</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`)
+    :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`)
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>`
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">Cert expiration</span><input type="date" id="edit-cert-exp-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.cert_expires_on)}"></label>`
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">CECs complete</span><select id="edit-cecs-${p.id}" class="admin-edit-field"><option value="false"${p.cecs_complete?'':' selected'}>No</option><option value="true"${p.cecs_complete?' selected':''}>Yes</option></select></label>`

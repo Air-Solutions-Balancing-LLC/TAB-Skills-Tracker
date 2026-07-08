@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS public.app_people (
   tech_id    bigint REFERENCES public.technicians(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS region text;
+ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS nebb_status text;
+ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS cert_expires_on date;
+ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS cecs_complete boolean NOT NULL DEFAULT false;
 
 -- ── Backfill technicians into the registry ───────────────────────────────────
 -- Only technicians with an email can sign in, so those are the ones we register.
