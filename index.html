@@ -668,7 +668,7 @@ body.mobile-nav-open{overflow:hidden}
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
-                <button type="button" class="btn" onclick="exportAdminReportPdf()">Export PDF</button>
+                <button type="button" class="btn" id="admin-report-download-btn" onclick="downloadAdminReportPdf()">Download PDF</button>
               </div>
             </div>
             <div class="report-table-body collapsed" id="report-table-activity">
@@ -1880,30 +1880,149 @@ async function loadAdminActivityReport(){
   renderAdminActivityReport();
 }
 
-function exportAdminReportPdf(){
-  const printEl=document.getElementById('admin-report-print');
-  const rows=filteredAdminReportRows();
-  if(!printEl||!rows.length){
-    alert('Load the report first.');
-    return;
+function adminReportPdfFilename(reportDateIso){
+  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const parts=['Technician-Activity-Report',iso];
+  if(adminReportRegion)parts.push(adminReportRegion);
+  if(adminReportSearch.trim())parts.push('filtered');
+  return parts.join('-')+'.pdf';
+}
+
+function buildAdminActivityReportPdfDoc(rows,reportDateText){
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=36;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const lh=12;
+  const cols=[
+    {key:'name',label:'Technician',w:contentW*0.24},
+    {key:'region',label:'Region',w:contentW*0.16},
+    {key:'last',label:'Last updated',w:contentW*0.16},
+    {key:'days',label:'Days since update',w:contentW*0.18},
+    {key:'skills',label:'Skills changed',w:contentW*0.26}
+  ];
+
+  function needPage(h){
+    if(y+h>pageH-margin){
+      doc.addPage();
+      y=margin;
+      return true;
+    }
+    return false;
   }
-  const reportDate=adminReportDate?fmtDateFull(adminReportDate.toISOString().slice(0,10)):fmtDateFull(new Date().toISOString().slice(0,10));
-  const prevTitle=document.title;
-  document.title='Technician Activity Report — '+reportDate;
+
+  function drawTableHeader(){
+    needPage(28);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    let x=margin+4;
+    cols.forEach(c=>{
+      doc.text(c.label,x,y+4,{maxWidth:c.w-8});
+      x+=c.w;
+    });
+    y+=22;
+  }
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,58,107);
+  doc.text('Technician Activity Report',margin,y);
+  y+=18;
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
   const filterNote=[
+    'Report date: '+reportDateText,
     adminReportSearch.trim()?('Search: '+adminReportSearch.trim()):'',
     adminReportRegion?('Region: '+regionLabel(adminReportRegion)):'',
-  ].filter(Boolean).join(' · ');
-  printEl.innerHTML=`<div class="report-print-title">Technician Activity Report</div>
-    <div class="report-print-meta">Report date: ${adminEsc(reportDate)}${filterNote?' · '+adminEsc(filterNote):''}</div>
-    ${buildAdminReportTableHtml(rows)}`;
-  document.body.classList.add('printing-report');
-  window.print();
-  setTimeout(()=>{
-    document.body.classList.remove('printing-report');
-    printEl.innerHTML='';
-    document.title=prevTitle;
-  },500);
+    'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
+  ].filter(Boolean).join('  ·  ');
+  const metaLines=doc.splitTextToSize(pdfSafeText(filterNote),contentW);
+  metaLines.forEach(line=>{
+    doc.text(line,margin,y);
+    y+=lh;
+  });
+  y+=10;
+
+  drawTableHeader();
+
+  rows.forEach((r,idx)=>{
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const days=r.days_since_update;
+    const daysText=days===null||days===undefined?'—':String(days);
+    const skills=r.assessment_count<2?'—':String(r.skills_changed??0);
+    const values=[
+      pdfSafeText(r.name),
+      pdfSafeText(regionLabel(r.region)),
+      pdfSafeText(last),
+      pdfSafeText(daysText),
+      pdfSafeText(skills)
+    ];
+    doc.setFontSize(9);
+    const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+    const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*11+6;
+    if(needPage(rowH+4))drawTableHeader();
+    if(idx%2===0){
+      doc.setFillColor(246,248,252);
+      doc.rect(margin,y-8,contentW,rowH,'F');
+    }
+    let x=margin+4;
+    lineSets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===0?'bold':'normal');
+      if(i===3){
+        const n=days===null||days===undefined||days===''?null:Number(days);
+        if(n===null||Number.isNaN(n)||n>=60)doc.setTextColor(192,57,43);
+        else if(n<=30)doc.setTextColor(15,110,86);
+        else doc.setTextColor(201,160,0);
+      }else{
+        doc.setTextColor(40,40,40);
+      }
+      lines.forEach((line,li)=>{doc.text(line,x,y+li*11,{maxWidth:cols[i].w-8});});
+      x+=cols[i].w;
+    });
+    y+=rowH;
+    doc.setDrawColor(230,230,230);
+    doc.line(margin,y-4,margin+contentW,y-4);
+  });
+
+  return doc;
+}
+
+async function downloadAdminReportPdf(){
+  const rows=filteredAdminReportRows();
+  if(!rows.length){
+    alert(adminReportRows.length?'No technicians match the current filters.':'Load the report first.');
+    return;
+  }
+  const btn=document.getElementById('admin-report-download-btn');
+  const prevText=btn?btn.textContent:'Download PDF';
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='Generating PDF…';
+  }
+  const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+  const reportDateText=fmtDateFull(reportDateIso);
+  try{
+    await ensureJsPdf();
+    const doc=buildAdminActivityReportPdfDoc(rows,reportDateText);
+    doc.save(adminReportPdfFilename(reportDateIso));
+  }catch(e){
+    console.error('Admin report PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=prevText;
+    }
+  }
 }
 
 function openAdmin(){
