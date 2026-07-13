@@ -1421,12 +1421,6 @@ function getAssessmentDraft(t){
   if(!draft||draft.month!==currentAssessmentMonth())return null;
   return draft;
 }
-function scrollToTechChecklist(){
-  showTechHome();
-  closeMobileNav();
-  const box=document.querySelector('#tech-home-body .cl-box');
-  if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
-}
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
@@ -1439,30 +1433,6 @@ function updateTechAssessNav(t,readOnly){
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
-  const hasRatedDue=visibleQuestionnaireSections(t).length>0;
-  // Checklist-only stages (Orientation / Pre-Bootcamp): keep required-rules visible on
-  // My Progress and point the CTA there instead of opening an empty scored assessment.
-  if(!hasRatedDue&&!draft){
-    const req=requiredAssessmentSections(t);
-    const checklistLabel=req.checklist&&req.checklist.includes('orientation')
-      ?'📋 Complete Orientation below'
-      :'📋 Complete Pre-Bootcamp below';
-    if(nav){
-      nav.classList.add('visible');
-      nav.textContent=checklistLabel;
-      nav.onclick=scrollToTechChecklist;
-    }
-    if(mobile){
-      mobile.classList.add('visible');
-      mobile.textContent='📋 Checklist';
-      mobile.onclick=scrollToTechChecklist;
-    }
-    if(done){
-      done.classList.add('visible');
-      done.textContent=requiredSectionsMessage(t)+'. Scored assessment unlocks after this stage.';
-    }
-    return;
-  }
   const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update this month\'s assessment':'📝 Take this month\'s assessment');
   if(nav){
     nav.classList.add('visible');
@@ -2798,43 +2768,29 @@ function bootcampHasPassed(t){
   boot.setHours(0,0,0,0);
   return todayDateOnly()>=boot;
 }
-// Tenure-based section gating. "Core" = safety. Checklist keys (orientation /
-// pre_bootcamp) live on My Progress — they are not rated questionnaire sections.
+// Tenure-based scored-section gating for the questionnaire.
+// Orientation / Pre-Bootcamp are checklist tasks on My Progress — they never lock
+// or replace the scored assessment.
 function requiredAssessmentSections(t){
   const days=employmentTenureDays(t);
-  const all={all:true,rated:null,checklist:null,message:'Complete all sections'};
+  const all={all:true,rated:null,checklist:[],message:'Complete all sections'};
   if(days===null||days>270)return all;
-  if(days<10)return{all:false,rated:[],checklist:['orientation'],message:'Required Sections: Orientation'};
+  const checklist=days<10
+    ?['orientation']
+    :(days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
   if(days>=100&&days<=270)return{
     all:false,
     rated:['safety','basic','intermediate','survey','national_accounts'],
-    checklist:[],
+    checklist,
     message:'Required Sections: Core, Basics, Intermediate, National & Survey'
   };
-  if(days>=11&&days<=100&&bootcampHasPassed(t))return{
+  // Days 0–99: Core & Basics are the scored sections (with or without bootcamp).
+  return{
     all:false,
     rated:['safety','basic'],
-    checklist:[],
+    checklist,
     message:'Required Sections: Core & Basics'
   };
-  if(days>=11&&days<=60&&isBeforeBootcamp(t))return{
-    all:false,
-    rated:[],
-    checklist:['pre_bootcamp'],
-    message:'Required Sections: Pre-Bootcamp'
-  };
-  if(days===10){
-    return isBeforeBootcamp(t)
-      ?{all:false,rated:[],checklist:['pre_bootcamp'],message:'Required Sections: Pre-Bootcamp'}
-      :{all:false,rated:['safety','basic'],checklist:[],message:'Required Sections: Core & Basics'};
-  }
-  if(days>60&&days<=100&&isBeforeBootcamp(t))return{
-    all:false,
-    rated:[],
-    checklist:['pre_bootcamp'],
-    message:'Required Sections: Pre-Bootcamp'
-  };
-  return all;
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
 function visibleQuestionnaireSections(t){
@@ -3826,12 +3782,14 @@ function renderTechHome(t,opts){
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
   const reqInfo=requiredAssessmentSections(t);
-  const hasRatedDue=visibleQuestionnaireSections(t).length>0;
+  const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
+    ?' Also complete Orientation on My Progress below — it does not block this assessment.'
+    :(reqInfo.checklist&&reqInfo.checklist.includes('pre_bootcamp')
+      ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
+      :'');
   const requiredHint=reqInfo.all
     ?'Complete every scored section in this month\'s assessment.'
-    :hasRatedDue
-      ?'Only these scored sections appear when you take this month\'s assessment.'
-      :'Complete this on My Progress below. Scored assessment sections unlock after this stage.';
+    :'Only these scored sections appear when you take this month\'s assessment.'+checklistHint;
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
     <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
@@ -3954,14 +3912,6 @@ async function startQuestionnaire(opts){
     qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
   }
   const openQuestionnaire=()=>{
-    const visible=visibleQuestionnaireSections(currentTechData);
-    // Orientation / Pre-Bootcamp-only windows have no rated questionnaire sections —
-    // those are completed on My Progress. Required rules stay visible there.
-    if(!visible.length){
-      showTechHome();
-      scrollToTechChecklist();
-      return;
-    }
     document.getElementById('tech-view-home').classList.remove('active');
     document.getElementById('tech-view-questionnaire').classList.add('active');
     renderQuestionnaire();
@@ -3972,7 +3922,7 @@ async function startQuestionnaire(opts){
     renderTechSidebarNav();
     window.scrollTo(0,0);
   };
-  // Always show the start-date rules before opening (including continue), so they don't disappear.
+  // Always show the start-date rules before opening (including continue).
   showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
 }
 function continueQuestionnaire(){startQuestionnaire({resume:true});}
