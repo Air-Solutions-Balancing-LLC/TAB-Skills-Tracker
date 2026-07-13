@@ -1520,7 +1520,8 @@ function renderTechSidebarNav(){
   const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
   const homeNav=document.getElementById('sb-nav-home');
   if(homeNav)homeNav.classList.toggle('active',!inQ);
-  wrap.innerHTML=QUESTIONNAIRE.map(sec=>{
+  const sections=inQ?visibleQuestionnaireSections(currentTechData):QUESTIONNAIRE;
+  wrap.innerHTML=sections.map(sec=>{
     const pct=techSidebarSectionPct(sec);
     const pctLabel=inQ?pct+'% rated':(pct?pct+'%':'—');
     const pctClass=!pct?'sb-pct-low':pct>=80?'sb-pct-good':pct>=50?'sb-pct-mid':'sb-pct-low';
@@ -2763,17 +2764,61 @@ function bootcampHasPassed(t){
   boot.setHours(0,0,0,0);
   return todayDateOnly()>=boot;
 }
-function requiredSectionsMessage(t){
+// Tenure-based section gating. "Core" = safety. Checklist keys (orientation /
+// pre_bootcamp) live on My Progress — they are not rated questionnaire sections.
+function requiredAssessmentSections(t){
   const days=employmentTenureDays(t);
-  if(days===null)return'Complete all sections';
-  if(days<10)return'Required Sections: Orientation';
-  if(days>270)return'Complete all sections';
-  if(days>=100&&days<=270)return'Required Sections: Core, Basics, Intermediate, National & Survey';
-  if(days>=11&&days<=100&&bootcampHasPassed(t))return'Required Sections: Core & Basics';
-  if(days>=11&&days<=60&&isBeforeBootcamp(t))return'Required Sections: Pre-Bootcamp';
-  if(days===10)return isBeforeBootcamp(t)?'Required Sections: Pre-Bootcamp':'Required Sections: Core & Basics';
-  if(days>60&&days<=100&&isBeforeBootcamp(t))return'Required Sections: Pre-Bootcamp';
-  return'Complete all sections';
+  const all={all:true,rated:null,checklist:null,message:'Complete all sections'};
+  if(days===null||days>270)return all;
+  if(days<10)return{all:false,rated:[],checklist:['orientation'],message:'Required Sections: Orientation'};
+  if(days>=100&&days<=270)return{
+    all:false,
+    rated:['safety','basic','intermediate','survey','national_accounts'],
+    checklist:[],
+    message:'Required Sections: Core, Basics, Intermediate, National & Survey'
+  };
+  if(days>=11&&days<=100&&bootcampHasPassed(t))return{
+    all:false,
+    rated:['safety','basic'],
+    checklist:[],
+    message:'Required Sections: Core & Basics'
+  };
+  if(days>=11&&days<=60&&isBeforeBootcamp(t))return{
+    all:false,
+    rated:[],
+    checklist:['pre_bootcamp'],
+    message:'Required Sections: Pre-Bootcamp'
+  };
+  if(days===10){
+    return isBeforeBootcamp(t)
+      ?{all:false,rated:[],checklist:['pre_bootcamp'],message:'Required Sections: Pre-Bootcamp'}
+      :{all:false,rated:['safety','basic'],checklist:[],message:'Required Sections: Core & Basics'};
+  }
+  if(days>60&&days<=100&&isBeforeBootcamp(t))return{
+    all:false,
+    rated:[],
+    checklist:['pre_bootcamp'],
+    message:'Required Sections: Pre-Bootcamp'
+  };
+  return all;
+}
+function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
+function visibleQuestionnaireSections(t){
+  const req=requiredAssessmentSections(t||currentTechData);
+  if(req.all||!req.rated)return QUESTIONNAIRE.slice();
+  const keys=new Set(req.rated);
+  return QUESTIONNAIRE.filter(sec=>keys.has(sec.key));
+}
+function filterAnswersToVisibleSections(raw,t){
+  const filled={};
+  const ids=new Set();
+  visibleQuestionnaireSections(t).forEach(sec=>sec.skills.forEach(sk=>ids.add(sk.id)));
+  Object.keys(raw||{}).forEach(id=>{
+    if(!ids.has(id))return;
+    const n=Math.round(Number(raw[id]));
+    if(n>=1&&n<=5)filled[id]=n;
+  });
+  return filled;
 }
 let assessStartContinue=null;
 function showAssessmentStartModal(message,onContinue){
@@ -3794,15 +3839,7 @@ function lastAssessmentRawScores(){
   return {};
 }
 function prefillQAnswersFromLast(){
-  const raw=lastAssessmentRawScores();
-  const filled={};
-  QUESTIONNAIRE.forEach(sec=>{
-    sec.skills.forEach(sk=>{
-      const n=Math.round(Number(raw[sk.id]));
-      if(n>=1&&n<=5)filled[sk.id]=n;
-    });
-  });
-  return filled;
+  return filterAnswersToVisibleSections(lastAssessmentRawScores(),currentTechData);
 }
 function sectionAvg(key){
   const sec=QUESTIONNAIRE.find(s=>s.key===key);
@@ -3811,11 +3848,30 @@ function sectionAvg(key){
   return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
 }
 function sectionAvgPayload(){
+  const visibleKeys=new Set(visibleQuestionnaireSections(currentTechData).map(s=>s.key));
+  const last=currentTechData&&currentTechData.assessments&&currentTechData.assessments.length
+    ?currentTechData.assessments[currentTechData.assessments.length-1]
+    :null;
   const out={};
   QUESTIONNAIRE.forEach(sec=>{
-    if(sec.avg_field)out[sec.avg_field]=sectionAvg(sec.key);
+    if(!sec.avg_field)return;
+    if(visibleKeys.has(sec.key)){
+      out[sec.avg_field]=sectionAvg(sec.key);
+    }else{
+      const prev=last?last[sec.avg_field]:null;
+      out[sec.avg_field]=prev!=null?prev:null;
+    }
   });
   return out;
+}
+function submitRawScoresPayload(){
+  const merged={...lastAssessmentRawScores()};
+  const visibleIds=new Set();
+  visibleQuestionnaireSections(currentTechData).forEach(sec=>sec.skills.forEach(sk=>visibleIds.add(sk.id)));
+  Object.keys(qAnswers).forEach(id=>{
+    if(visibleIds.has(id))merged[id]=qAnswers[id];
+  });
+  return merged;
 }
 
 async function startQuestionnaire(opts){
@@ -3840,7 +3896,10 @@ async function startQuestionnaire(opts){
   const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
   let draftComment='';
   if(draft){
-    qAnswers=draft.raw_scores&&typeof draft.raw_scores==='object'?{...draft.raw_scores}:{};
+    qAnswers={
+      ...prefillQAnswersFromLast(),
+      ...filterAnswersToVisibleSections(draft.raw_scores&&typeof draft.raw_scores==='object'?draft.raw_scores:{},currentTechData)
+    };
     qNebbStatus=draft.nebb_status||'';
     draftComment=draft.comment||'';
   }else{
@@ -3848,6 +3907,19 @@ async function startQuestionnaire(opts){
     qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
   }
   const openQuestionnaire=()=>{
+    const visible=visibleQuestionnaireSections(currentTechData);
+    // Orientation / Pre-Bootcamp-only windows have no rated questionnaire sections —
+    // those are completed on My Progress. Keep the tech on home instead of an empty form.
+    if(!visible.length){
+      showTechHome();
+      const body=document.getElementById('tech-home-body');
+      if(body){
+        const tip=requiredSectionsMessage(currentTechData);
+        body.insertAdjacentHTML('afterbegin','<div class="success-box">'+adminEsc(tip)+'. Complete it below on My Progress — no scored assessment is due yet.</div>');
+        setTimeout(()=>{const s=document.querySelector('#tech-home-body .success-box');if(s)s.remove();},7000);
+      }
+      return;
+    }
     document.getElementById('tech-view-home').classList.remove('active');
     document.getElementById('tech-view-questionnaire').classList.add('active');
     renderQuestionnaire();
@@ -3891,7 +3963,8 @@ async function saveAssessmentDraft(){
 }
 
 function renderQuestionnaire(){
-  const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
+  const visible=visibleQuestionnaireSections(currentTechData);
+  const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
   const prefilled=Object.keys(qAnswers).length;
   const hasPriorAssessments=!!(currentTechData&&currentTechData.assessments&&currentTechData.assessments.length);
   const prefilledNote=prefilled
@@ -3899,7 +3972,12 @@ function renderQuestionnaire(){
     :hasPriorAssessments
     ?` We don't have your previous skill-by-skill ratings on file yet (only section averages from an older import). Please rate each skill — after you submit once, future assessments will pre-fill automatically.`
     :'';
-  const sections=QUESTIONNAIRE.map(sec=>{
+  const requiredNote=(()=>{
+    const req=requiredAssessmentSections(currentTechData);
+    if(req.all)return'';
+    return` Showing only your required sections for this stage (${req.message.replace(/^Required Sections:\s*/,'')}).`;
+  })();
+  const sections=visible.map(sec=>{
     const secSub=isJobAccountsSection(sec)
       ?jobAccountsSectionSub(sec)
       :'Rate each skill from 1 (Beginner) to 5 (Exceptional).';
@@ -3924,7 +4002,7 @@ function renderQuestionnaire(){
   document.getElementById('q-content').innerHTML=`
     <div class="q-header">
       <div class="q-title">TAB Skills Self-Assessment</div>
-      <div class="q-sub">Your answers help customize your training and track progress over time.${prefilledNote}</div>
+      <div class="q-sub">Your answers help customize your training and track progress over time.${requiredNote}${prefilledNote}</div>
       ${ratingScaleLegendHtml()}
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
@@ -3958,9 +4036,10 @@ function setRating(id,val){
 }
 
 function updateProgress(){
-  const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
-  const done=Object.keys(qAnswers).length;
-  const pct=Math.round((done/total)*100);
+  const visible=visibleQuestionnaireSections(currentTechData);
+  const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
+  const done=visible.reduce((n,sec)=>n+sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length,0);
+  const pct=total?Math.round((done/total)*100):0;
   const fill=document.getElementById('q-fill');
   const lbl=document.getElementById('q-label');
   if(fill)fill.style.width=pct+'%';
@@ -3979,7 +4058,7 @@ async function submitAssessment(){
     ...sectionAvgPayload(),
     comment:comment||null,
     nebb_status:qNebbStatus,
-    raw_scores:qAnswers
+    raw_scores:submitRawScoresPayload()
   };
   try{
     await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
