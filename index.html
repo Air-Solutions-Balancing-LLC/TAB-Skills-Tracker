@@ -2771,8 +2771,10 @@ function bootcampHasPassed(t){
 // Tenure-based scored-section gating for the questionnaire.
 // Orientation / Pre-Bootcamp are checklist tasks on My Progress — they never lock
 // or replace the scored assessment.
+// Survey + National Accounts are always included with every stage's required sections.
 function requiredAssessmentSections(t){
   const days=employmentTenureDays(t);
+  const accountSecs=['survey','national_accounts'];
   const all={all:true,rated:null,checklist:[],message:'Complete all sections'};
   if(days===null||days>270)return all;
   const checklist=days<10
@@ -2780,16 +2782,16 @@ function requiredAssessmentSections(t){
     :(days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
   if(days>=100&&days<=270)return{
     all:false,
-    rated:['safety','basic','intermediate','survey','national_accounts'],
+    rated:['safety','basic','intermediate',...accountSecs],
     checklist,
     message:'Required Sections: Core, Basics, Intermediate, National & Survey'
   };
-  // Days 0–99: Core & Basics are the scored sections (with or without bootcamp).
+  // Days 0–99: Core & Basics plus National & Survey every time.
   return{
     all:false,
-    rated:['safety','basic'],
+    rated:['safety','basic',...accountSecs],
     checklist,
-    message:'Required Sections: Core & Basics'
+    message:'Required Sections: Core, Basics, National & Survey'
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
