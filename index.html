@@ -466,6 +466,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-cover-comments .tech-notes-title{margin-bottom:6px}
 .tech-tenure-info{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
+.tech-required-box{background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.tech-required-box .tech-required-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#4A90D9;margin-bottom:4px}
+.tech-required-box .tech-required-msg{font-size:14px;font-weight:700;color:#1B3A6B;line-height:1.4}
+.tech-required-box .tech-required-hint{font-size:12px;color:#555;margin-top:6px;line-height:1.45}
 .tech-notes-export{margin-bottom:14px}
 @media(max-width:640px){.tech-cover-columns{grid-template-columns:1fr}.tech-cover-col-right{text-align:left}}
 .tech-pdf-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:99998;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#1B3A6B}
@@ -1417,6 +1421,12 @@ function getAssessmentDraft(t){
   if(!draft||draft.month!==currentAssessmentMonth())return null;
   return draft;
 }
+function scrollToTechChecklist(){
+  showTechHome();
+  closeMobileNav();
+  const box=document.querySelector('#tech-home-body .cl-box');
+  if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
@@ -1429,6 +1439,30 @@ function updateTechAssessNav(t,readOnly){
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
+  const hasRatedDue=visibleQuestionnaireSections(t).length>0;
+  // Checklist-only stages (Orientation / Pre-Bootcamp): keep required-rules visible on
+  // My Progress and point the CTA there instead of opening an empty scored assessment.
+  if(!hasRatedDue&&!draft){
+    const req=requiredAssessmentSections(t);
+    const checklistLabel=req.checklist&&req.checklist.includes('orientation')
+      ?'📋 Complete Orientation below'
+      :'📋 Complete Pre-Bootcamp below';
+    if(nav){
+      nav.classList.add('visible');
+      nav.textContent=checklistLabel;
+      nav.onclick=scrollToTechChecklist;
+    }
+    if(mobile){
+      mobile.classList.add('visible');
+      mobile.textContent='📋 Checklist';
+      mobile.onclick=scrollToTechChecklist;
+    }
+    if(done){
+      done.classList.add('visible');
+      done.textContent=requiredSectionsMessage(t)+'. Scored assessment unlocks after this stage.';
+    }
+    return;
+  }
   const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update this month\'s assessment':'📝 Take this month\'s assessment');
   if(nav){
     nav.classList.add('visible');
@@ -3791,9 +3825,21 @@ function renderTechHome(t,opts){
 
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
+  const reqInfo=requiredAssessmentSections(t);
+  const hasRatedDue=visibleQuestionnaireSections(t).length>0;
+  const requiredHint=reqInfo.all
+    ?'Complete every scored section in this month\'s assessment.'
+    :hasRatedDue
+      ?'Only these scored sections appear when you take this month\'s assessment.'
+      :'Complete this on My Progress below. Scored assessment sections unlock after this stage.';
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
     <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+  </div>`;
+  const requiredHtml=`<div class="tech-required-box">
+    <div class="tech-required-label">Required this period</div>
+    <div class="tech-required-msg">${adminEsc(reqInfo.message)}</div>
+    <div class="tech-required-hint">${requiredHint}</div>
   </div>`;
 
   const banner=adminEdit
@@ -3808,6 +3854,7 @@ function renderTechHome(t,opts){
         <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
       ${tenureHtml}
+      ${requiredHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
@@ -3909,15 +3956,10 @@ async function startQuestionnaire(opts){
   const openQuestionnaire=()=>{
     const visible=visibleQuestionnaireSections(currentTechData);
     // Orientation / Pre-Bootcamp-only windows have no rated questionnaire sections —
-    // those are completed on My Progress. Keep the tech on home instead of an empty form.
+    // those are completed on My Progress. Required rules stay visible there.
     if(!visible.length){
       showTechHome();
-      const body=document.getElementById('tech-home-body');
-      if(body){
-        const tip=requiredSectionsMessage(currentTechData);
-        body.insertAdjacentHTML('afterbegin','<div class="success-box">'+adminEsc(tip)+'. Complete it below on My Progress — no scored assessment is due yet.</div>');
-        setTimeout(()=>{const s=document.querySelector('#tech-home-body .success-box');if(s)s.remove();},7000);
-      }
+      scrollToTechChecklist();
       return;
     }
     document.getElementById('tech-view-home').classList.remove('active');
@@ -3930,11 +3972,8 @@ async function startQuestionnaire(opts){
     renderTechSidebarNav();
     window.scrollTo(0,0);
   };
-  if(!opts.resume){
-    showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
-  }else{
-    openQuestionnaire();
-  }
+  // Always show the start-date rules before opening (including continue), so they don't disappear.
+  showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
 }
 function continueQuestionnaire(){startQuestionnaire({resume:true});}
 async function saveAssessmentDraft(){
