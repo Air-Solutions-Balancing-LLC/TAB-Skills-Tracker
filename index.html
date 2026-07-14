@@ -1024,7 +1024,7 @@ body.mobile-nav-open{overflow:hidden}
 <div class="assess-modal-overlay" id="assess-start-modal" role="dialog" aria-modal="true" aria-labelledby="assess-start-title">
   <div class="assess-modal">
     <h3 id="assess-start-title">Before you begin</h3>
-    <p>Your employment timeline determines which sections to focus on this month.</p>
+    <p>Your time with the company (from your start date) determines which skill levels to complete. Survey and National Accounts are always required.</p>
     <div class="assess-modal-msg" id="assess-start-msg"></div>
     <div class="assess-modal-actions">
       <button type="button" class="btn" id="assess-start-continue">Continue to assessment</button>
@@ -2768,29 +2768,49 @@ function bootcampHasPassed(t){
   boot.setHours(0,0,0,0);
   return todayDateOnly()>=boot;
 }
-// Tenure-based scored-section gating for the questionnaire.
-// Orientation / Pre-Bootcamp are checklist tasks on My Progress — they never lock
-// or replace the scored assessment.
-// Survey + National Accounts are always included with every stage's required sections.
+// Tenure KEY (from start_date):
+//   BASIC        0–3.9 months  (0–0.3 years)
+//   INTERMEDIATE 4.0–12.9 mo   (0.4–1.1 years)
+//   ADVANCED     13+ months    (1.2+ years)
+// Survey + National Accounts are always required at every level.
+// Scored sections are cumulative through the technician's current level.
+// Orientation / Pre-Bootcamp stay on My Progress and never lock the assessment.
+function employmentTenureMonths(t){
+  const days=employmentTenureDays(t);
+  if(days===null)return null;
+  return days/30.44;
+}
 function requiredAssessmentSections(t){
+  const months=employmentTenureMonths(t);
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
-  const all={all:true,rated:null,checklist:[],message:'Complete all sections'};
-  if(days===null||days>270)return all;
-  const checklist=days<10
+  const all={all:true,rated:null,checklist:[],level:null,message:'Complete all sections'};
+  if(months===null)return all;
+  const checklist=days!==null&&days<10
     ?['orientation']
-    :(days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
-  if(days>=100&&days<=270)return{
+    :(days!==null&&days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
+  // ADVANCED — 13+ months
+  if(months>=13)return{
+    all:false,
+    rated:['safety','basic','intermediate','advanced',...accountSecs],
+    checklist,
+    level:'advanced',
+    message:'Required Sections: Core, Basics, Intermediate, Advanced, National & Survey'
+  };
+  // INTERMEDIATE — 4.0–12.9 months
+  if(months>=4)return{
     all:false,
     rated:['safety','basic','intermediate',...accountSecs],
     checklist,
+    level:'intermediate',
     message:'Required Sections: Core, Basics, Intermediate, National & Survey'
   };
-  // Days 0–99: Core & Basics plus National & Survey every time.
+  // BASIC — 0–3.9 months
   return{
     all:false,
     rated:['safety','basic',...accountSecs],
     checklist,
+    level:'basic',
     message:'Required Sections: Core, Basics, National & Survey'
   };
 }
@@ -3784,17 +3804,22 @@ function renderTechHome(t,opts){
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
   const reqInfo=requiredAssessmentSections(t);
+  const levelLabel=reqInfo.level==='basic'?'BASIC (0–3.9 months)'
+    :reqInfo.level==='intermediate'?'INTERMEDIATE (4.0–12.9 months)'
+    :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
+    :null;
   const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
     ?' Also complete Orientation on My Progress below — it does not block this assessment.'
     :(reqInfo.checklist&&reqInfo.checklist.includes('pre_bootcamp')
       ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
       :'');
   const requiredHint=reqInfo.all
-    ?'Complete every scored section in this month\'s assessment.'
-    :'Only these scored sections appear when you take this month\'s assessment.'+checklistHint;
+    ?'No start date on file — complete every scored section. Survey and National Accounts are always required.'
+    :'Based on time with the company'+(levelLabel?` — ${levelLabel}`:'')+'. Survey and National Accounts are always included.'+checklistHint;
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
     <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+    ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
   </div>`;
   const requiredHtml=`<div class="tech-required-box">
     <div class="tech-required-label">Required this period</div>
