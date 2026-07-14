@@ -1430,6 +1430,13 @@ function updateTechAssessNav(t,readOnly){
   if(mobile)mobile.classList.remove('visible');
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
+  if(!techStartDate(t)){
+    if(done){
+      done.classList.add('visible');
+      done.textContent='Assessment unavailable until an employee start date is assigned.';
+    }
+    return;
+  }
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
@@ -2784,8 +2791,13 @@ function requiredAssessmentSections(t){
   const months=employmentTenureMonths(t);
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
-  const all={all:true,rated:null,checklist:[],level:null,message:'Complete all sections'};
-  if(months===null)return all;
+  if(months===null)return{
+    all:false,
+    rated:[],
+    checklist:[],
+    level:null,
+    message:'No assessment sections available — employee start date required'
+  };
   const checklist=days!==null&&days<10
     ?['orientation']
     :(days!==null&&days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
@@ -3814,7 +3826,9 @@ function renderTechHome(t,opts){
       ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
       :'');
   const requiredHint=reqInfo.all
-    ?'No start date on file — complete every scored section. Survey and National Accounts are always required.'
+    ?'Complete every scored section. Survey and National Accounts are always required.'
+    :!techStartDate(t)
+      ?'A start date must be assigned before assessment sections become available.'
     :'Based on time with the company'+(levelLabel?` — ${levelLabel}`:'')+'. Survey and National Accounts are always included.'+checklistHint;
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
@@ -3924,6 +3938,11 @@ async function startQuestionnaire(opts){
         currentTechData=t;
       }
     }catch(e){console.warn('Could not refresh assessments for pre-fill',e);}
+  }
+  if(!techStartDate(currentTechData)){
+    showTechHome();
+    alert('Assessment unavailable until your employee start date is assigned.');
+    return;
   }
   const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
   let draftComment='';
