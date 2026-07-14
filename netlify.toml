@@ -1,0 +1,14 @@
+# Netlify configuration for TAB Skills Tracker.
+# The site itself is static (served from the repo root). The only server-side
+# piece is the ATA Tracking sheet importer, which must run on the server because
+# Google Sheets does not send CORS headers for the CSV export (a browser fetch is
+# blocked) and the data is spread across one tab per technician.
+
+[build]
+  publish = "."
+  # No build step for the static site; functions are bundled automatically.
+  command = ""
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
