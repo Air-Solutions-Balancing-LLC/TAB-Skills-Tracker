@@ -474,6 +474,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-cover-comments .tech-notes-title{margin-bottom:6px}
 .tech-tenure-info{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
+.tech-required-box{background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.tech-required-box .tech-required-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#4A90D9;margin-bottom:4px}
+.tech-required-box .tech-required-msg{font-size:14px;font-weight:700;color:#1B3A6B;line-height:1.4}
+.tech-required-box .tech-required-hint{font-size:12px;color:#555;margin-top:6px;line-height:1.45}
 .tech-notes-export{margin-bottom:14px}
 @media(max-width:640px){.tech-cover-columns{grid-template-columns:1fr}.tech-cover-col-right{text-align:left}}
 .tech-pdf-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:99998;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#1B3A6B}
@@ -767,6 +771,51 @@ body.mobile-nav-open{overflow:hidden}
       </div>
 
       <div class="admin-sec">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-ata" aria-expanded="false" onclick="toggleAdminSection('ata')">
+          <span class="admin-sec-chevron">▼</span> ATA Tracking
+        </button>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Enter a Basic start date to generate the schedule — each lesson is due the following Friday, one per week. Intermediate and Advanced unlock as the prior program is completed.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
+            <button type="button" class="btn" id="ata-update-btn" style="background:#0F6E56" onclick="ataUpdateFromSheet()">↻ Update from Sheet</button>
+            <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
+            <a class="btn" id="ata-open-sheet" href="#" target="_blank" rel="noopener" style="background:#888;text-decoration:none;display:none">Open Sheet</a>
+            <span id="ata-last-import" style="font-size:11px;color:#888"></span>
+          </div>
+          <div id="ata-import-status" style="font-size:12px;margin:4px 0;min-height:16px"></div>
+          <div id="ata-import-fallback" style="display:none;background:#F6F8FC;border:1px solid #d8e2f0;border-radius:8px;padding:10px;margin-bottom:8px">
+            <div style="font-size:12px;color:#555;margin-bottom:6px">Manual fallback — paste or upload a CSV with a header row containing <strong>Name</strong>, <strong>Quiz</strong>, and <strong>Score</strong> columns (quiz cells must include codes like TAB-B-101). Rows marked "Not taken" are ignored.</div>
+            <textarea id="ata-paste-csv" placeholder="Name,Quiz,Score&#10;Cam Smith,TAB-B-101 Quiz,5/5" style="width:100%;min-height:90px;border:1px solid #cbd6e6;border-radius:6px;padding:8px;font-family:monospace;font-size:11px"></textarea>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
+              <button type="button" class="btn" style="padding:6px 12px" onclick="ataImportFromPaste()">Import pasted CSV</button>
+              <input type="file" accept=".csv,text/csv" onchange="ataImportFromFile(this)" style="font-size:12px">
+            </div>
+          </div>
+          <div class="report-filters">
+            <div class="pm-search-wrap">
+              <input type="search" id="ata-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAtaAdminFilterChange()">
+            </div>
+            <div class="report-filter-field">
+              <label for="ata-region">Region</label>
+              <select id="ata-region" onchange="onAtaAdminFilterChange()"></select>
+            </div>
+            <div class="report-filter-field">
+              <label for="ata-status">Status</label>
+              <select id="ata-status" onchange="onAtaAdminFilterChange()">
+                <option value="">All statuses</option>
+                <option value="behind">Behind</option>
+                <option value="on_track">On track</option>
+                <option value="complete">Complete</option>
+                <option value="not_started">Not started</option>
+              </select>
+            </div>
+          </div>
+          <div class="report-filter-hint" id="ata-filter-hint"></div>
+          <div class="report-wrap" id="ata-roster-wrap"><div class="admin-empty" style="padding:12px">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="admin-sec">
         <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="false" onclick="toggleAdminSection('admins')">
           <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
         </button>
@@ -908,6 +957,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">📊 Dashboard</div>
         <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">⚠️ Alerts <span class="sb-badge" id="alert-count">0</span></div>
         <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">📈 Compare</div>
+        <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">📚 ATA Tracking</div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -942,6 +992,31 @@ body.mobile-nav-open{overflow:hidden}
           <div class="topbar-grow"><div class="topbar-title">📈 Team Comparison</div><div class="topbar-sub" id="compare-sub">Latest scores</div></div>
         </div>
         <div class="compare-body"><div style="overflow-x:auto"><table class="compare-table" id="compare-table"><thead></thead><tbody></tbody></table></div></div>
+      </div>
+      <div id="pm-view-ata" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Weekly digital ATA progress — one lesson per week, due each Friday</div></div>
+          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">📄 Region Report PDF</button>
+        </div>
+        <div class="page-body">
+          <div class="report-filters">
+            <div class="pm-search-wrap">
+              <input type="search" id="pm-ata-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmAtaFilterChange()">
+            </div>
+            <div class="report-filter-field">
+              <label for="pm-ata-status">Status</label>
+              <select id="pm-ata-status" onchange="onPmAtaFilterChange()">
+                <option value="">All statuses</option>
+                <option value="behind">Behind</option>
+                <option value="on_track">On track</option>
+                <option value="complete">Complete</option>
+                <option value="not_started">Not started</option>
+              </select>
+            </div>
+          </div>
+          <div id="pm-ata-wrap"><div class="loading">Loading…</div></div>
+        </div>
       </div>
       <div id="pm-view-tech" class="view">
         <div class="detail-topbar">
@@ -978,6 +1053,7 @@ body.mobile-nav-open{overflow:hidden}
         </div>
         <div class="sb-nav active" id="sb-nav-home" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
         <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
+        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()">📚 ATA Tracking</button>
         <button type="button" class="sb-section-toggle" id="sb-skill-toggle" onclick="toggleSbSkillSections()" aria-expanded="true">
           <span class="sb-section">Skill sections</span>
           <span class="sb-section-chevron" id="sb-skill-chevron">▼</span>
@@ -996,6 +1072,13 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
         </div>
         <div class="page-body" id="tech-home-body"><div class="loading">Loading...</div></div>
+      </div>
+      <div id="tech-view-ata" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Your weekly digital ATA lesson schedule</div></div>
+        </div>
+        <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
       </div>
       <div id="tech-view-questionnaire" class="view">
         <div class="topbar">
@@ -1042,7 +1125,7 @@ body.mobile-nav-open{overflow:hidden}
 <div class="assess-modal-overlay" id="assess-start-modal" role="dialog" aria-modal="true" aria-labelledby="assess-start-title">
   <div class="assess-modal">
     <h3 id="assess-start-title">Before you begin</h3>
-    <p>Your employment timeline determines which sections to focus on this month.</p>
+    <p>Your time with the company (from your start date) determines which skill levels to complete. Survey and National Accounts are always required.</p>
     <div class="assess-modal-msg" id="assess-start-msg"></div>
     <div class="assess-modal-actions">
       <button type="button" class="btn" id="assess-start-continue">Continue to assessment</button>
@@ -1448,6 +1531,13 @@ function updateTechAssessNav(t,readOnly){
   if(mobile)mobile.classList.remove('visible');
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
+  if(!techStartDate(t)){
+    if(done){
+      done.classList.add('visible');
+      done.textContent='Assessment unavailable until an employee start date is assigned.';
+    }
+    return;
+  }
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
@@ -1540,9 +1630,12 @@ function renderTechSidebarNav(){
   const wrap=document.getElementById('tech-sb-sections');
   if(!wrap||!QUESTIONNAIRE.length)return;
   const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
+  const ataEl=document.getElementById('tech-view-ata');
+  const inAta=ataEl&&ataEl.classList.contains('active');
   const homeNav=document.getElementById('sb-nav-home');
-  if(homeNav)homeNav.classList.toggle('active',!inQ);
-  wrap.innerHTML=QUESTIONNAIRE.map(sec=>{
+  if(homeNav)homeNav.classList.toggle('active',!inQ&&!inAta);
+  const sections=inQ?visibleQuestionnaireSections(currentTechData):QUESTIONNAIRE;
+  wrap.innerHTML=sections.map(sec=>{
     const pct=techSidebarSectionPct(sec);
     const pctLabel=inQ?pct+'% rated':(pct?pct+'%':'—');
     const pctClass=!pct?'sb-pct-low':pct>=80?'sb-pct-good':pct>=50?'sb-pct-mid':'sb-pct-low';
@@ -1821,7 +1914,7 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
-const adminSecOpen={admins:false,pms:false,techs:false,deleted:false};
+const adminSecOpen={ata:false,admins:false,pms:false,techs:false,deleted:false};
 const reportTableOpen={activity:false,nebb:false};
 
 function toggleReportTable(key){
@@ -2238,6 +2331,591 @@ async function saveNebbReportRow(personId){
   }
 }
 
+// ── ATA Tracking ─────────────────────────────────────────────────────────────
+let ataCurriculum=null;                 // [{program,lesson_code,lesson_name,sort_order,week_index}]
+let ataAdminData=null;                  // {techs:[...], last_import:{...}}
+let ataAdminSearch='',ataAdminRegion='',ataAdminStatusFilter='';
+let ataPmData=null,ataPmSearch='',ataPmStatusFilter='';
+const ATA_PROGRAMS=['basic','intermediate','advanced'];
+const ATA_PROGRAM_LABEL={basic:'Basic',intermediate:'Intermediate',advanced:'Advanced'};
+
+async function ensureAtaCurriculum(){
+  if(ataCurriculum)return ataCurriculum;
+  ataCurriculum=await rpc('app_ata_curriculum',{})||[];
+  return ataCurriculum;
+}
+
+function ataToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function ataIsSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+
+// One lesson per week; each lesson is due the Friday of its week. Week 1's Friday
+// is the first Friday on or after the program start date.
+function ataFridayDeadline(startISO,weekIndex){
+  const d=parseDateOnly(startISO);
+  if(!d)return null;
+  const daysUntilFri=(5-d.getDay()+7)%7;
+  const first=new Date(d.getFullYear(),d.getMonth(),d.getDate()+daysUntilFri);
+  return new Date(first.getFullYear(),first.getMonth(),first.getDate()+(Math.max(1,weekIndex)-1)*7);
+}
+
+function ataLessonsByProgram(program){
+  return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>a.sort_order-b.sort_order);
+}
+function ataCompletionFor(tech,code){const c=(tech&&tech.completions)||{};return c[code]||null;}
+function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program]||null;}
+function ataProgramComplete(tech,program){
+  const lessons=ataLessonsByProgram(program);
+  if(!lessons.length)return false;
+  return lessons.every(l=>!!ataCompletionFor(tech,l.lesson_code));
+}
+
+function ataProgramStatus(tech,program,today){
+  today=today||ataToday();
+  const start=ataStart(tech,program);
+  const lessons=ataLessonsByProgram(program);
+  const total=lessons.length;
+  let completed=0,overdue=0,dueSoon=0,nextDue=null;
+  const overdueList=[],lessonRows=[];
+  lessons.forEach(l=>{
+    const done=!!ataCompletionFor(tech,l.lesson_code);
+    const dl=start?ataFridayDeadline(start,l.week_index):null;
+    let st='upcoming';
+    if(done){completed++;st='complete';}
+    else if(start&&dl){
+      if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
+      else{if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};const diff=Math.round((dl-today)/86400000);if(diff<=7)dueSoon++;st='due';}
+    }else{st='pending';}
+    lessonRows.push({lesson:l,deadline:dl,done,state:st});
+  });
+  let status;
+  if(!start)status='not_started';
+  else if(completed>=total&&total>0)status='complete';
+  else if(overdue>0)status='behind';
+  else status='on_track';
+  return {program,start,total,completed,overdue,dueSoon,nextDue,overdueList,lessonRows,status};
+}
+
+function ataTechSummary(tech){
+  const today=ataToday();
+  const progs=ATA_PROGRAMS.map(p=>ataProgramStatus(tech,p,today));
+  const active=progs.filter(p=>p.start);
+  const totalOverdue=active.reduce((s,p)=>s+p.overdue,0);
+  const overdueList=[];
+  active.forEach(p=>p.overdueList.forEach(o=>overdueList.push(Object.assign({program:p.program},o))));
+  let status;
+  if(!active.length)status='not_started';
+  else if(active.every(p=>p.status==='complete'))status='complete';
+  else if(totalOverdue>0)status='behind';
+  else status='on_track';
+  const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
+  return {tech,progs,byProgram,active,totalOverdue,overdueList,status};
+}
+
+function ataStatusMeta(status){
+  switch(status){
+    case 'behind':return {label:'Behind',color:'#C0392B',bg:'#FDECEA'};
+    case 'on_track':return {label:'On track',color:'#0F6E56',bg:'#E7F5EF'};
+    case 'complete':return {label:'Complete',color:'#1B3A6B',bg:'#EEF4FF'};
+    default:return {label:'Not started',color:'#8a8a8a',bg:'#F0F0F0'};
+  }
+}
+function ataStatusChip(status){
+  const m=ataStatusMeta(status);
+  return `<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:${m.color};background:${m.bg}">${m.label}</span>`;
+}
+function ataRegionOptionsHtml(sel){
+  return ['<option value="">All regions</option>'].concat(ADMIN_REGIONS.map(([c,l])=>`<option value="${c}"${sel===c?' selected':''}>${l}</option>`)).join('');
+}
+
+// ── CSV parsing + Google Sheet import ────────────────────────────────────────
+function ataParseCsv(text){
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else{
+      if(ch==='"')q=true;
+      else if(ch===','){row.push(cur);cur='';}
+      else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+      else if(ch==='\r'){}
+      else cur+=ch;
+    }
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+// "12/15" -> 80 ; "5/5" -> 100 ; "Complete (no score shown)" -> completed, no number.
+function ataInterpretScore(cell){
+  const s=String(cell||'').trim();
+  if(!s)return {completed:false,score:null};
+  if(/not\s*taken|not\s*started|no\s*attempt|incomplete|in\s*progress/i.test(s))return {completed:false,score:null};
+  const f=/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/.exec(s);
+  if(f){const den=parseFloat(f[2]),num=parseFloat(f[1]);return {completed:true,score:den>0?Math.round(num/den*1000)/10:null};}
+  const p=/^(\d+(?:\.\d+)?)\s*%$/.exec(s);
+  if(p)return {completed:true,score:parseFloat(p[1])};
+  return {completed:true,score:null};
+}
+// Fallback: parse a manually pasted CSV that has Name + Quiz (+ Score) columns.
+function ataParsePastedCsv(text){
+  const raw=ataParseCsv(text).filter(r=>r.some(c=>String(c).trim()!==''));
+  if(raw.length<2)return [];
+  const H=raw[0].map(h=>String(h||'').toLowerCase().trim());
+  const find=preds=>{for(const p of preds){const i=H.findIndex(p);if(i>=0)return i;}return -1;};
+  const nameIdx=find([h=>h.includes('technician'),h=>h==='name',h=>h.includes('name')]);
+  const emailIdx=find([h=>h.includes('email')]);
+  const quizIdx=find([h=>h.includes('quiz'),h=>h.includes('lesson'),h=>h.includes('code')]);
+  const scoreIdx=find([h=>h.includes('score'),h=>h.includes('status'),h=>h.includes('percent'),h=>h.includes('grade')]);
+  if(quizIdx<0||(nameIdx<0&&emailIdx<0))return [];
+  const out=[];
+  for(let i=1;i<raw.length;i++){
+    const r=raw[i];
+    const m=/TAB-[BIA]-\d+/i.exec(String(r[quizIdx]||''));
+    if(!m)continue;
+    const info=ataInterpretScore(scoreIdx>=0?r[scoreIdx]:'');
+    if(scoreIdx>=0&&!info.completed)continue;
+    out.push({
+      name:nameIdx>=0?String(r[nameIdx]||'').trim():'',
+      email:emailIdx>=0?String(r[emailIdx]||'').trim():'',
+      lesson_code:m[0].toUpperCase(),
+      score:info.score,
+      completed_at:null
+    });
+  }
+  return out;
+}
+
+function ataSetImportStatus(msg,kind){
+  const el=document.getElementById('ata-import-status');
+  if(!el)return;
+  const color=kind==='err'?'#C0392B':kind==='ok'?'#0F6E56':'#555';
+  el.style.color=color;
+  el.innerHTML=msg;
+}
+function ataShowFallback(show){
+  const el=document.getElementById('ata-import-fallback');
+  if(el)el.style.display=show?'block':'none';
+}
+
+async function ataApplyRows(rows){
+  if(!rows||!rows.length){ataSetImportStatus('No completed quiz rows were found to import.','err');return false;}
+  ataSetImportStatus('Importing '+rows.length+' quiz completion'+(rows.length===1?'':'s')+'…');
+  let result;
+  try{
+    result=await rpc('app_ata_import',{p_rows:rows});
+  }catch(e){
+    ataSetImportStatus('Import failed. '+((e.message||'').includes('app_ata_import')?'Run supabase/ata-tracking.sql in Supabase.':(e.message||'Try again.')),'err');
+    return false;
+  }
+  const applied=(result&&result.applied)||0;
+  const matched=(result&&result.matched)||0;
+  const unm=(result&&result.unmatched)||0;
+  const unmList=(result&&result.unmatched_names)||[];
+  let msg='Imported '+applied+' update'+(applied===1?'':'s')+' across '+matched+' matched completion'+(matched===1?'':'s')+'.';
+  if(unm)msg+=' '+unm+' completion'+(unm===1?'':'s')+' had no matching technician'+(unmList.length?' — no match for: '+unmList.slice(0,8).map(adminEsc).join(', ')+(unmList.length>8?'…':''):'')+'. Add or rename those technicians so their name matches the sheet tab.';
+  ataSetImportStatus(msg,'ok');
+  await ataLoadAdmin();
+  return true;
+}
+
+async function ataUpdateFromSheet(){
+  const btn=document.getElementById('ata-update-btn');
+  if(btn){btn.disabled=true;btn.textContent='Fetching…';}
+  ataSetImportStatus('Reading the latest quiz history from Google Sheets…');
+  ataShowFallback(false);
+  try{
+    const res=await fetch('/.netlify/functions/ata-sheet',{cache:'no-store'});
+    let data=null;try{data=await res.json();}catch(_){}
+    if(!res.ok||!data||!data.ok)throw new Error((data&&data.error)||('HTTP '+res.status));
+    ataSetImportStatus('Read '+data.tabCount+' technician tab'+(data.tabCount===1?'':'s')+' ('+data.rowCount+' completions). Importing…');
+    await ataApplyRows(data.rows);
+  }catch(e){
+    const openLink=(typeof ATA_SHEET_URL!=='undefined'&&ATA_SHEET_URL)?` <a href="${ATA_SHEET_URL}" target="_blank" rel="noopener">Open the sheet</a>.`:'';
+    ataSetImportStatus('Could not read the sheet automatically. '+adminEsc(e.message||'')+' The importer runs on the deployed Netlify site — it will not work when testing from a local file. You can also paste a CSV below.'+openLink,'err');
+    ataShowFallback(true);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='↻ Update from Sheet';}
+  }
+}
+
+async function ataImportCsvText(text){
+  const rows=ataParsePastedCsv(text);
+  if(!rows.length){
+    ataSetImportStatus('Could not find Name + Quiz columns in that CSV. Include a header row with columns like Name, Quiz, Score (quiz cells must contain codes such as TAB-B-101).','err');
+    return false;
+  }
+  return ataApplyRows(rows);
+}
+
+async function ataImportFromPaste(){
+  const ta=document.getElementById('ata-paste-csv');
+  const text=ta?ta.value:'';
+  if(!text.trim()){ataSetImportStatus('Paste the CSV contents first, or choose a file.','err');return;}
+  await ataImportCsvText(text);
+}
+function ataImportFromFile(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{ataImportCsvText(String(reader.result||''));};
+  reader.onerror=()=>{ataSetImportStatus('Could not read that file.','err');};
+  reader.readAsText(file);
+}
+
+// ── Admin ATA data + rendering ───────────────────────────────────────────────
+async function ataLoadAdmin(){
+  const wrap=document.getElementById('ata-roster-wrap');
+  if(wrap&&!ataAdminData)wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  try{
+    await ensureAtaCurriculum();
+    ataAdminData=await rpc('app_ata_admin_data',{})||{techs:[],last_import:null};
+  }catch(e){
+    if(wrap)wrap.innerHTML='<div class="err" style="display:block">Could not load ATA data. '+adminEsc((e.message||'').includes('app_ata_admin_data')?'Run supabase/ata-tracking.sql in Supabase.':(e.message||'Try again.'))+'</div>';
+    return;
+  }
+  ataRenderLastImport();
+  ataRenderAdmin();
+}
+
+function ataRenderLastImport(){
+  const el=document.getElementById('ata-last-import');
+  if(!el)return;
+  const li=ataAdminData&&ataAdminData.last_import;
+  el.textContent=li&&li.ran_at?('Last update: '+fmtDateFull(String(li.ran_at).slice(0,10))+' · '+(li.applied||0)+' applied, '+(li.unmatched||0)+' unmatched'):'No imports yet';
+}
+
+function ataFilteredAdminTechs(){
+  const techs=(ataAdminData&&ataAdminData.techs)||[];
+  const q=ataAdminSearch.trim().toLowerCase();
+  return techs.map(t=>ataTechSummary(t)).filter(s=>{
+    if(ataAdminRegion&&s.tech.region!==ataAdminRegion)return false;
+    if(ataAdminStatusFilter&&s.status!==ataAdminStatusFilter)return false;
+    if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
+}
+
+function ataStartCell(summary,program){
+  const tech=summary.tech;
+  const ps=summary.byProgram[program];
+  const val=adminDateInputValue(ataStart(tech,program));
+  let locked=false,lockMsg='';
+  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')){locked=true;lockMsg='Unlocks when Basic is complete';}
+  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')){locked=true;lockMsg='Unlocks when Intermediate is complete';}
+  const input=`<input type="date" class="admin-edit-field" style="min-width:140px" value="${val}" ${locked&&!val?'disabled':''} onchange="ataSaveStart(${tech.id},'${program}',this.value)">`;
+  const prog=ps.start?`<div style="font-size:10px;color:#666;margin-top:3px">${ps.completed}/${ps.total} done${ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:''}</div>`
+    :locked?`<div style="font-size:10px;color:#b58900;margin-top:3px">🔒 ${lockMsg}</div>`
+    :`<div style="font-size:10px;color:#999;margin-top:3px">Not started</div>`;
+  return `<td>${input}${prog}</td>`;
+}
+
+function ataRenderAdmin(){
+  const wrap=document.getElementById('ata-roster-wrap');
+  if(!wrap)return;
+  const rows=ataFilteredAdminTechs();
+  const total=(ataAdminData&&ataAdminData.techs||[]).length;
+  const hint=document.getElementById('ata-filter-hint');
+  if(hint)hint.textContent=total?(rows.length===total&&!ataAdminSearch&&!ataAdminRegion&&!ataAdminStatusFilter?total+' technician'+(total===1?'':'s'):'Showing '+rows.length+' of '+total):'';
+  if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match the current filters.</div>';return;}
+  const body=rows.map(s=>{
+    const t=s.tech;
+    const warn=s.status==='behind'?`<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#C0392B" onclick="ataEmailWarning(${t.id})">✉ Warn</button>`:'';
+    return `<tr>
+      <td style="font-weight:700;color:#1B3A6B">${adminEsc(t.name)}</td>
+      <td>${adminEsc(regionLabel(t.region))}</td>
+      ${ataStartCell(s,'basic')}
+      ${ataStartCell(s,'intermediate')}
+      ${ataStartCell(s,'advanced')}
+      <td>${ataStatusChip(s.status)}</td>
+      <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">PDF</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="report-table">
+    <thead><tr><th>Technician</th><th>Region</th><th>Basic start</th><th>Intermediate start</th><th>Advanced start</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+function onAtaAdminFilterChange(){
+  const s=document.getElementById('ata-search');
+  const r=document.getElementById('ata-region');
+  const st=document.getElementById('ata-status');
+  ataAdminSearch=s?s.value:'';
+  ataAdminRegion=r?r.value:'';
+  ataAdminStatusFilter=st?st.value:'';
+  ataRenderAdmin();
+}
+
+async function ataSaveStart(techId,program,value){
+  try{
+    await rpc('app_ata_set_start',{p_tech_id:techId,p_program:program,p_start_date:value||null});
+    const tech=(ataAdminData.techs||[]).find(t=>t.id===techId);
+    if(tech){tech.starts=tech.starts||{};if(value)tech.starts[program]=value;else delete tech.starts[program];}
+    ataRenderAdmin();
+  }catch(e){
+    alert('Could not save start date. '+((e.message||'').includes('app_ata_set_start')?'Run supabase/ata-tracking.sql in Supabase.':(e.message||'Try again.')));
+  }
+}
+
+function ataFindTech(techId){return (ataAdminData&&ataAdminData.techs|| (ataPmData&&ataPmData.techs)||[]).find(t=>t.id===techId);}
+
+// ── Email a behind technician a warning (mailto draft) ───────────────────────
+function ataEmailWarning(techId){
+  const tech=ataFindTech(techId);
+  if(!tech)return;
+  const s=ataTechSummary(tech);
+  if(!tech.email){alert('No email on file for '+tech.name+'. Add one in the Technicians section.');return;}
+  const overdue=s.overdueList.slice().sort((a,b)=>a.deadline-b.deadline);
+  const first=(tech.name||'there').split(' ')[0];
+  const lines=overdue.map(o=>`  • [${ATA_PROGRAM_LABEL[o.program]}] ${o.lesson.lesson_code} — ${o.lesson.lesson_name} (was due ${fmtDate(o.deadline.toISOString().slice(0,10))})`);
+  const nextDue=[];
+  s.progs.forEach(p=>{if(p.start&&p.nextDue)nextDue.push(`  • [${ATA_PROGRAM_LABEL[p.program]}] ${p.nextDue.lesson.lesson_code} — ${p.nextDue.lesson.lesson_name} (due ${fmtDate(p.nextDue.deadline.toISOString().slice(0,10))})`);});
+  const body=
+`Hi ${first},
+
+I'm reaching out about your ATA training progress. Our records show you're currently behind on your assigned lessons. The ATA program is one lesson per week, with each lesson due by that Friday.
+
+Overdue lesson${overdue.length===1?'':'s'} to complete as soon as possible:
+${lines.join('\n')}
+${nextDue.length?`\nComing up next:\n${nextDue.join('\n')}\n`:''}
+Please carve out time this week to catch up. If something is blocking you — schedule, access, or a lesson that isn't making sense — reply to this email and we'll help you get back on track.
+
+Thanks,
+Training Team`;
+  const subject='ATA Training — you have '+overdue.length+' overdue lesson'+(overdue.length===1?'':'s');
+  window.location.href='mailto:'+encodeURIComponent(tech.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+
+// ── PDF: weekly region-grouped report ────────────────────────────────────────
+function ataStatusRank(status){return status==='behind'?0:status==='not_started'?1:status==='on_track'?2:3;}
+
+function buildAtaWeeklyReportDoc(summaries,scopeLabel){
+  const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;let y=margin;
+  const cols=[
+    {label:'Technician',w:contentW*0.24},
+    {label:'Status',w:contentW*0.12},
+    {label:'Basic',w:contentW*0.16},
+    {label:'Intermediate',w:contentW*0.16},
+    {label:'Advanced',w:contentW*0.16},
+    {label:'Overdue',w:contentW*0.16}
+  ];
+  function needPage(h){if(y+h>pageH-margin){doc.addPage();y=margin;return true;}return false;}
+  function progText(p){return p.start?(p.completed+'/'+p.total+(p.overdue?' ('+p.overdue+' late)':'')):'—';}
+  function header(){
+    needPage(26);doc.setFillColor(27,58,107);doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    let x=margin+4;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});y+=22;
+  }
+  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+  doc.text('ATA Weekly Progress Report',margin,y);y+=18;
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
+  const behind=summaries.filter(s=>s.status==='behind').length;
+  const onTrack=summaries.filter(s=>s.status==='on_track').length;
+  const complete=summaries.filter(s=>s.status==='complete').length;
+  const notStarted=summaries.filter(s=>s.status==='not_started').length;
+  doc.text(pdfSafeText('Report date: '+fmtDateFull(new Date().toISOString().slice(0,10))+'   ·   '+scopeLabel),margin,y);y+=13;
+  doc.text(pdfSafeText('Behind: '+behind+'   ·   On track: '+onTrack+'   ·   Complete: '+complete+'   ·   Not started: '+notStarted+'   ·   '+summaries.length+' technician'+(summaries.length===1?'':'s')),margin,y);y+=16;
+
+  const byRegion={};
+  summaries.forEach(s=>{const r=s.tech.region||'—';(byRegion[r]=byRegion[r]||[]).push(s);});
+  const regions=Object.keys(byRegion).sort((a,b)=>regionLabel(a).localeCompare(regionLabel(b)));
+  regions.forEach(rc=>{
+    const list=byRegion[rc].slice().sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
+    needPage(30);
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+    doc.text(pdfSafeText(regionLabel(rc)+' ('+list.length+')'),margin,y+2);y+=14;
+    header();
+    list.forEach((s,idx)=>{
+      const m=ataStatusMeta(s.status);
+      const values=[
+        pdfSafeText(s.tech.name),
+        m.label,
+        pdfSafeText(progText(s.byProgram.basic)),
+        pdfSafeText(progText(s.byProgram.intermediate)),
+        pdfSafeText(progText(s.byProgram.advanced)),
+        String(s.totalOverdue||0)
+      ];
+      doc.setFontSize(9);
+      const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+      const rowH=Math.max(...sets.map(ls=>ls.length),1)*11+6;
+      if(needPage(rowH+4))header();
+      if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-8,contentW,rowH,'F');}
+      let x=margin+4;
+      sets.forEach((lines,i)=>{
+        doc.setFont('helvetica',i===0?'bold':'normal');
+        if(i===1)doc.setTextColor(...(m.color==='#C0392B'?[192,57,43]:m.color==='#0F6E56'?[15,110,86]:m.color==='#1B3A6B'?[27,58,107]:[120,120,120]));
+        else if(i===5&&Number(values[5])>0)doc.setTextColor(192,57,43);
+        else doc.setTextColor(40,40,40);
+        lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
+        x+=cols[i].w;
+      });
+      y+=rowH;doc.setDrawColor(230,230,230);doc.line(margin,y-4,margin+contentW,y-4);
+    });
+    y+=10;
+  });
+  return doc;
+}
+
+async function ataDownloadWeeklyReport(scope){
+  let summaries,scopeLabel;
+  if(scope==='pm'){
+    summaries=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary);
+    scopeLabel='Region: '+regionLabel(currentRegion);
+  }else{
+    summaries=ataFilteredAdminTechs();
+    scopeLabel=ataAdminRegion?('Region: '+regionLabel(ataAdminRegion)):'All regions';
+    if(ataAdminStatusFilter)scopeLabel+='  ·  Status: '+ataStatusMeta(ataAdminStatusFilter).label;
+  }
+  if(!summaries.length){alert('No technicians to include. Load data first or adjust filters.');return;}
+  try{
+    await ensureJsPdf();
+    const doc=buildAtaWeeklyReportDoc(summaries,scopeLabel);
+    doc.save('ATA-Weekly-Report-'+new Date().toISOString().slice(0,10)+'.pdf');
+  }catch(e){console.error('ATA report PDF failed',e);alert('Could not create the PDF. Please try again.');}
+}
+
+// ── PDF: single technician schedule ──────────────────────────────────────────
+function buildAtaTechDoc(tech){
+  const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
+  const margin=44,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;let y=margin;
+  const s=ataTechSummary(tech);
+  function needPage(h){if(y+h>pageH-margin){doc.addPage();y=margin;return true;}return false;}
+  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+  doc.text(pdfSafeText(tech.name+' — ATA Schedule'),margin,y);y+=18;
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
+  doc.text(pdfSafeText(regionLabel(tech.region)+'   ·   Report date: '+fmtDateFull(new Date().toISOString().slice(0,10))+'   ·   Status: '+ataStatusMeta(s.status).label),margin,y);y+=16;
+  s.progs.forEach(p=>{
+    needPage(40);
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+    doc.text(pdfSafeText(ATA_PROGRAM_LABEL[p.program]+(p.start?'  (start '+fmtDate(p.start)+')':'  (not started)')),margin,y);y+=13;
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
+    doc.text(pdfSafeText(p.start?(p.completed+' of '+p.total+' complete'+(p.overdue?' · '+p.overdue+' overdue':'')):'No start date assigned'),margin,y);y+=13;
+    if(p.start){
+      p.lessonRows.forEach(lr=>{
+        needPage(13);
+        const mark=lr.done?'[x]':lr.state==='overdue'?'[!]':'[ ]';
+        const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
+        if(lr.state==='overdue'&&!lr.done)doc.setTextColor(192,57,43);
+        else if(lr.done)doc.setTextColor(15,110,86);
+        else doc.setTextColor(60,60,60);
+        doc.text(pdfSafeText(mark+' '+lr.lesson.lesson_code+' — '+lr.lesson.lesson_name+'   (due '+due+')'),margin+8,y,{maxWidth:contentW-8});
+        y+=12;
+      });
+    }
+    y+=8;
+  });
+  return doc;
+}
+async function ataDownloadTechPdf(techId){
+  const tech=ataFindTech(techId);
+  if(!tech)return;
+  try{await ensureJsPdf();const doc=buildAtaTechDoc(tech);doc.save('ATA-'+String(tech.name||'tech').replace(/[^a-z0-9]+/gi,'-')+'.pdf');}
+  catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
+}
+
+// ── PM read-only ATA view ────────────────────────────────────────────────────
+async function loadPmAta(){
+  const wrap=document.getElementById('pm-ata-wrap');
+  if(wrap)wrap.innerHTML='<div class="loading">Loading…</div>';
+  try{
+    await ensureAtaCurriculum();
+    ataPmData=await rpc('app_ata_pm_data',{p_token:currentToken})||{techs:[]};
+  }catch(e){
+    if(wrap)wrap.innerHTML='<div class="err" style="display:block">Could not load ATA data. '+adminEsc((e.message||'').includes('app_ata_pm_data')?'Run supabase/ata-tracking.sql in Supabase.':(e.message||'Try again.'))+'</div>';
+    return;
+  }
+  renderPmAta();
+}
+function onPmAtaFilterChange(){
+  const s=document.getElementById('pm-ata-search');const st=document.getElementById('pm-ata-status');
+  ataPmSearch=s?s.value:'';ataPmStatusFilter=st?st.value:'';renderPmAta();
+}
+function renderPmAta(){
+  const wrap=document.getElementById('pm-ata-wrap');if(!wrap)return;
+  const q=ataPmSearch.trim().toLowerCase();
+  const rows=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>{
+    if(ataPmStatusFilter&&s.status!==ataPmStatusFilter)return false;
+    if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
+  if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match.</div>';return;}
+  const cell=p=>p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
+  const body=rows.map(s=>`<tr>
+    <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
+    <td>${ataStatusChip(s.status)}</td>
+    <td>${cell(s.byProgram.basic)}</td>
+    <td>${cell(s.byProgram.intermediate)}</td>
+    <td>${cell(s.byProgram.advanced)}</td>
+    <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">PDF</button></td>
+  </tr>`).join('');
+  wrap.innerHTML=`<div style="overflow-x:auto"><table class="report-table">
+    <thead><tr><th>Technician</th><th>Status</th><th>Basic</th><th>Intermediate</th><th>Advanced</th><th></th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+}
+
+// ── Technician read-only ATA schedule ────────────────────────────────────────
+async function showTechAta(){
+  closeTechResultsView();
+  document.getElementById('tech-view-home').classList.remove('active');
+  document.getElementById('tech-view-questionnaire').classList.remove('active');
+  const v=document.getElementById('tech-view-ata');
+  if(v)v.classList.add('active');
+  document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
+  const nav=document.getElementById('sb-nav-ata');if(nav)nav.classList.add('active');
+  await loadTechAta();
+}
+async function loadTechAta(){
+  const body=document.getElementById('tech-ata-body');
+  if(body)body.innerHTML='<div class="loading">Loading your ATA schedule…</div>';
+  let tech;
+  try{
+    await ensureAtaCurriculum();
+    tech=await rpc('app_ata_tech_data',{p_token:currentToken});
+  }catch(e){
+    if(body)body.innerHTML='<div class="err" style="display:block">Could not load your ATA schedule. '+adminEsc((e.message||'').includes('app_ata_tech_data')?'Ask an admin to run supabase/ata-tracking.sql.':(e.message||'Try again.'))+'</div>';
+    return;
+  }
+  renderTechAta(tech);
+}
+function renderTechAta(tech){
+  const body=document.getElementById('tech-ata-body');if(!body)return;
+  if(!tech){body.innerHTML='<div class="admin-empty" style="padding:12px">No ATA record found for your account yet.</div>';return;}
+  const s=ataTechSummary(tech);
+  if(!s.active.length){
+    body.innerHTML='<div class="my-scores"><div style="font-size:13px;color:#555">Your ATA program hasn\'t been started yet. Once an admin assigns your Basic start date, your weekly lesson schedule will appear here.</div></div>';
+    return;
+  }
+  const today=ataToday();
+  const stateBadge=(lr)=>{
+    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">✓ Done</span>';
+    if(lr.state==='overdue')return '<span style="color:#C0392B;font-weight:700">Overdue</span>';
+    if(lr.state==='due'){const diff=Math.round((lr.deadline-today)/86400000);return `<span style="color:#b58900;font-weight:700">Due ${diff<=0?'today':'in '+diff+'d'}</span>`;}
+    return '<span style="color:#999">Upcoming</span>';
+  };
+  const sections=s.progs.filter(p=>p.start).map(p=>{
+    const rows=p.lessonRows.map(lr=>`<tr>
+      <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(lr.lesson.lesson_code)}</td>
+      <td>${adminEsc(lr.lesson.lesson_name)}</td>
+      <td style="white-space:nowrap">${lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—'}</td>
+      <td style="white-space:nowrap">${stateBadge(lr)}</td>
+    </tr>`).join('');
+    return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} complete ${ataStatusChip(p.status)}</div>
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · each lesson due that Friday</div></div>
+    ${ataStatusChip(s.status)}</div>
+    ${s.totalOverdue?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">⚠️ You have ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}</div><div style="font-size:12px;color:#555">Catch up as soon as you can to stay on track.</div></div>`:''}
+  </div>`;
+  body.innerHTML=overall+sections;
+}
+
 async function loadAdminActivityReport(){
   const wrap=document.getElementById('admin-report-wrap');
   const err=document.getElementById('admin-report-err');
@@ -2545,10 +3223,21 @@ function openAdmin(){
   if(nebbDeadline)nebbDeadline.value='all';
   reportTableOpen.activity=false;
   reportTableOpen.nebb=false;
+  ataAdminSearch='';ataAdminRegion='';ataAdminStatusFilter='';
+  const ataSearchEl=document.getElementById('ata-search');
+  const ataRegionEl=document.getElementById('ata-region');
+  const ataStatusEl=document.getElementById('ata-status');
+  if(ataSearchEl)ataSearchEl.value='';
+  if(ataRegionEl)ataRegionEl.innerHTML=ataRegionOptionsHtml('');
+  if(ataStatusEl)ataStatusEl.value='';
+  const ataOpenSheet=document.getElementById('ata-open-sheet');
+  if(ataOpenSheet&&typeof ATA_SHEET_URL!=='undefined'&&ATA_SHEET_URL){ataOpenSheet.href=ATA_SHEET_URL;ataOpenSheet.style.display='inline-block';}
+  ataSetImportStatus('');
+  ataShowFallback(false);
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminNebbReport()]);
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminNebbReport(),ataLoadAdmin()]);
 }
 
 async function loadAdminLists(){
@@ -2961,17 +3650,74 @@ function bootcampHasPassed(t){
   boot.setHours(0,0,0,0);
   return todayDateOnly()>=boot;
 }
-function requiredSectionsMessage(t){
+// Tenure KEY (from start_date):
+//   BASIC        0–3.9 months  (0–0.3 years)
+//   INTERMEDIATE 4.0–12.9 mo   (0.4–1.1 years)
+//   ADVANCED     13+ months    (1.2+ years)
+// Survey + National Accounts are always required at every level.
+// Scored sections are cumulative through the technician's current level.
+// Orientation / Pre-Bootcamp stay on My Progress and never lock the assessment.
+function employmentTenureMonths(t){
   const days=employmentTenureDays(t);
-  if(days===null)return'Complete all sections';
-  if(days<10)return'Required Sections: Orientation';
-  if(days>270)return'Complete all sections';
-  if(days>=100&&days<=270)return'Required Sections: Core, Basics, Intermediate, National & Survey';
-  if(days>=11&&days<=100&&bootcampHasPassed(t))return'Required Sections: Core & Basics';
-  if(days>=11&&days<=60&&isBeforeBootcamp(t))return'Required Sections: Pre-Bootcamp';
-  if(days===10)return isBeforeBootcamp(t)?'Required Sections: Pre-Bootcamp':'Required Sections: Core & Basics';
-  if(days>60&&days<=100&&isBeforeBootcamp(t))return'Required Sections: Pre-Bootcamp';
-  return'Complete all sections';
+  if(days===null)return null;
+  return days/30.44;
+}
+function requiredAssessmentSections(t){
+  const months=employmentTenureMonths(t);
+  const days=employmentTenureDays(t);
+  const accountSecs=['survey','national_accounts'];
+  if(months===null)return{
+    all:false,
+    rated:[],
+    checklist:[],
+    level:null,
+    message:'No assessment sections available — employee start date required'
+  };
+  const checklist=days!==null&&days<10
+    ?['orientation']
+    :(days!==null&&days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
+  // ADVANCED — 13+ months
+  if(months>=13)return{
+    all:false,
+    rated:['safety','basic','intermediate','advanced',...accountSecs],
+    checklist,
+    level:'advanced',
+    message:'Required Sections: Core, Basics, Intermediate, Advanced, National & Survey'
+  };
+  // INTERMEDIATE — 4.0–12.9 months
+  if(months>=4)return{
+    all:false,
+    rated:['safety','basic','intermediate',...accountSecs],
+    checklist,
+    level:'intermediate',
+    message:'Required Sections: Core, Basics, Intermediate, National & Survey'
+  };
+  // BASIC — 0–3.9 months
+  return{
+    all:false,
+    rated:['safety','basic',...accountSecs],
+    checklist,
+    level:'basic',
+    message:'Required Sections: Core, Basics, National & Survey'
+  };
+}
+function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
+function visibleQuestionnaireSections(t){
+  const req=requiredAssessmentSections(t||currentTechData);
+  if(req.all||!req.rated)return QUESTIONNAIRE.slice();
+  const keys=new Set(req.rated);
+  return QUESTIONNAIRE.filter(sec=>keys.has(sec.key));
+}
+function filterAnswersToVisibleSections(raw,t){
+  const filled={};
+  const ids=new Set();
+  visibleQuestionnaireSections(t).forEach(sec=>sec.skills.forEach(sk=>ids.add(sk.id)));
+  Object.keys(raw||{}).forEach(id=>{
+    if(!ids.has(id))return;
+    const n=Math.round(Number(raw[id]));
+    if(n>=1&&n<=5)filled[id]=n;
+  });
+  return filled;
 }
 let assessStartContinue=null;
 function showAssessmentStartModal(message,onContinue){
@@ -3958,9 +4704,30 @@ function renderTechHome(t,opts){
 
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
+  const reqInfo=requiredAssessmentSections(t);
+  const levelLabel=reqInfo.level==='basic'?'BASIC (0–3.9 months)'
+    :reqInfo.level==='intermediate'?'INTERMEDIATE (4.0–12.9 months)'
+    :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
+    :null;
+  const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
+    ?' Also complete Orientation on My Progress below — it does not block this assessment.'
+    :(reqInfo.checklist&&reqInfo.checklist.includes('pre_bootcamp')
+      ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
+      :'');
+  const requiredHint=reqInfo.all
+    ?'Complete every scored section. Survey and National Accounts are always required.'
+    :!techStartDate(t)
+      ?'A start date must be assigned before assessment sections become available.'
+    :'Based on time with the company'+(levelLabel?` — ${levelLabel}`:'')+'. Survey and National Accounts are always included.'+checklistHint;
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
     <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+    ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
+  </div>`;
+  const requiredHtml=`<div class="tech-required-box">
+    <div class="tech-required-label">Required this period</div>
+    <div class="tech-required-msg">${adminEsc(reqInfo.message)}</div>
+    <div class="tech-required-hint">${requiredHint}</div>
   </div>`;
 
   const banner=adminEdit
@@ -3975,6 +4742,7 @@ function renderTechHome(t,opts){
         <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
       ${tenureHtml}
+      ${requiredHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
@@ -3991,6 +4759,9 @@ function showTechHome(){
   closeTechResultsView();
   document.getElementById('tech-view-home').classList.add('active');
   document.getElementById('tech-view-questionnaire').classList.remove('active');
+  const ata=document.getElementById('tech-view-ata');if(ata)ata.classList.remove('active');
+  document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
+  const home=document.getElementById('sb-nav-home');if(home)home.classList.add('active');
   if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
   renderTechSidebarNav();
 }
@@ -4006,15 +4777,7 @@ function lastAssessmentRawScores(){
   return {};
 }
 function prefillQAnswersFromLast(){
-  const raw=lastAssessmentRawScores();
-  const filled={};
-  QUESTIONNAIRE.forEach(sec=>{
-    sec.skills.forEach(sk=>{
-      const n=Math.round(Number(raw[sk.id]));
-      if(n>=1&&n<=5)filled[sk.id]=n;
-    });
-  });
-  return filled;
+  return filterAnswersToVisibleSections(lastAssessmentRawScores(),currentTechData);
 }
 function sectionAvg(key){
   const sec=QUESTIONNAIRE.find(s=>s.key===key);
@@ -4023,11 +4786,30 @@ function sectionAvg(key){
   return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
 }
 function sectionAvgPayload(){
+  const visibleKeys=new Set(visibleQuestionnaireSections(currentTechData).map(s=>s.key));
+  const last=currentTechData&&currentTechData.assessments&&currentTechData.assessments.length
+    ?currentTechData.assessments[currentTechData.assessments.length-1]
+    :null;
   const out={};
   QUESTIONNAIRE.forEach(sec=>{
-    if(sec.avg_field)out[sec.avg_field]=sectionAvg(sec.key);
+    if(!sec.avg_field)return;
+    if(visibleKeys.has(sec.key)){
+      out[sec.avg_field]=sectionAvg(sec.key);
+    }else{
+      const prev=last?last[sec.avg_field]:null;
+      out[sec.avg_field]=prev!=null?prev:null;
+    }
   });
   return out;
+}
+function submitRawScoresPayload(){
+  const merged={...lastAssessmentRawScores()};
+  const visibleIds=new Set();
+  visibleQuestionnaireSections(currentTechData).forEach(sec=>sec.skills.forEach(sk=>visibleIds.add(sk.id)));
+  Object.keys(qAnswers).forEach(id=>{
+    if(visibleIds.has(id))merged[id]=qAnswers[id];
+  });
+  return merged;
 }
 
 async function startQuestionnaire(opts){
@@ -4049,10 +4831,18 @@ async function startQuestionnaire(opts){
       }
     }catch(e){console.warn('Could not refresh assessments for pre-fill',e);}
   }
+  if(!techStartDate(currentTechData)){
+    showTechHome();
+    alert('Assessment unavailable until your employee start date is assigned.');
+    return;
+  }
   const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
   let draftComment='';
   if(draft){
-    qAnswers=draft.raw_scores&&typeof draft.raw_scores==='object'?{...draft.raw_scores}:{};
+    qAnswers={
+      ...prefillQAnswersFromLast(),
+      ...filterAnswersToVisibleSections(draft.raw_scores&&typeof draft.raw_scores==='object'?draft.raw_scores:{},currentTechData)
+    };
     qNebbStatus=draft.nebb_status||'';
     draftComment=draft.comment||'';
   }else{
@@ -4070,11 +4860,8 @@ async function startQuestionnaire(opts){
     renderTechSidebarNav();
     window.scrollTo(0,0);
   };
-  if(!opts.resume){
-    showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
-  }else{
-    openQuestionnaire();
-  }
+  // Always show the start-date rules before opening (including continue).
+  showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
 }
 function continueQuestionnaire(){startQuestionnaire({resume:true});}
 async function saveAssessmentDraft(){
@@ -4103,7 +4890,8 @@ async function saveAssessmentDraft(){
 }
 
 function renderQuestionnaire(){
-  const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
+  const visible=visibleQuestionnaireSections(currentTechData);
+  const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
   const prefilled=Object.keys(qAnswers).length;
   const hasPriorAssessments=!!(currentTechData&&currentTechData.assessments&&currentTechData.assessments.length);
   const prefilledNote=prefilled
@@ -4111,7 +4899,12 @@ function renderQuestionnaire(){
     :hasPriorAssessments
     ?` We don't have your previous skill-by-skill ratings on file yet (only section averages from an older import). Please rate each skill — after you submit once, future assessments will pre-fill automatically.`
     :'';
-  const sections=QUESTIONNAIRE.map(sec=>{
+  const requiredNote=(()=>{
+    const req=requiredAssessmentSections(currentTechData);
+    if(req.all)return'';
+    return` Showing only your required sections for this stage (${req.message.replace(/^Required Sections:\s*/,'')}).`;
+  })();
+  const sections=visible.map(sec=>{
     const secSub=isJobAccountsSection(sec)
       ?jobAccountsSectionSub(sec)
       :'Rate each skill from 1 (Beginner) to 5 (Exceptional).';
@@ -4136,7 +4929,7 @@ function renderQuestionnaire(){
   document.getElementById('q-content').innerHTML=`
     <div class="q-header">
       <div class="q-title">TAB Skills Self-Assessment</div>
-      <div class="q-sub">Your answers help customize your training and track progress over time.${prefilledNote}</div>
+      <div class="q-sub">Your answers help customize your training and track progress over time.${requiredNote}${prefilledNote}</div>
       ${ratingScaleLegendHtml()}
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
@@ -4170,9 +4963,10 @@ function setRating(id,val){
 }
 
 function updateProgress(){
-  const total=QUESTIONNAIRE.reduce((s,sec)=>s+sec.skills.length,0);
-  const done=Object.keys(qAnswers).length;
-  const pct=Math.round((done/total)*100);
+  const visible=visibleQuestionnaireSections(currentTechData);
+  const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
+  const done=visible.reduce((n,sec)=>n+sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length,0);
+  const pct=total?Math.round((done/total)*100):0;
   const fill=document.getElementById('q-fill');
   const lbl=document.getElementById('q-label');
   if(fill)fill.style.width=pct+'%';
@@ -4191,7 +4985,7 @@ async function submitAssessment(){
     ...sectionAvgPayload(),
     comment:comment||null,
     nebb_status:qNebbStatus,
-    raw_scores:qAnswers
+    raw_scores:submitRawScoresPayload()
   };
   try{
     await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
