@@ -45,10 +45,10 @@ BEGIN
               FROM (
                 SELECT jsonb_object_keys(coalesce(l.latest_raw, '{}'::jsonb)) AS key
                 UNION
-                SELECT jsonb_object_keys(coalesce(p.prev_raw, '{}'::jsonb)) AS key
+                SELECT jsonb_object_keys(coalesce(prev.prev_raw, '{}'::jsonb)) AS key
               ) keys
               WHERE coalesce(l.latest_raw -> keys.key, 'null'::jsonb)
-                    IS DISTINCT FROM coalesce(p.prev_raw -> keys.key, 'null'::jsonb)
+                    IS DISTINCT FROM coalesce(prev.prev_raw -> keys.key, 'null'::jsonb)
             ) diff
           )
         END AS skills_changed
@@ -80,7 +80,7 @@ BEGIN
           WHERE a.%1$I = t.id
         ) r
         WHERE r.rn = 2
-      ) p ON true
+      ) prev ON true
       WHERE t.deleted_at IS NULL
     ) x
   $q$, v_fk_col)
@@ -128,9 +128,17 @@ BEGIN
         ELSE coalesce(p.cecs_complete,false)
       END AS cecs_complete,
       CASE
+        WHEN p.role='technician' THEN coalesce(t.nebb_site_updated,false)
+        ELSE coalesce(p.nebb_site_updated,false)
+      END AS nebb_site_updated,
+      CASE
         WHEN (CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END) IS NULL THEN NULL
         ELSE ((CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END) - current_date)::int
-      END AS days_until_expiry
+      END AS days_until_expiry,
+      EXISTS (
+        SELECT 1 FROM public.app_person_cert_files f
+        WHERE f.person_id = p.id
+      ) AS has_cert_file
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     WHERE (p.role <> 'technician' OR t.deleted_at IS NULL)
@@ -145,3 +153,59 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.app_admin_nebb_certified_report() TO authenticated;
+
+-- ── NEBB report inline save (expiration + CEC + site-updated flags) ──────────
+CREATE OR REPLACE FUNCTION public.app_admin_save_nebb_report_row(
+  p_person_id bigint,
+  p_cert_expires_on text DEFAULT NULL,
+  p_cecs_complete boolean DEFAULT NULL,
+  p_nebb_site_updated boolean DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_role    text;
+  v_tech_id bigint;
+BEGIN
+  IF NOT app_is_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  SELECT role, tech_id INTO v_role, v_tech_id
+  FROM public.app_people
+  WHERE id = p_person_id;
+
+  IF v_role IS NULL THEN
+    RAISE EXCEPTION 'Person not found';
+  END IF;
+
+  IF v_role IN ('admin','pm') THEN
+    UPDATE public.app_people
+    SET cert_expires_on = CASE
+                            WHEN p_cert_expires_on IS NULL THEN cert_expires_on
+                            WHEN trim(p_cert_expires_on) = '' THEN NULL
+                            ELSE p_cert_expires_on::date
+                          END,
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete),
+        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated)
+    WHERE id = p_person_id;
+  ELSIF v_role = 'technician' AND v_tech_id IS NOT NULL THEN
+    UPDATE public.technicians
+    SET cert_expires_on = CASE
+          WHEN p_cert_expires_on IS NULL THEN cert_expires_on
+          WHEN trim(p_cert_expires_on) = '' THEN NULL
+          ELSE p_cert_expires_on::date
+        END,
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete),
+        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated)
+    WHERE id = v_tech_id AND deleted_at IS NULL;
+  ELSE
+    RAISE EXCEPTION 'Unable to update this person';
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.app_admin_save_nebb_report_row(bigint, text, boolean, boolean) TO authenticated;

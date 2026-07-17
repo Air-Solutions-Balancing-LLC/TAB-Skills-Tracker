@@ -17,6 +17,7 @@ ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS deleted_at  timestamptz;
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS prev_region text;
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS cert_expires_on date;
 ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS cecs_complete boolean NOT NULL DEFAULT false;
+ALTER TABLE public.technicians ADD COLUMN IF NOT EXISTS nebb_site_updated boolean NOT NULL DEFAULT false;
 
 -- ── Unified people registry ──────────────────────────────────────────────────
 -- email is always stored lower-cased; UNIQUE(email) lets the RPCs upsert safely.
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.app_people (
   nebb_status text,
   cert_expires_on date,
   cecs_complete boolean NOT NULL DEFAULT false,
+  nebb_site_updated boolean NOT NULL DEFAULT false,
   tech_id    bigint REFERENCES public.technicians(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -36,6 +38,16 @@ ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS region text;
 ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS nebb_status text;
 ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS cert_expires_on date;
 ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS cecs_complete boolean NOT NULL DEFAULT false;
+ALTER TABLE public.app_people ADD COLUMN IF NOT EXISTS nebb_site_updated boolean NOT NULL DEFAULT false;
+
+-- ── Certification PDF storage (DB-backed, admin-managed) ─────────────────────
+CREATE TABLE IF NOT EXISTS public.app_person_cert_files (
+  person_id       bigint PRIMARY KEY REFERENCES public.app_people(id) ON DELETE CASCADE,
+  file_name       text NOT NULL,
+  mime_type       text NOT NULL DEFAULT 'application/pdf',
+  content_base64  text NOT NULL,
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
 
 -- ── Backfill technicians into the registry ───────────────────────────────────
 -- Only technicians with an email can sign in, so those are the ones we register.
@@ -86,7 +98,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, cert_expires_on date, cecs_complete boolean, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, cert_expires_on date, cecs_complete boolean, nebb_site_updated boolean, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -110,6 +122,7 @@ BEGIN
            CASE WHEN p.role='technician' THEN t.nebb_status ELSE p.nebb_status END AS nebb_status,
            CASE WHEN p.role='technician' THEN t.cert_expires_on ELSE p.cert_expires_on END AS cert_expires_on,
            CASE WHEN p.role='technician' THEN coalesce(t.cecs_complete,false) ELSE coalesce(p.cecs_complete,false) END AS cecs_complete,
+           CASE WHEN p.role='technician' THEN coalesce(t.nebb_site_updated,false) ELSE coalesce(p.nebb_site_updated,false) END AS nebb_site_updated,
            t.start_date,
            t.bootcamp_start_date,
            (
@@ -282,6 +295,7 @@ $$;
 -- Drop older signatures so re-running leaves only one version.
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean);
 
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_id         bigint,
@@ -293,7 +307,8 @@ CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_bootcamp_start_date text DEFAULT NULL,
   p_nebb_status text DEFAULT NULL,
   p_cert_expires_on text DEFAULT NULL,
-  p_cecs_complete boolean DEFAULT NULL
+  p_cecs_complete boolean DEFAULT NULL,
+  p_nebb_site_updated boolean DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -371,7 +386,8 @@ BEGIN
                             WHEN trim(p_cert_expires_on) = '' THEN NULL
                             ELSE p_cert_expires_on::date
                           END,
-        cecs_complete = COALESCE(p_cecs_complete, cecs_complete)
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete),
+        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated)
     WHERE id = p_id;
   END IF;
 
@@ -400,9 +416,90 @@ BEGIN
           WHEN trim(p_cert_expires_on) = '' THEN NULL
           ELSE p_cert_expires_on::date
         END,
-        cecs_complete = COALESCE(p_cecs_complete, cecs_complete)
+        cecs_complete = COALESCE(p_cecs_complete, cecs_complete),
+        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated)
     WHERE id = v_tech_id AND deleted_at IS NULL;
   END IF;
+END;
+$$;
+
+-- ── Admin: upload/replace certification PDF for a person ─────────────────────
+CREATE OR REPLACE FUNCTION public.app_admin_save_cert_pdf(
+  p_person_id bigint,
+  p_file_name text,
+  p_content_base64 text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+BEGIN
+  IF NOT app_is_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  IF p_person_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.app_people WHERE id = p_person_id) THEN
+    RAISE EXCEPTION 'Person not found';
+  END IF;
+  IF p_content_base64 IS NULL OR trim(p_content_base64) = '' THEN
+    RAISE EXCEPTION 'PDF content is required';
+  END IF;
+  IF length(p_content_base64) > 12000000 THEN
+    RAISE EXCEPTION 'PDF is too large';
+  END IF;
+  IF lower(coalesce(p_file_name,'')) !~ '\.pdf$' THEN
+    RAISE EXCEPTION 'Only PDF files are allowed';
+  END IF;
+  -- Reject obvious non-PDF content (images usually start with iVBOR / /9j / R0lG)
+  IF left(regexp_replace(trim(p_content_base64), '\s', '', 'g'), 5) NOT IN ('JVBER') THEN
+    RAISE EXCEPTION 'Only valid PDF files are allowed';
+  END IF;
+
+  INSERT INTO public.app_person_cert_files (person_id, file_name, mime_type, content_base64, updated_at)
+  VALUES (
+    p_person_id,
+    COALESCE(NULLIF(trim(p_file_name), ''), 'certification.pdf'),
+    'application/pdf',
+    p_content_base64,
+    now()
+  )
+  ON CONFLICT (person_id) DO UPDATE
+    SET file_name      = EXCLUDED.file_name,
+        mime_type      = EXCLUDED.mime_type,
+        content_base64 = EXCLUDED.content_base64,
+        updated_at     = now();
+END;
+$$;
+
+-- ── Admin: fetch certification PDF payload for download ───────────────────────
+CREATE OR REPLACE FUNCTION public.app_admin_get_cert_pdf(p_person_id bigint)
+RETURNS json
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  IF NOT app_is_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  SELECT row_to_json(x)
+  INTO v_result
+  FROM (
+    SELECT
+      f.person_id,
+      f.file_name,
+      f.mime_type,
+      f.content_base64,
+      f.updated_at
+    FROM public.app_person_cert_files f
+    WHERE f.person_id = p_person_id
+  ) x;
+
+  RETURN COALESCE(v_result, '{}'::json);
 END;
 $$;
 
@@ -413,4 +510,6 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_save_cert_pdf(bigint, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_get_cert_pdf(bigint) TO authenticated;

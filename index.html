@@ -79,8 +79,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
 .admin-empty{font-size:12px;color:#aaa;padding:4px 2px}
 .admin-box-wide{max-width:1000px!important}
+#pg-admin .login-bg{padding:8px 8px!important;align-items:flex-start}
+#pg-admin .admin-box-wide{max-width:min(1480px,100%)!important;padding:1.25rem 1.1rem;border-radius:12px}
 .report-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:0}
 .report-item{border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafafa}
+.report-table.nebb-cert-table{table-layout:fixed;font-size:11px}
+.report-table.nebb-cert-table th,.report-table.nebb-cert-table td{padding:6px 6px;vertical-align:middle}
+.report-table.nebb-cert-table th{white-space:normal;line-height:1.2}
+.report-table.nebb-cert-table .admin-edit-field{min-width:0!important;width:100%;padding:5px 6px;font-size:11px}
+.report-table.nebb-cert-table .nebb-cert-actions{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.report-table.nebb-cert-table .nebb-cert-actions .btn{padding:5px 7px;font-size:10px;line-height:1.2}
 .report-item:last-child{margin-bottom:0}
 .report-toggle{border:none;background:transparent;cursor:pointer;padding:0 4px 0 0;font-size:9px;color:#1B3A6B;line-height:1;flex-shrink:0}
 .report-toggle:hover{color:#2d5a9e}
@@ -521,6 +529,10 @@ body.mobile-nav-open{overflow:hidden}
   .comp-row{flex-direction:column;align-items:stretch;gap:6px}
   .comp-label{width:auto}
   .comp-trend{text-align:left;min-width:0}
+  .tech-results-header{padding:12px 14px}
+  .tech-results-filter{padding:10px 14px}
+  .tech-res-filter-btn{min-height:44px;flex:1 1 calc(50% - 4px)}
+  .tech-results-body{padding:12px 14px 20px}
   .mod-head{flex-wrap:wrap;padding:12px 14px;gap:8px}
   .mod-name{flex:1 1 100%;font-size:12px;line-height:1.35}
   .mod-stats{margin-left:0;width:100%;justify-content:flex-end}
@@ -643,8 +655,8 @@ body.mobile-nav-open{overflow:hidden}
 
 <!-- ADMIN: user management -->
 <div id="pg-admin" class="page">
-  <div class="login-bg" style="align-items:flex-start;padding:24px 16px">
-    <div class="login-box admin-box-wide" style="max-width:840px">
+  <div class="login-bg">
+    <div class="login-box admin-box-wide">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
         <div class="login-logo">User Management</div>
         <div style="display:flex;gap:8px">
@@ -732,6 +744,16 @@ body.mobile-nav-open{overflow:hidden}
                     <option value="RM">Rocky Mountain</option>
                     <option value="SE">Southeast</option>
                     <option value="SW">Southwest</option>
+                  </select>
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-nebb-deadline">Cert deadline</label>
+                  <select id="admin-nebb-deadline" onchange="onAdminNebbFilterChange()">
+                    <option value="30">Under 30 days</option>
+                    <option value="60">Under 60 days</option>
+                    <option value="90">Under 90 days</option>
+                    <option value="120">Under 120 days</option>
+                    <option value="all" selected>All</option>
                   </select>
                 </div>
               </div>
@@ -1009,7 +1031,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="tech-results-body" id="tech-results-body"></div>
   <div class="tech-results-footer">
     <button type="button" class="btn btn-outline" onclick="closeTechResultsView()">Close</button>
-    <button type="button" class="btn" id="tech-download-btn" onclick="downloadTechAssessment()">Download PDF</button>
+    <button type="button" class="btn" id="tech-download-btn" onclick="exportTechAssessmentPdf()">Download PDF</button>
   </div>
 </div>
 
@@ -1796,7 +1818,7 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='';
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
 const adminSecOpen={admins:false,pms:false,techs:false,deleted:false};
@@ -1945,8 +1967,14 @@ function sortAdminNebbRows(rows){
 function filteredAdminNebbRows(){
   const q=adminNebbSearch.trim().toLowerCase();
   const region=adminNebbRegion;
+  const deadlineFilter=String(adminNebbDeadlineFilter||'all');
   return sortAdminNebbRows(adminNebbRows).filter(r=>{
     if(region&&r.region!==region)return false;
+    if(deadlineFilter!=='all'){
+      const n=Number(r.days_until_expiry);
+      const cap=Number(deadlineFilter);
+      if(Number.isNaN(n)||n>cap)return false;
+    }
     if(!q)return true;
     return String(r.name||'').toLowerCase().includes(q);
   });
@@ -1956,7 +1984,7 @@ function updateAdminNebbFilterHint(shown,total){
   const hint=document.getElementById('admin-nebb-filter-hint');
   if(!hint)return;
   if(!total){hint.textContent='';return;}
-  if(shown===total&&!adminNebbSearch.trim()&&!adminNebbRegion){
+  if(shown===total&&!adminNebbSearch.trim()&&!adminNebbRegion&&String(adminNebbDeadlineFilter||'all')==='all'){
     hint.textContent=total+' certified employee'+(total===1?'':'s');
     return;
   }
@@ -1966,9 +1994,149 @@ function updateAdminNebbFilterHint(shown,total){
 function onAdminNebbFilterChange(){
   const searchEl=document.getElementById('admin-nebb-search');
   const regionEl=document.getElementById('admin-nebb-region');
+  const deadlineEl=document.getElementById('admin-nebb-deadline');
   adminNebbSearch=searchEl?searchEl.value:'';
   adminNebbRegion=regionEl?regionEl.value:'';
+  adminNebbDeadlineFilter=deadlineEl?deadlineEl.value:'all';
   renderAdminNebbReport();
+}
+
+function nebbCertDeadlineLabel(value){
+  const v=String(value||'all');
+  if(v==='30')return 'Under 30 days';
+  if(v==='60')return 'Under 60 days';
+  if(v==='90')return 'Under 90 days';
+  if(v==='120')return 'Under 120 days';
+  return 'All deadlines';
+}
+
+async function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const result=String(reader.result||'');
+      const idx=result.indexOf(',');
+      resolve(idx>=0?result.slice(idx+1):result);
+    };
+    reader.onerror=()=>reject(new Error('Could not read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function assertNebbCertPdfFile(file){
+  if(!file)throw new Error('Please choose a PDF file.');
+  const name=String(file.name||'').toLowerCase().trim();
+  const type=String(file.type||'').toLowerCase().trim();
+  const imageTypes=['image/','image/png','image/jpeg','image/jpg','image/gif','image/webp','image/heic','image/heif','image/bmp','image/tiff'];
+  const imageExts=['.png','.jpg','.jpeg','.gif','.webp','.heic','.heif','.bmp','.tif','.tiff'];
+  if(imageTypes.some(t=>type===t||type.startsWith('image/'))){
+    throw new Error('Images are not allowed. Upload a PDF only.');
+  }
+  if(imageExts.some(ext=>name.endsWith(ext))){
+    throw new Error('PNG/JPEG and other image files are not allowed. Upload a PDF only.');
+  }
+  if(!name.endsWith('.pdf')){
+    throw new Error('Only PDF files are allowed for NEBB certificates.');
+  }
+  if(type&&type!=='application/pdf'&&type!=='application/x-pdf'){
+    throw new Error('Only PDF files are allowed for NEBB certificates.');
+  }
+  if(file.size>9*1024*1024)throw new Error('PDF is too large. Use a file under 9 MB.');
+  const header=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(new Uint8Array(reader.result||[]));
+    reader.onerror=()=>reject(new Error('Could not read file'));
+    reader.readAsArrayBuffer(file.slice(0,5));
+  });
+  const sig=String.fromCharCode(...header);
+  if(sig!=='%PDF-'){
+    throw new Error('That file is not a valid PDF. Upload a PDF certificate only.');
+  }
+}
+
+async function uploadNebbCertPdf(personId){
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  const input=document.getElementById('nebb-cert-file-'+personId);
+  if(!input||!input.files||!input.files.length)return;
+  const file=input.files[0];
+  try{
+    await assertNebbCertPdfFile(file);
+    const safeName=String(file.name||'certification.pdf').replace(/[^\w.\-() ]+/g,'_');
+    const contentBase64=await fileToBase64(file);
+    await rpc('app_admin_save_cert_pdf',{
+      p_person_id:personId,
+      p_file_name:safeName.toLowerCase().endsWith('.pdf')?safeName:'certification.pdf',
+      p_content_base64:contentBase64
+    });
+    input.value='';
+    await loadAdminNebbReport();
+  }catch(e){
+    input.value='';
+    if(err){
+      err.textContent='Could not upload certification PDF. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
+}
+
+function base64ToBlob(base64,mimeType){
+  const clean=String(base64||'').replace(/\s/g,'');
+  const bin=atob(clean);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i+=1)bytes[i]=bin.charCodeAt(i);
+  return new Blob([bytes],{type:mimeType||'application/pdf'});
+}
+
+async function fetchNebbCertPdfBlob(personId){
+  const data=await rpc('app_admin_get_cert_pdf',{p_person_id:personId});
+  const b64=data&&data.content_base64?String(data.content_base64):'';
+  if(!b64)throw new Error('No certification PDF is uploaded yet.');
+  return {
+    blob:base64ToBlob(b64,data.mime_type||'application/pdf'),
+    fileName:data.file_name||'certification.pdf'
+  };
+}
+
+async function downloadNebbCertPdf(personId){
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  try{
+    const {blob,fileName}=await fetchNebbCertPdfBlob(personId);
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;
+    link.download=fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){
+    if(err){
+      err.textContent='Could not download certification PDF. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
+}
+
+async function viewNebbCertPdf(personId){
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  try{
+    const {blob}=await fetchNebbCertPdfBlob(personId);
+    const url=URL.createObjectURL(blob);
+    const win=window.open(url,'_blank','noopener,noreferrer');
+    if(!win){
+      URL.revokeObjectURL(url);
+      throw new Error('Popup blocked. Allow popups to view the certificate.');
+    }
+    setTimeout(()=>URL.revokeObjectURL(url),120000);
+  }catch(e){
+    if(err){
+      err.textContent='Could not view certification PDF. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
 }
 
 function buildAdminNebbTableHtml(rows){
@@ -1977,22 +2145,40 @@ function buildAdminNebbTableHtml(rows){
     const expVal=adminDateInputValue(r.cert_expires_on);
     const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
     const deadlineCls=reportCertDaysClass(r.days_until_expiry);
-    const expEditor=`<input type="date" id="nebb-exp-${r.person_id}" class="admin-edit-field" value="${expVal}" style="min-width:140px">`;
-    const cecsEditor=`<label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input type="checkbox" id="nebb-cecs-${r.person_id}" ${r.cecs_complete?'checked':''}> <span>${r.cecs_complete?'Yes':'No'}</span></label>`;
+    const expEditor=`<input type="date" id="nebb-exp-${r.person_id}" class="admin-edit-field" value="${expVal}">`;
+    const cecsEditor=`<label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="nebb-cecs-${r.person_id}" ${r.cecs_complete?'checked':''} onchange="this.nextElementSibling.textContent=this.checked?'Yes':'No'"> <span>${r.cecs_complete?'Yes':'No'}</span></label>`;
+    const siteEditor=`<label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="nebb-siteupd-${r.person_id}" ${r.nebb_site_updated?'checked':''} onchange="this.nextElementSibling.textContent=this.checked?'Yes':'No'"> <span>${r.nebb_site_updated?'Yes':'No'}</span></label>`;
+    const fileInputId='nebb-cert-file-'+r.person_id;
+    const uploadLabel=r.has_cert_file?'Replace':'Upload';
+    const certActions=`
+      <div class="nebb-cert-actions">
+        <input type="file" id="${fileInputId}" accept=".pdf,application/pdf" style="display:none" onchange="uploadNebbCertPdf(${r.person_id})">
+        <button type="button" class="btn" onclick="document.getElementById('${fileInputId}').click()">${uploadLabel}</button>
+        <button type="button" class="btn" style="background:#0F6E56" onclick="viewNebbCertPdf(${r.person_id})" ${r.has_cert_file?'':'disabled'}>View</button>
+        <button type="button" class="btn" style="background:#888" onclick="downloadNebbCertPdf(${r.person_id})" ${r.has_cert_file?'':'disabled'}>Download</button>
+      </div>
+    `;
     return `<tr>
       <td>${adminEsc(r.name)}</td>
       <td>${adminEsc(String(r.role||'').toUpperCase())}</td>
-      <td>${adminEsc(regionLabel(r.region))}</td>
+      <td>${adminEsc(regionLabel(r.region)||r.region||'—')}</td>
       <td>${adminEsc(r.nebb_status)}</td>
       <td>${expEditor}</td>
       <td>${cecsEditor}</td>
+      <td>${siteEditor}</td>
       <td class="${deadlineCls}">${adminEsc(deadline)}</td>
-      <td><button type="button" class="btn" style="padding:6px 10px;font-size:11px" onclick="saveNebbReportRow(${r.person_id})">Save</button></td>
+      <td>${certActions}</td>
+      <td><button type="button" class="btn" style="padding:5px 8px;font-size:10px" onclick="saveNebbReportRow(${r.person_id})">Save</button></td>
     </tr>`;
   }).join('');
-  return `<table class="report-table">
+  return `<table class="report-table nebb-cert-table">
+    <colgroup>
+      <col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:8%">
+      <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:7%">
+      <col style="width:20%"><col style="width:5%">
+    </colgroup>
     <thead><tr>
-      <th>Name</th><th>Role</th><th>Region</th><th>Certification</th><th>Expiration date</th><th>CECs complete</th><th>Cert deadline (days)</th><th>Action</th>
+      <th>Name</th><th>Role</th><th>Region</th><th>Cert</th><th>Expires</th><th>CECs</th><th>Site Updated</th><th>Days</th><th>Certification PDF</th><th></th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -2034,24 +2220,19 @@ async function saveNebbReportRow(personId){
   if(err)err.style.display='none';
   const exp=document.getElementById('nebb-exp-'+personId);
   const cecs=document.getElementById('nebb-cecs-'+personId);
+  const siteUpdated=document.getElementById('nebb-siteupd-'+personId);
   try{
-    await rpc('app_admin_update_person',{
-      p_id:personId,
-      p_name:null,
-      p_email:null,
-      p_role:null,
-      p_region:null,
-      p_start_date:null,
-      p_bootcamp_start_date:null,
-      p_nebb_status:null,
+    await rpc('app_admin_save_nebb_report_row',{
+      p_person_id:personId,
       p_cert_expires_on:exp?exp.value:null,
-      p_cecs_complete:cecs?!!cecs.checked:null
+      p_cecs_complete:cecs?!!cecs.checked:false,
+      p_nebb_site_updated:siteUpdated?!!siteUpdated.checked:false
     });
     await loadAdminNebbReport();
     await loadAdminLists();
   }catch(e){
     if(err){
-      err.textContent='Could not save certification updates. '+(e.message||'Try again.');
+      err.textContent='Could not save certification updates. '+(e.message||'Try again. If this persists, run the latest supabase/admin-reports.sql in Supabase.');
       err.style.display='block';
     }
   }
@@ -2229,6 +2410,7 @@ function adminNebbPdfFilename(reportDateIso){
   const iso=reportDateIso||new Date().toISOString().slice(0,10);
   const parts=['NEBB-Certified-Report',iso];
   if(adminNebbRegion)parts.push(adminNebbRegion);
+  if(String(adminNebbDeadlineFilter||'all')!=='all')parts.push('under-'+adminNebbDeadlineFilter+'-days');
   if(adminNebbSearch.trim())parts.push('filtered');
   return parts.join('-')+'.pdf';
 }
@@ -2246,12 +2428,13 @@ function buildAdminNebbPdfDoc(rows,reportDateText){
   const lh=12;
   const cols=[
     {label:'Name',w:contentW*0.20},
-    {label:'Role',w:contentW*0.10},
-    {label:'Region',w:contentW*0.14},
-    {label:'Certification',w:contentW*0.14},
-    {label:'Expiration',w:contentW*0.15},
-    {label:'CECs complete',w:contentW*0.11},
-    {label:'Cert deadline (days)',w:contentW*0.16}
+    {label:'Role',w:contentW*0.09},
+    {label:'Region',w:contentW*0.12},
+    {label:'Certification',w:contentW*0.13},
+    {label:'Expiration',w:contentW*0.13},
+    {label:'CECs',w:contentW*0.08},
+    {label:'Site Updated',w:contentW*0.10},
+    {label:'Cert deadline (days)',w:contentW*0.15}
   ];
   function needPage(h){
     if(y+h>pageH-margin){
@@ -2284,6 +2467,7 @@ function buildAdminNebbPdfDoc(rows,reportDateText){
     'Report date: '+reportDateText,
     adminNebbSearch.trim()?('Search: '+adminNebbSearch.trim()):'',
     adminNebbRegion?('Region: '+regionLabel(adminNebbRegion)):'',
+    String(adminNebbDeadlineFilter||'all')!=='all'?('Cert deadline: '+nebbCertDeadlineLabel(adminNebbDeadlineFilter)):'',
     'Showing '+rows.length+' employee'+(rows.length===1?'':'s')
   ].filter(Boolean).join('  ·  ')),contentW);
   meta.forEach(line=>{doc.text(line,margin,y);y+=lh;});
@@ -2292,7 +2476,7 @@ function buildAdminNebbPdfDoc(rows,reportDateText){
   rows.forEach((r,idx)=>{
     const exp=r.cert_expires_on?fmtDate(r.cert_expires_on):'—';
     const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
-    const values=[pdfSafeText(r.name),pdfSafeText(String(r.role||'').toUpperCase()),pdfSafeText(regionLabel(r.region)),pdfSafeText(r.nebb_status),pdfSafeText(exp),r.cecs_complete?'Yes':'No',pdfSafeText(deadline)];
+    const values=[pdfSafeText(r.name),pdfSafeText(String(r.role||'').toUpperCase()),pdfSafeText(regionLabel(r.region)),pdfSafeText(r.nebb_status),pdfSafeText(exp),r.cecs_complete?'Yes':'No',r.nebb_site_updated?'Yes':'No',pdfSafeText(deadline)];
     const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
     const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*11+6;
     if(needPage(rowH+4))drawHeader();
@@ -2348,14 +2532,19 @@ function openAdmin(){
   adminReportRegion='';
   adminNebbSearch='';
   adminNebbRegion='';
+  adminNebbDeadlineFilter='all';
   const reportSearch=document.getElementById('admin-report-search');
   const reportRegion=document.getElementById('admin-report-region');
   const nebbSearch=document.getElementById('admin-nebb-search');
   const nebbRegion=document.getElementById('admin-nebb-region');
+  const nebbDeadline=document.getElementById('admin-nebb-deadline');
   if(reportSearch)reportSearch.value='';
   if(reportRegion)reportRegion.value='';
   if(nebbSearch)nebbSearch.value='';
   if(nebbRegion)nebbRegion.value='';
+  if(nebbDeadline)nebbDeadline.value='all';
+  reportTableOpen.activity=false;
+  reportTableOpen.nebb=false;
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
@@ -2428,7 +2617,13 @@ function regionOptionsWithBlankHtml(sel){
 }
 
 function nebbOptionsHtml(sel){
-  return ADMIN_NEBB_OPTIONS.map(([v,l])=>`<option value="${adminEsc(v)}"${v===sel?' selected':''}>${adminEsc(l)}</option>`).join('');
+  const values=ADMIN_NEBB_OPTIONS.map(([v])=>v);
+  let normalized=sel||'';
+  if(!values.includes(normalized)){
+    const tier=nebbStatusTier(sel);
+    normalized=tier==='cp'?'NEBB CP':(tier==='ct'?'NEBB CT':'In Training');
+  }
+  return ADMIN_NEBB_OPTIONS.map(([v,l])=>`<option value="${adminEsc(v)}"${v===normalized?' selected':''}>${adminEsc(l)}</option>`).join('');
 }
 
 function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.length>=10?s.slice(0,10):'';}
@@ -2441,6 +2636,7 @@ function editRowHtml(p){
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>`
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">Cert expiration</span><input type="date" id="edit-cert-exp-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.cert_expires_on)}"></label>`
     +`<label class="admin-start-wrap"><span class="admin-start-lbl">CECs complete</span><select id="edit-cecs-${p.id}" class="admin-edit-field"><option value="false"${p.cecs_complete?'':' selected'}>No</option><option value="true"${p.cecs_complete?' selected':''}>Yes</option></select></label>`
+    +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB Site Updated</span><select id="edit-siteupd-${p.id}" class="admin-edit-field"><option value="false"${p.nebb_site_updated?'':' selected'}>No</option><option value="true"${p.nebb_site_updated?' selected':''}>Yes</option></select></label>`
     +(p.role==='technician'
       ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label><label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>`
       :'');
@@ -2475,13 +2671,15 @@ async function saveEdit(id,role){
   err.style.display='none';
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null};
   const nebb=document.getElementById('edit-nebb-'+id);
   const certExp=document.getElementById('edit-cert-exp-'+id);
   const cecs=document.getElementById('edit-cecs-'+id);
+  const siteUpd=document.getElementById('edit-siteupd-'+id);
   args.p_nebb_status=nebb?nebb.value:null;
   args.p_cert_expires_on=certExp?certExp.value:null;
   args.p_cecs_complete=cecs?cecs.value==='true':null;
+  args.p_nebb_site_updated=siteUpd?siteUpd.value==='true':null;
   if(role==='technician'){
     const r=document.getElementById('edit-region-'+id);
     args.p_region=r?r.value:null;
@@ -2819,8 +3017,8 @@ function nebbStatusTier(stored){
   if(idx===2||idx===3||idx===4)return 'ct';
   if(idx>=0)return 'training';
   const s=String(stored).toLowerCase();
-  if(s==='nebb cp'||s==='cp')return 'cp';
-  if(s==='nebb ct'||s==='ct')return 'ct';
+  if(s==='nebb cp'||s==='cp'||s.includes('nebb cp'))return 'cp';
+  if(s==='nebb ct'||s==='ct'||s.includes('nebb ct'))return 'ct';
   return 'training';
 }
 function nebbStatusLabel(stored){
@@ -3280,11 +3478,18 @@ function buildTechAssessmentCoverSection(t,assessment){
   </div>`;
 }
 
+function buildAssessmentResultsContent(assessment,prevAssessment,opts){
+  opts=opts||{};
+  const t=opts.tech||currentTechData;
+  if(t)return buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts);
+  return buildAssessmentModulesHtml(assessment,prevAssessment,opts);
+}
+
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
     idPrefix:'tech-res-',
-    startOpen:false,
+    startOpen:true,
     sortByRating:true,
     ratingFilter:opts.ratingFilter,
     showTrend:!!prevAssessment
@@ -3512,7 +3717,7 @@ function refreshTechResultsView(){
   const prev=idx>0?assessments[idx-1]:null;
   const body=document.getElementById('tech-results-body');
   if(body){
-    body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,techResultsAssessment,prev,{ratingFilter:techResultsRatingFilter});
+    body.innerHTML=buildAssessmentResultsContent(techResultsAssessment,prev,{ratingFilter:techResultsRatingFilter,tech:currentTechData});
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
@@ -3540,7 +3745,7 @@ function openTechResultsView(assessment,opts){
   const dateEl=document.getElementById('tech-results-date');
   if(dateEl)dateEl.textContent='Submitted '+fmtDateFull(assessment.date);
   if(body){
-    body.innerHTML=buildTechAssessmentResultsHtml(currentTechData,assessment,prev,opts);
+    body.innerHTML=buildAssessmentResultsContent(assessment,prev,Object.assign({tech:currentTechData},opts));
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
@@ -3554,8 +3759,11 @@ function openTechResultsView(assessment,opts){
 function closeTechResultsView(){
   const overlay=document.getElementById('tech-results-overlay');
   techResultsRatingFilter=null;
+  techResultsAssessment=null;
   if(overlay)overlay.classList.remove('visible');
   document.body.style.overflow='';
+  document.getElementById('tech-view-home')?.classList.add('active');
+  document.getElementById('tech-view-questionnaire')?.classList.remove('active');
 }
 
 function downloadFilename(name,date){
@@ -3563,6 +3771,10 @@ function downloadFilename(name,date){
   const d=parseDateOnly(date);
   const iso=d?d.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
   return'TAB-Assessment-'+safe+'-'+iso+'.pdf';
+}
+
+async function exportTechAssessmentPdf(){
+  return downloadTechAssessment();
 }
 
 async function downloadTechAssessment(){
