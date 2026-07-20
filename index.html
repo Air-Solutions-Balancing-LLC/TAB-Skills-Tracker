@@ -779,9 +779,11 @@ body.mobile-nav-open{overflow:hidden}
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" id="ata-update-btn" style="background:#0F6E56" onclick="ataUpdateFromSheet()">↻ Update from Sheet</button>
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
+            <button type="button" class="btn" style="background:#6b4fa0" onclick="ataShowWebhookSetup()">⚡ Zapier auto-sync setup</button>
             <a class="btn" id="ata-open-sheet" href="#" target="_blank" rel="noopener" style="background:#888;text-decoration:none;display:none">Open Sheet</a>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
           </div>
+          <div id="ata-webhook-box" style="display:none;background:#F3F0FA;border:1px solid #d6cceb;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px"></div>
           <div id="ata-import-status" style="font-size:12px;margin:4px 0;min-height:16px"></div>
           <div id="ata-import-fallback" style="display:none;background:#F6F8FC;border:1px solid #d8e2f0;border-radius:8px;padding:10px;margin-bottom:8px">
             <div style="font-size:12px;color:#555;margin-bottom:6px">Manual fallback — paste or upload a CSV with a header row containing <strong>Name</strong>, <strong>Quiz</strong>, and <strong>Score</strong> columns (quiz cells must include codes like TAB-B-101). Rows marked "Not taken" are ignored.</div>
@@ -2362,11 +2364,40 @@ function ataLessonsByProgram(program){
   return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>a.sort_order-b.sort_order);
 }
 function ataCompletionFor(tech,code){const c=(tech&&tech.completions)||{};return c[code]||null;}
+function ataAttemptInfo(tech,code){const a=(tech&&tech.attempts)||{};return a[code]||null;}
 function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program]||null;}
+const ATA_PASS_PCT=80;
+const ATA_MAX_RESETS=3;
+// A lesson is "done" only when passed (>=80%). Legacy sheet completions with no
+// numeric score are treated as done; a recorded score below 80 is NOT done.
+function ataIsDone(tech,code){
+  const c=ataCompletionFor(tech,code);
+  if(!c)return false;
+  if(c.passed===true)return true;
+  if(c.score==null)return true; // legacy "completed, no score shown" import
+  return Number(c.score)>=ATA_PASS_PCT;
+}
+// Failed = has an attempt/score on record but has not reached a passing score.
+function ataIsFailed(tech,code){
+  if(ataIsDone(tech,code))return false;
+  const c=ataCompletionFor(tech,code);
+  const a=ataAttemptInfo(tech,code);
+  if(a&&(a.count||0)>0)return true;
+  return !!(c&&c.score!=null&&Number(c.score)<ATA_PASS_PCT);
+}
+function ataResetsThisMonth(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.month_count||0)-1):0;}
+function ataBestScore(tech,code){
+  const c=ataCompletionFor(tech,code);
+  const a=ataAttemptInfo(tech,code);
+  const vals=[];
+  if(c&&c.score!=null)vals.push(Number(c.score));
+  if(a&&a.best!=null)vals.push(Number(a.best));
+  return vals.length?Math.max.apply(null,vals):null;
+}
 function ataProgramComplete(tech,program){
   const lessons=ataLessonsByProgram(program);
   if(!lessons.length)return false;
-  return lessons.every(l=>!!ataCompletionFor(tech,l.lesson_code));
+  return lessons.every(l=>ataIsDone(tech,l.lesson_code));
 }
 
 function ataProgramStatus(tech,program,today){
@@ -2374,25 +2405,33 @@ function ataProgramStatus(tech,program,today){
   const start=ataStart(tech,program);
   const lessons=ataLessonsByProgram(program);
   const total=lessons.length;
-  let completed=0,overdue=0,dueSoon=0,nextDue=null;
+  let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,nextDue=null;
   const overdueList=[],lessonRows=[];
   lessons.forEach(l=>{
-    const done=!!ataCompletionFor(tech,l.lesson_code);
+    const code=l.lesson_code;
+    const done=ataIsDone(tech,code);
+    const isFailed=!done&&ataIsFailed(tech,code);
+    const resets=ataResetsThisMonth(tech,code);
+    const best=ataBestScore(tech,code);
+    const overLimit=resets>=ATA_MAX_RESETS;
+    if(isFailed)failed++;
+    if(isFailed&&overLimit)atLimit++;
     const dl=start?ataFridayDeadline(start,l.week_index):null;
     let st='upcoming';
     if(done){completed++;st='complete';}
+    else if(isFailed){st='failed';if(start&&dl&&!(dl<today&&!ataIsSameDay(dl,today))){if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};}if(start&&dl&&dl<today&&!ataIsSameDay(dl,today)){overdue++;overdueList.push({lesson:l,deadline:dl});}}
     else if(start&&dl){
       if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
       else{if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};const diff=Math.round((dl-today)/86400000);if(diff<=7)dueSoon++;st='due';}
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,overLimit:overLimit,best:best});
   });
   let status;
   if(!start)status='not_started';
   else if(completed>=total&&total>0)status='complete';
-  else if(overdue>0)status='behind';
+  else if(overdue>0||failed>0)status='behind';
   else status='on_track';
-  return {program,start,total,completed,overdue,dueSoon,nextDue,overdueList,lessonRows,status};
+  return {program,start,total,completed,overdue,dueSoon,failed,atLimit,nextDue,overdueList,lessonRows,status};
 }
 
 function ataTechSummary(tech){
@@ -2400,6 +2439,8 @@ function ataTechSummary(tech){
   const progs=ATA_PROGRAMS.map(p=>ataProgramStatus(tech,p,today));
   const active=progs.filter(p=>p.start);
   const totalOverdue=active.reduce((s,p)=>s+p.overdue,0);
+  const totalFailed=progs.reduce((s,p)=>s+(p.failed||0),0);
+  const totalAtLimit=progs.reduce((s,p)=>s+(p.atLimit||0),0);
   const overdueList=[];
   active.forEach(p=>p.overdueList.forEach(o=>overdueList.push(Object.assign({program:p.program},o))));
   let status;
@@ -2408,7 +2449,7 @@ function ataTechSummary(tech){
   else if(totalOverdue>0)status='behind';
   else status='on_track';
   const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
-  return {tech,progs,byProgram,active,totalOverdue,overdueList,status};
+  return {tech,progs,byProgram,active,totalOverdue,totalFailed,totalAtLimit,overdueList,status};
 }
 
 function ataStatusMeta(status){
@@ -2494,6 +2535,28 @@ function ataSetImportStatus(msg,kind){
 function ataShowFallback(show){
   const el=document.getElementById('ata-import-fallback');
   if(el)el.style.display=show?'block':'none';
+}
+
+async function ataShowWebhookSetup(){
+  const box=document.getElementById('ata-webhook-box');
+  if(!box)return;
+  if(box.style.display==='block'){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML='Loading webhook details…';
+  let secret='';
+  try{secret=await rpc('app_ata_webhook_secret',{})||'';}
+  catch(e){box.innerHTML='<span style="color:#C0392B">Could not load the secret. Run supabase/ata-attempts.sql in Supabase first.</span>';return;}
+  const url=(typeof SUPABASE_URL!=='undefined'?SUPABASE_URL:'')+'/rest/v1/rpc/app_ata_record_attempt';
+  const key=typeof SUPABASE_KEY!=='undefined'?SUPABASE_KEY:'';
+  const bodyExample=JSON.stringify({p_secret:secret,p_email:'{{student email}}',p_name:'{{student name}}',p_lesson_code:'{{quiz name}}',p_score:'{{percent 0-100}}',p_attempted_at:'{{submitted at}}',p_external_id:'{{response id}}'},null,2);
+  box.innerHTML=`<div style="font-weight:700;margin-bottom:6px">⚡ Zapier auto-sync (Teachable → app)</div>
+  <div style="margin-bottom:6px">In your Zap, add a final step <strong>“Webhooks by Zapier → POST”</strong> with:</div>
+  <div style="margin-bottom:4px"><strong>URL</strong><br><code style="word-break:break-all;background:#fff;padding:2px 4px;border-radius:4px">${adminEsc(url)}</code></div>
+  <div style="margin-bottom:4px"><strong>Payload type:</strong> JSON</div>
+  <div style="margin-bottom:4px"><strong>Headers:</strong><br><code style="background:#fff;padding:2px 4px;border-radius:4px">apikey: ${adminEsc(key)}</code><br><code style="background:#fff;padding:2px 4px;border-radius:4px;word-break:break-all">Authorization: Bearer ${adminEsc(key)}</code><br><code style="background:#fff;padding:2px 4px;border-radius:4px">Content-Type: application/json</code></div>
+  <div style="margin-bottom:4px"><strong>Data (map the Teachable fields in {{ }}):</strong>
+  <pre style="white-space:pre-wrap;background:#fff;padding:8px;border-radius:6px;font-size:11px;margin:4px 0">${adminEsc(bodyExample)}</pre></div>
+  <div style="color:#7a5d00">Keep this secret private — anyone with it can post quiz results. Send <em>p_score</em> as a percent (0–100), or send <em>p_correct</em> + <em>p_total</em> instead and the app computes the percent.</div>`;
 }
 
 async function ataApplyRows(rows){
@@ -2625,7 +2688,7 @@ function ataRenderAdmin(){
       ${ataStartCell(s,'basic')}
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
-      <td>${ataStatusChip(s.status)}</td>
+      <td>${ataStatusChip(s.status)}${s.totalFailed?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
       <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">PDF</button></td>
     </tr>`;
   }).join('');
@@ -2848,7 +2911,7 @@ function renderPmAta(){
   const cell=p=>p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
   const body=rows.map(s=>`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
-    <td>${ataStatusChip(s.status)}</td>
+    <td>${ataStatusChip(s.status)}${s.totalFailed?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}</td>
     <td>${cell(s.byProgram.basic)}</td>
     <td>${cell(s.byProgram.intermediate)}</td>
     <td>${cell(s.byProgram.advanced)}</td>
@@ -2892,8 +2955,17 @@ function renderTechAta(tech){
     return;
   }
   const today=ataToday();
+  const resetCell=(lr)=>{
+    const i=lr.resets||0;
+    if(!lr.failed&&i===0)return '<span style="color:#bbb">—</span>';
+    const col=lr.overLimit?'#C0392B':i>=2?'#b58900':'#555';
+    let txt=`<span style="color:${col};font-weight:700">${i}/${ATA_MAX_RESETS} resets</span>`;
+    if(lr.overLimit)txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
+    return txt;
+  };
   const stateBadge=(lr)=>{
-    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">✓ Done</span>';
+    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">✓ Passed</span>';
+    if(lr.failed)return '<span style="color:#C0392B;font-weight:700">Failed — retake needed</span>';
     if(lr.state==='overdue')return '<span style="color:#C0392B;font-weight:700">Overdue</span>';
     if(lr.state==='due'){const diff=Math.round((lr.deadline-today)/86400000);return `<span style="color:#b58900;font-weight:700">Due ${diff<=0?'today':'in '+diff+'d'}</span>`;}
     return '<span style="color:#999">Upcoming</span>';
@@ -2903,15 +2975,20 @@ function renderTechAta(tech){
       <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(lr.lesson.lesson_code)}</td>
       <td>${adminEsc(lr.lesson.lesson_name)}</td>
       <td style="white-space:nowrap">${lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—'}</td>
+      <td style="white-space:nowrap;text-align:center">${lr.best==null?'<span style="color:#bbb">—</span>':`<span style="color:${lr.best>=ATA_PASS_PCT?'#0F6E56':'#C0392B'};font-weight:700">${lr.best}%</span>`}</td>
       <td style="white-space:nowrap">${stateBadge(lr)}</td>
+      <td style="white-space:nowrap">${resetCell(lr)}</td>
     </tr>`).join('');
-    return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} complete ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Score</th><th>Status</th><th>Resets (mo.)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
+  const alerts=[];
+  if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
+  if(s.totalFailed)alerts.push(`❌ ${s.totalFailed} failed (need ≥${ATA_PASS_PCT}% to pass)`);
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · each lesson due that Friday</div></div>
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Friday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month</div></div>
     ${ataStatusChip(s.status)}</div>
-    ${s.totalOverdue?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">⚠️ You have ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}</div><div style="font-size:12px;color:#555">Catch up as soon as you can to stay on track.</div></div>`:''}
+    ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
   </div>`;
   body.innerHTML=overall+sections;
 }
@@ -3234,6 +3311,8 @@ function openAdmin(){
   if(ataOpenSheet&&typeof ATA_SHEET_URL!=='undefined'&&ATA_SHEET_URL){ataOpenSheet.href=ATA_SHEET_URL;ataOpenSheet.style.display='inline-block';}
   ataSetImportStatus('');
   ataShowFallback(false);
+  const ataWebhookBox=document.getElementById('ata-webhook-box');
+  if(ataWebhookBox){ataWebhookBox.style.display='none';ataWebhookBox.innerHTML='';}
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
