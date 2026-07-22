@@ -776,12 +776,13 @@ body.mobile-nav-open{overflow:hidden}
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
           <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Enter a Basic start date to generate the schedule — each lesson is due the following Friday, one per week. Intermediate and Advanced unlock as the prior program is completed.</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
-            <button type="button" class="btn" id="ata-update-btn" style="background:#0F6E56" onclick="ataUpdateFromSheet()">↻ Update from Sheet</button>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
-            <button type="button" class="btn" style="background:#6b4fa0" onclick="ataShowWebhookSetup()">⚡ Zapier auto-sync setup</button>
-            <a class="btn" id="ata-open-sheet" href="#" target="_blank" rel="noopener" style="background:#888;text-decoration:none;display:none">Open Sheet</a>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:6px">
+            <button type="button" onclick="ataShowWebhookSetup()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#6b4fa0">⚡ Zapier setup</button>
+            <button type="button" id="ata-update-btn" onclick="ataUpdateFromSheet()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#0F6E56">↻ Update from Sheet</button>
           </div>
           <div id="ata-webhook-box" style="display:none;background:#F3F0FA;border:1px solid #d6cceb;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px"></div>
           <div id="ata-import-status" style="font-size:12px;margin:4px 0;min-height:16px"></div>
@@ -3307,8 +3308,6 @@ function openAdmin(){
   if(ataSearchEl)ataSearchEl.value='';
   if(ataRegionEl)ataRegionEl.innerHTML=ataRegionOptionsHtml('');
   if(ataStatusEl)ataStatusEl.value='';
-  const ataOpenSheet=document.getElementById('ata-open-sheet');
-  if(ataOpenSheet&&typeof ATA_SHEET_URL!=='undefined'&&ATA_SHEET_URL){ataOpenSheet.href=ATA_SHEET_URL;ataOpenSheet.style.display='inline-block';}
   ataSetImportStatus('');
   ataShowFallback(false);
   const ataWebhookBox=document.getElementById('ata-webhook-box');
