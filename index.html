@@ -2771,9 +2771,37 @@ Training Team`;
   window.location.href='mailto:'+encodeURIComponent(tech.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
 
-// ── PDF: weekly region-grouped report ────────────────────────────────────────
+// ── PDF helpers (shared ATA styling) ─────────────────────────────────────────
 function ataStatusRank(status){return status==='behind'?0:status==='not_started'?1:status==='on_track'?2:3;}
+function ataHexRgb(hex){
+  const h=String(hex||'#888888').replace('#','');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+}
+function ataPdfProgressBar(doc,x,y,w,h,pct,fillRgb){
+  const p=Math.max(0,Math.min(100,pct||0));
+  doc.setFillColor(232,236,242);doc.roundedRect(x,y,w,h,2,2,'F');
+  if(p>0){doc.setFillColor(fillRgb[0],fillRgb[1],fillRgb[2]);doc.roundedRect(x,y,Math.max(4,w*p/100),h,2,2,'F');}
+}
+function ataPdfFooter(doc,margin,pageW,pageH,subtitle){
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){
+    doc.setPage(i);
+    doc.setDrawColor(220,226,236);doc.line(margin,pageH-28,pageW-margin,pageH-28);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(130,130,130);
+    doc.text(pdfSafeText(subtitle||'TAB Skills Tracker · ATA Tracking'),margin,pageH-16);
+    doc.text('Page '+i+' of '+n,pageW-margin,pageH-16,{align:'right'});
+  }
+}
+function ataProgCellText(p){
+  if(!p)return '—';
+  if(!p.start&&!(p.completed>0))return '—';
+  let t=p.completed+'/'+p.total;
+  if(p.overdue)t+=' · '+p.overdue+' late';
+  if(p.failed)t+=' · '+p.failed+' failed';
+  return t;
+}
 
+// ── PDF: weekly region-grouped report ────────────────────────────────────────
 function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
   const {jsPDF}=lib;
@@ -2781,67 +2809,96 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;let y=margin;
   const cols=[
-    {label:'Technician',w:contentW*0.24},
-    {label:'Status',w:contentW*0.12},
-    {label:'Basic',w:contentW*0.16},
-    {label:'Intermediate',w:contentW*0.16},
-    {label:'Advanced',w:contentW*0.16},
-    {label:'Overdue',w:contentW*0.16}
+    {label:'Technician',w:contentW*0.22},
+    {label:'Status',w:contentW*0.11},
+    {label:'Basic',w:contentW*0.15},
+    {label:'Intermediate',w:contentW*0.15},
+    {label:'Advanced',w:contentW*0.15},
+    {label:'Overdue',w:contentW*0.11},
+    {label:'Failed',w:contentW*0.11}
   ];
-  function needPage(h){if(y+h>pageH-margin){doc.addPage();y=margin;return true;}return false;}
-  function progText(p){return p.start?(p.completed+'/'+p.total+(p.overdue?' ('+p.overdue+' late)':'')):'—';}
+  const bottom=pageH-40;
+  function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
   function header(){
-    needPage(26);doc.setFillColor(27,58,107);doc.rect(margin,y-10,contentW,22,'F');
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-    let x=margin+4;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});y+=22;
+    needPage(26);doc.setFillColor(27,58,107);doc.roundedRect(margin,y-10,contentW,22,3,3,'F');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    let x=margin+6;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});y+=20;
   }
-  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
-  doc.text('ATA Weekly Progress Report',margin,y);y+=18;
-  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
+
+  // Title band
+  doc.setFillColor(27,58,107);doc.rect(0,0,pageW,58,'F');
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  doc.text('ATA Weekly Progress Report',margin,28);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(200,214,240);
+  doc.text(pdfSafeText(fmtDateFull(new Date().toISOString().slice(0,10))+'  ·  '+scopeLabel),margin,44);
+  y=70;
+
   const behind=summaries.filter(s=>s.status==='behind').length;
   const onTrack=summaries.filter(s=>s.status==='on_track').length;
   const complete=summaries.filter(s=>s.status==='complete').length;
   const notStarted=summaries.filter(s=>s.status==='not_started').length;
-  doc.text(pdfSafeText('Report date: '+fmtDateFull(new Date().toISOString().slice(0,10))+'   ·   '+scopeLabel),margin,y);y+=13;
-  doc.text(pdfSafeText('Behind: '+behind+'   ·   On track: '+onTrack+'   ·   Complete: '+complete+'   ·   Not started: '+notStarted+'   ·   '+summaries.length+' technician'+(summaries.length===1?'':'s')),margin,y);y+=16;
+  const cards=[
+    {label:'Behind',n:behind,c:[192,57,43]},
+    {label:'On track',n:onTrack,c:[15,110,86]},
+    {label:'Complete',n:complete,c:[27,58,107]},
+    {label:'Not started',n:notStarted,c:[120,120,120]},
+    {label:'Technicians',n:summaries.length,c:[70,90,120]}
+  ];
+  const cardW=(contentW-(cards.length-1)*8)/cards.length;
+  cards.forEach((c,i)=>{
+    const x=margin+i*(cardW+8);
+    doc.setFillColor(246,248,252);doc.roundedRect(x,y,cardW,42,4,4,'F');
+    doc.setDrawColor(230,235,242);doc.roundedRect(x,y,cardW,42,4,4,'S');
+    doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(c.c[0],c.c[1],c.c[2]);
+    doc.text(String(c.n),x+10,y+22);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+    doc.text(c.label,x+10,y+34);
+  });
+  y+=56;
 
   const byRegion={};
   summaries.forEach(s=>{const r=s.tech.region||'—';(byRegion[r]=byRegion[r]||[]).push(s);});
   const regions=Object.keys(byRegion).sort((a,b)=>regionLabel(a).localeCompare(regionLabel(b)));
   regions.forEach(rc=>{
     const list=byRegion[rc].slice().sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
-    needPage(30);
-    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
-    doc.text(pdfSafeText(regionLabel(rc)+' ('+list.length+')'),margin,y+2);y+=14;
+    needPage(36);
+    doc.setFillColor(238,242,248);doc.roundedRect(margin,y-6,contentW,20,3,3,'F');
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+    doc.text(pdfSafeText(regionLabel(rc)),margin+8,y+8);
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(110,110,110);
+    doc.text(list.length+' technician'+(list.length===1?'':'s'),margin+contentW-8,y+8,{align:'right'});
+    y+=22;
     header();
     list.forEach((s,idx)=>{
       const m=ataStatusMeta(s.status);
       const values=[
         pdfSafeText(s.tech.name),
         m.label,
-        pdfSafeText(progText(s.byProgram.basic)),
-        pdfSafeText(progText(s.byProgram.intermediate)),
-        pdfSafeText(progText(s.byProgram.advanced)),
-        String(s.totalOverdue||0)
+        pdfSafeText(ataProgCellText(s.byProgram.basic)),
+        pdfSafeText(ataProgCellText(s.byProgram.intermediate)),
+        pdfSafeText(ataProgCellText(s.byProgram.advanced)),
+        String(s.totalOverdue||0),
+        String(s.totalFailed||0)
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
-      const rowH=Math.max(...sets.map(ls=>ls.length),1)*11+6;
+      const rowH=Math.max(...sets.map(ls=>ls.length),1)*11+8;
       if(needPage(rowH+4))header();
-      if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-8,contentW,rowH,'F');}
-      let x=margin+4;
+      if(idx%2===0){doc.setFillColor(250,251,253);doc.rect(margin,y-9,contentW,rowH,'F');}
+      let x=margin+6;
       sets.forEach((lines,i)=>{
         doc.setFont('helvetica',i===0?'bold':'normal');
-        if(i===1)doc.setTextColor(...(m.color==='#C0392B'?[192,57,43]:m.color==='#0F6E56'?[15,110,86]:m.color==='#1B3A6B'?[27,58,107]:[120,120,120]));
-        else if(i===5&&Number(values[5])>0)doc.setTextColor(192,57,43);
+        if(i===1)doc.setTextColor(...ataHexRgb(m.color));
+        else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
       });
-      y+=rowH;doc.setDrawColor(230,230,230);doc.line(margin,y-4,margin+contentW,y-4);
+      y+=rowH;doc.setDrawColor(235,238,244);doc.line(margin,y-4,margin+contentW,y-4);
     });
-    y+=10;
+    y+=12;
   });
+  ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Weekly Report');
   return doc;
 }
 
@@ -2868,34 +2925,145 @@ function buildAtaTechDoc(tech){
   const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
   const {jsPDF}=lib;
   const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
-  const margin=44,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+  const margin=40,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;let y=margin;
+  const bottom=pageH-40;
   const s=ataTechSummary(tech);
-  function needPage(h){if(y+h>pageH-margin){doc.addPage();y=margin;return true;}return false;}
-  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
-  doc.text(pdfSafeText(tech.name+' — ATA Schedule'),margin,y);y+=18;
-  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
-  doc.text(pdfSafeText(regionLabel(tech.region)+'   ·   Report date: '+fmtDateFull(new Date().toISOString().slice(0,10))+'   ·   Status: '+ataStatusMeta(s.status).label),margin,y);y+=16;
-  s.progs.forEach(p=>{
-    needPage(40);
-    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
-    doc.text(pdfSafeText(ATA_PROGRAM_LABEL[p.program]+(p.start?'  (start '+fmtDate(p.start)+')':'  (not started)')),margin,y);y+=13;
-    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(70,70,70);
-    doc.text(pdfSafeText(p.start?(p.completed+' of '+p.total+' complete'+(p.overdue?' · '+p.overdue+' overdue':'')):'No start date assigned'),margin,y);y+=13;
-    if(p.start){
-      p.lessonRows.forEach(lr=>{
-        needPage(13);
-        const mark=lr.done?'[x]':lr.state==='overdue'?'[!]':'[ ]';
-        const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
-        if(lr.state==='overdue'&&!lr.done)doc.setTextColor(192,57,43);
-        else if(lr.done)doc.setTextColor(15,110,86);
-        else doc.setTextColor(60,60,60);
-        doc.text(pdfSafeText(mark+' '+lr.lesson.lesson_code+' — '+lr.lesson.lesson_name+'   (due '+due+')'),margin+8,y,{maxWidth:contentW-8});
-        y+=12;
-      });
-    }
-    y+=8;
+  const statusMeta=ataStatusMeta(s.status);
+  function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
+
+  // Header band
+  doc.setFillColor(27,58,107);doc.rect(0,0,pageW,72,'F');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(160,185,220);
+  doc.text('TAB SKILLS TRACKER  ·  ATA SCHEDULE',margin,22);
+  doc.setFontSize(20);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  doc.text(pdfSafeText(tech.name||'Technician'),margin,46);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(190,205,230);
+  doc.text(pdfSafeText(regionLabel(tech.region)+'  ·  '+fmtDateFull(new Date().toISOString().slice(0,10))),margin,62);
+  // Status pill on the right of the header
+  doc.setFont('helvetica','bold');doc.setFontSize(9);
+  const pillLabel=statusMeta.label.toUpperCase();
+  const pillW=doc.getTextWidth(pillLabel)+18;
+  const pillX=pageW-margin-pillW;
+  doc.setFillColor(255,255,255);doc.roundedRect(pillX,28,pillW,18,9,9,'F');
+  doc.setTextColor(...ataHexRgb(statusMeta.color));
+  doc.text(pillLabel,pillX+9,40);
+  y=88;
+
+  // Summary cards for Basic / Intermediate / Advanced
+  const cardGap=10;
+  const cardW=(contentW-(2*cardGap))/3;
+  s.progs.forEach((p,i)=>{
+    const x=margin+i*(cardW+cardGap);
+    const pct=p.total?Math.round((p.completed/p.total)*100):0;
+    const fill=p.status==='behind'?[192,57,43]:p.status==='complete'?[15,110,86]:p.status==='on_track'?[27,58,107]:[150,150,150];
+    doc.setFillColor(248,250,253);doc.roundedRect(x,y,cardW,68,5,5,'F');
+    doc.setDrawColor(225,230,238);doc.roundedRect(x,y,cardW,68,5,5,'S');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+    doc.text(ATA_PROGRAM_LABEL[p.program],x+10,y+16);
+    doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(fill[0],fill[1],fill[2]);
+    doc.text(p.completed+'/'+p.total,x+10,y+34);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(110,110,110);
+    const sub=p.start?('Start '+fmtDate(p.start)):(p.completed>0?'In progress · no start date':'Not started');
+    doc.text(pdfSafeText(sub),x+10,y+46,{maxWidth:cardW-20});
+    ataPdfProgressBar(doc,x+10,y+52,cardW-20,6,pct,fill);
   });
+  y+=84;
+
+  // Alerts strip
+  const alerts=[];
+  if(s.totalOverdue)alerts.push(s.totalOverdue+' overdue');
+  if(s.totalFailed)alerts.push(s.totalFailed+' failed (<80%)');
+  if(s.totalAtLimit)alerts.push(s.totalAtLimit+' at reset limit — schedule Brenda call');
+  if(alerts.length){
+    needPage(28);
+    doc.setFillColor(253,236,234);doc.roundedRect(margin,y,contentW,22,4,4,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(192,57,43);
+    doc.text(pdfSafeText('⚠  '+alerts.join('  ·  ')),margin+10,y+14);
+    y+=32;
+  }
+
+  // Lesson tables per program
+  const cols=[
+    {label:'Code',w:contentW*0.16},
+    {label:'Lesson',w:contentW*0.34},
+    {label:'Due',w:contentW*0.14},
+    {label:'Score',w:contentW*0.10},
+    {label:'Status',w:contentW*0.14},
+    {label:'Resets',w:contentW*0.12}
+  ];
+  function lessonStatusLabel(lr){
+    if(lr.done)return {t:'Passed',c:'#0F6E56'};
+    if(lr.failed)return {t:'Failed',c:'#C0392B'};
+    if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
+    if(lr.state==='due')return {t:'Due soon',c:'#B58900'};
+    if(lr.state==='pending'||!lr.deadline)return {t:'Upcoming',c:'#888888'};
+    return {t:'Upcoming',c:'#888888'};
+  }
+  function drawLessonHeader(){
+    needPage(24);
+    doc.setFillColor(27,58,107);doc.roundedRect(margin,y-8,contentW,18,2,2,'F');
+    doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    let x=margin+5;cols.forEach(c=>{doc.text(c.label,x,y+4);x+=c.w;});y+=16;
+  }
+
+  s.progs.forEach(p=>{
+    const hasWork=p.start||p.completed>0||(p.failed||0)>0;
+    needPage(36);
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
+    const title=ATA_PROGRAM_LABEL[p.program]+(p.start?'  ·  started '+fmtDate(p.start):'');
+    doc.text(pdfSafeText(title),margin,y);y+=12;
+    doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+    if(!hasWork){
+      doc.text('No start date assigned yet. Intermediate and Advanced unlock when the prior program is complete.',margin,y);
+      y+=18;return;
+    }
+    const bits=[p.completed+' of '+p.total+' passed'];
+    if(p.overdue)bits.push(p.overdue+' overdue');
+    if(p.failed)bits.push(p.failed+' failed');
+    if(p.atLimit)bits.push(p.atLimit+' at reset limit');
+    doc.text(pdfSafeText(bits.join('  ·  ')),margin,y);y+=12;
+
+    drawLessonHeader();
+    p.lessonRows.forEach((lr,idx)=>{
+      const st=lessonStatusLabel(lr);
+      const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
+      const score=lr.best==null?'—':(lr.best+'%');
+      const resets=(lr.resets||0)>0||lr.failed?(lr.resets+'/'+ATA_MAX_RESETS+(lr.overLimit?' !':'')):'—';
+      const values=[
+        pdfSafeText(lr.lesson.lesson_code),
+        pdfSafeText(lr.lesson.lesson_name),
+        due,score,st.t,resets
+      ];
+      doc.setFontSize(8);
+      const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-6));
+      const rowH=Math.max(...sets.map(ls=>ls.length),1)*10+6;
+      if(needPage(rowH+2))drawLessonHeader();
+      if(idx%2===0){doc.setFillColor(248,250,253);doc.rect(margin,y-8,contentW,rowH,'F');}
+      let x=margin+5;
+      sets.forEach((lines,i)=>{
+        doc.setFont('helvetica',i===0||i===4?'bold':'normal');
+        if(i===4)doc.setTextColor(...ataHexRgb(st.c));
+        else if(i===3&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
+        else if(i===5&&lr.overLimit)doc.setTextColor(192,57,43);
+        else doc.setTextColor(45,45,45);
+        lines.forEach((ln,li)=>doc.text(ln,x,y+li*10,{maxWidth:cols[i].w-6}));
+        x+=cols[i].w;
+      });
+      y+=rowH;
+    });
+    y+=14;
+  });
+
+  // Legend
+  needPage(40);
+  doc.setDrawColor(220,226,236);doc.line(margin,y,margin+contentW,y);y+=12;
+  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
+  doc.text('Legend',margin,y);y+=11;
+  doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda'),margin,y,{maxWidth:contentW});
+
+  ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
 }
 async function ataDownloadTechPdf(techId){
