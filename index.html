@@ -2665,7 +2665,7 @@ function ataStartCell(summary,program){
   let locked=false,lockMsg='';
   if(program==='intermediate'&&!ataProgramComplete(tech,'basic')){locked=true;lockMsg='Unlocks when Basic is complete';}
   if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')){locked=true;lockMsg='Unlocks when Intermediate is complete';}
-  const input=`<input type="date" class="admin-edit-field" style="min-width:140px" value="${val}" ${locked&&!val?'disabled':''} onchange="ataSaveStart(${tech.id},'${program}',this.value)">`;
+  const input=`<input type="date" class="admin-edit-field" style="min-width:140px" min="2000-01-01" max="2100-12-31" value="${val}" ${locked&&!val?'disabled':''} oninput="ataSaveStart(${tech.id},'${program}',this.value)" onblur="ataStartBlur(${tech.id},'${program}')">`;
   const prog=ps.start?`<div style="font-size:10px;color:#666;margin-top:3px">${ps.completed}/${ps.total} done${ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:''}</div>`
     :locked?`<div style="font-size:10px;color:#b58900;margin-top:3px">🔒 ${lockMsg}</div>`
     :`<div style="font-size:10px;color:#999;margin-top:3px">Not started</div>`;
@@ -2709,15 +2709,37 @@ function onAtaAdminFilterChange(){
   ataRenderAdmin();
 }
 
-async function ataSaveStart(techId,program,value){
+// Date inputs fire on every partial edit (e.g. year "0002" before "2026"). To
+// avoid replacing the field mid-typing, we update the model right away but debounce
+// the DB save + table re-render, and only re-render once the field loses focus or
+// a full 4-digit year has settled.
+const ataStartTimers={};
+const ataStartPending={};
+function ataSaveStart(techId,program,value){
+  const tech=(ataAdminData.techs||[]).find(t=>t.id===techId);
+  if(tech){tech.starts=tech.starts||{};if(value)tech.starts[program]=value;else delete tech.starts[program];}
+  const key=techId+'|'+program;
+  ataStartPending[key]={techId,program,value};
+  clearTimeout(ataStartTimers[key]);
+  // A complete date has a 4-digit year (YYYY-MM-DD); wait a beat before committing.
+  ataStartTimers[key]=setTimeout(()=>{ataCommitStart(key,false);},900);
+}
+async function ataCommitStart(key,doRender){
+  const p=ataStartPending[key];
+  clearTimeout(ataStartTimers[key]);
+  if(!p)return;
+  delete ataStartPending[key];
   try{
-    await rpc('app_ata_set_start',{p_tech_id:techId,p_program:program,p_start_date:value||null});
-    const tech=(ataAdminData.techs||[]).find(t=>t.id===techId);
-    if(tech){tech.starts=tech.starts||{};if(value)tech.starts[program]=value;else delete tech.starts[program];}
-    ataRenderAdmin();
+    await rpc('app_ata_set_start',{p_tech_id:p.techId,p_program:p.program,p_start_date:p.value||null});
+    if(doRender)ataRenderAdmin();
   }catch(e){
     alert('Could not save start date. '+((e.message||'').includes('app_ata_set_start')?'Run supabase/ata-tracking.sql in Supabase.':(e.message||'Try again.')));
   }
+}
+function ataStartBlur(techId,program){
+  const key=techId+'|'+program;
+  if(ataStartPending[key]){ataCommitStart(key,true);}
+  else{ataRenderAdmin();}
 }
 
 function ataFindTech(techId){return (ataAdminData&&ataAdminData.techs|| (ataPmData&&ataPmData.techs)||[]).find(t=>t.id===techId);}
