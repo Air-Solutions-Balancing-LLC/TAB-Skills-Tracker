@@ -622,7 +622,7 @@ body.mobile-nav-open{overflow:hidden}
       <div class="field"><label>Continue as</label></div>
       <button type="button" class="btn btn-full" id="role-admin-btn" style="background:#0F6E56;display:none" onclick="chooseRole('admin')">🛠️ Admin</button>
       <button type="button" class="btn btn-full" id="role-pm-btn" style="display:none" onclick="chooseRole('pm')">📊 Project Manager</button>
-      <button type="button" class="btn btn-full" id="role-tech-btn" style="background:#4A90D9;display:none" onclick="chooseRole('tech')">👷 Technician</button>
+      <button type="button" class="btn btn-full" id="role-tech-btn" style="background:#4A90D9;display:none" onclick="chooseRole('tech')">👷 Tech View</button>
       <div class="err" id="role-err">Something went wrong. Please try again.</div>
       <div class="login-hint"><a href="#" onclick="doLogout();return false;" style="color:#888">Sign out</a></div>
     </div>
@@ -663,8 +663,9 @@ body.mobile-nav-open{overflow:hidden}
     <div class="login-box admin-box-wide">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
         <div class="login-logo">User Management</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">📊 PM Login</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="chooseRole('tech')">👷 Tech View</button>
           <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
         </div>
       </div>
@@ -1790,8 +1791,9 @@ async function handleSession(session){
   document.getElementById('role-pm-btn').style.display='none';
   document.getElementById('role-tech-btn').style.display='none';
   // Reveal role buttons based on the server-verified role:
-  //   admin -> Admin + Project Manager, pm -> Project Manager only,
-  //   everyone else with a technician profile -> Technician only.
+  //   admin -> Admin + Project Manager + Tech View,
+  //   pm -> Project Manager + Tech View,
+  //   everyone else with a technician profile -> Tech View only.
   try{
     const access=await rpc('app_access_status',{});
     if(!access||!access.has_access){
@@ -1821,7 +1823,23 @@ function applyRoleButtons(role){
   userIsAdmin=isAdmin;
   document.getElementById('role-admin-btn').style.display=isAdmin?'':'none';
   document.getElementById('role-pm-btn').style.display=(isAdmin||isPm)?'':'none';
-  document.getElementById('role-tech-btn').style.display=(isAdmin||isPm)?'none':'';
+  // Tech View is available to everyone with access (admins/PMs use it to open the technician experience).
+  document.getElementById('role-tech-btn').style.display='';
+}
+
+function showRoleError(msg){
+  const onAdmin=document.getElementById('pg-admin')&&document.getElementById('pg-admin').classList.contains('active');
+  const adminErr=document.getElementById('admin-err');
+  const roleErr=document.getElementById('role-err');
+  if(onAdmin&&adminErr){
+    adminErr.textContent=msg;
+    adminErr.style.display='block';
+    return;
+  }
+  if(roleErr){
+    roleErr.textContent=msg;
+    roleErr.style.display='block';
+  }
 }
 
 // Step 2: user picked a role.
@@ -1836,16 +1854,20 @@ async function chooseRole(role){
     return;
   }
   const err=document.getElementById('role-err');
-  err.style.display='none';
+  const adminErr=document.getElementById('admin-err');
+  if(err)err.style.display='none';
+  if(adminErr)adminErr.style.display='none';
   try{
     const token=await rpc('app_tech_azure_login',{});
-    if(!token){err.textContent='No access. Your profile has not been added to this tracker.';err.style.display='block';return;}
-    currentRole='tech';currentToken=token;techViewMode=null;
+    if(!token){
+      showRoleError('No Tech View access. Your Microsoft email must also be linked as a Technician in User Management.');
+      return;
+    }
+    currentRole='tech';currentToken=token;techViewMode=null;techViewBackPage=null;
     showPage('pg-tech');
     await loadTechHome();
   }catch(e){
-    err.textContent=azureSetupError(e);
-    err.style.display='block';
+    showRoleError(azureSetupError(e));
     console.error(e);
   }
 }
