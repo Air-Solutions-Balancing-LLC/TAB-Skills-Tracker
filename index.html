@@ -786,16 +786,18 @@ body.mobile-nav-open{overflow:hidden}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:6px">
             <button type="button" onclick="ataShowWebhookSetup()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#6b4fa0">⚡ Zapier setup</button>
-            <button type="button" id="ata-update-btn" onclick="ataUpdateFromSheet()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#0F6E56">↻ Update from Sheet</button>
+            <button type="button" onclick="document.getElementById('ata-tech-file').click()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#0F6E56">⬆ Upload technician sheet</button>
+            <input type="file" id="ata-tech-file" accept=".xlsx,.xls,.csv,text/csv" onchange="ataImportFromFile(this)" style="display:none">
+            <button type="button" id="ata-update-btn" onclick="ataUpdateFromSheet()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#8a8a8a">↻ Update from Sheet (legacy)</button>
           </div>
           <div id="ata-webhook-box" style="display:none;background:#F3F0FA;border:1px solid #d6cceb;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px"></div>
           <div id="ata-import-status" style="font-size:12px;margin:4px 0;min-height:16px"></div>
           <div id="ata-import-fallback" style="display:none;background:#F6F8FC;border:1px solid #d8e2f0;border-radius:8px;padding:10px;margin-bottom:8px">
-            <div style="font-size:12px;color:#555;margin-bottom:6px">Manual fallback — paste or upload a CSV with a header row containing <strong>Name</strong>, <strong>Quiz</strong>, and <strong>Score</strong> columns (quiz cells must include codes like TAB-B-101). Rows marked "Not taken" are ignored.</div>
-            <textarea id="ata-paste-csv" placeholder="Name,Quiz,Score&#10;Cam Smith,TAB-B-101 Quiz,5/5" style="width:100%;min-height:90px;border:1px solid #cbd6e6;border-radius:6px;padding:8px;font-family:monospace;font-size:11px"></textarea>
+            <div style="font-size:12px;color:#555;margin-bottom:6px">Upload a <strong>per-technician sheet</strong> (.xlsx or .csv) — one file per technician with a <strong>Technician Name:</strong> cell and a <strong>Lesson / Quiz Grades</strong> table (grades as fractions like 12/15). You can also paste a CSV with <strong>Name</strong>, <strong>Quiz</strong>, <strong>Score</strong> columns. Lessons with no grade yet are ignored.</div>
+            <textarea id="ata-paste-csv" placeholder="Technician Name:,,Ryan Dinger&#10;Week,Due Date,Lesson,,Quiz Grades,,Notes&#10;1,7/30/2026,TAB-B-101,Introduction to TAB,,5/5" style="width:100%;min-height:90px;border:1px solid #cbd6e6;border-radius:6px;padding:8px;font-family:monospace;font-size:11px"></textarea>
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
               <button type="button" class="btn" style="padding:6px 12px" onclick="ataImportFromPaste()">Import pasted CSV</button>
-              <input type="file" accept=".csv,text/csv" onchange="ataImportFromFile(this)" style="font-size:12px">
+              <input type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="ataImportFromFile(this)" style="font-size:12px">
             </div>
           </div>
           <div class="report-filters">
@@ -2654,6 +2656,47 @@ function ataParsePastedCsv(text){
   return out;
 }
 
+// New per-technician layout: name in a "Technician Name:" cell, a header row with
+// "Lesson" + "Quiz Grades", then one row per lesson (code in the Lesson column,
+// grade as a fraction like 12/15 in the Quiz Grades column). Returns
+// {recognized, name, rows}. recognized=false means it is not this format, so
+// callers can fall back to the columnar Name/Quiz/Score parser.
+function ataParsePerTechMatrix(mat){
+  if(!mat||!mat.length)return {recognized:false,name:'',rows:[]};
+  const low=r=>(r||[]).map(c=>String(c||'').toLowerCase().trim());
+  let name='';
+  for(const row of mat){
+    for(let c=0;c<(row||[]).length;c++){
+      if(/technician\s*name/i.test(String(row[c]||''))){
+        for(let k=c+1;k<row.length;k++){if(String(row[k]||'').trim()){name=String(row[k]).trim();break;}}
+        break;
+      }
+    }
+    if(name)break;
+  }
+  let hIdx=-1,lessonCol=-1,gradeStart=-1,notesCol=-1;
+  for(let i=0;i<mat.length;i++){
+    const L=low(mat[i]);
+    const li=L.findIndex(h=>h==='lesson');
+    const gi=L.findIndex(h=>h.includes('quiz grade')||h.includes('grades')||h==='grade');
+    if(li>=0&&gi>=0){hIdx=i;lessonCol=li;gradeStart=gi;notesCol=L.findIndex(h=>h.includes('note'));break;}
+  }
+  if(hIdx<0||lessonCol<0||!name)return {recognized:false,name:name,rows:[]};
+  const gradeEnd=notesCol>gradeStart?notesCol:gradeStart+2;
+  const out=[];
+  for(let i=hIdx+1;i<mat.length;i++){
+    const row=mat[i];if(!row)continue;
+    const codeM=/TAB-[BIA]-\d+/i.exec(String(row[lessonCol]||''))||/TAB-[BIA]-\d+/i.exec(row.join(' '));
+    if(!codeM)continue;
+    let gradeCell='';
+    for(let c=gradeStart;c<gradeEnd&&c<row.length;c++){if(String(row[c]||'').trim()){gradeCell=String(row[c]).trim();break;}}
+    const info=ataInterpretScore(gradeCell);
+    if(!info.completed)continue;
+    out.push({name, email:'', lesson_code:codeM[0].toUpperCase(), score:info.score, completed_at:null});
+  }
+  return {recognized:true,name:name,rows:out};
+}
+
 function ataSetImportStatus(msg,kind){
   const el=document.getElementById('ata-import-status');
   if(!el)return;
@@ -2730,9 +2773,17 @@ async function ataUpdateFromSheet(){
 }
 
 async function ataImportCsvText(text){
+  // Try the new per-technician layout first, then the old Name/Quiz/Score columns.
+  const matrix=ataParseCsv(text).filter(r=>r.some(c=>String(c).trim()!==''));
+  const per=ataParsePerTechMatrix(matrix);
+  if(per.rows.length)return ataApplyRows(per.rows);
+  if(per.recognized){
+    ataSetImportStatus('Recognized '+adminEsc(per.name)+'\u2019s sheet, but no quiz grades are filled in yet — nothing to import.','err');
+    return false;
+  }
   const rows=ataParsePastedCsv(text);
   if(!rows.length){
-    ataSetImportStatus('Could not find Name + Quiz columns in that CSV. Include a header row with columns like Name, Quiz, Score (quiz cells must contain codes such as TAB-B-101).','err');
+    ataSetImportStatus('Could not read that data. Use a per-technician sheet ("Technician Name:" cell + a Lesson/Quiz Grades table) or a CSV with Name, Quiz, Score columns (quiz cells must contain codes such as TAB-B-101).','err');
     return false;
   }
   return ataApplyRows(rows);
@@ -2747,6 +2798,29 @@ async function ataImportFromPaste(){
 function ataImportFromFile(input){
   const file=input&&input.files&&input.files[0];
   if(!file)return;
+  const isXlsx=/\.(xlsx|xls)$/i.test(file.name||'');
+  if(isXlsx){
+    ataSetImportStatus('Reading spreadsheet…');
+    const reader=new FileReader();
+    reader.onload=async()=>{
+      try{
+        const XLSX=await ensureXlsx();
+        const wb=XLSX.read(new Uint8Array(reader.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const matrix=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+        const per=ataParsePerTechMatrix(matrix);
+        if(per.rows.length){await ataApplyRows(per.rows);return;}
+        if(per.recognized){ataSetImportStatus('Recognized '+adminEsc(per.name)+'\u2019s sheet, but no quiz grades are filled in yet — nothing to import.','err');return;}
+        const csv=XLSX.utils.sheet_to_csv(ws);
+        const rows=ataParsePastedCsv(csv);
+        if(!rows.length){ataSetImportStatus('Could not find a technician name or Lesson/Quiz Grades table in that spreadsheet.','err');return;}
+        await ataApplyRows(rows);
+      }catch(e){ataSetImportStatus('Could not read that spreadsheet. '+adminEsc(e.message||''),'err');}
+    };
+    reader.onerror=()=>{ataSetImportStatus('Could not read that file.','err');};
+    reader.readAsArrayBuffer(file);
+    return;
+  }
   const reader=new FileReader();
   reader.onload=()=>{ataImportCsvText(String(reader.result||''));};
   reader.onerror=()=>{ataSetImportStatus('Could not read that file.','err');};
@@ -4842,6 +4916,23 @@ function ensureJsPdf(){
     document.head.appendChild(script);
   });
   return jsPdfLoading;
+}
+
+let xlsxLoading=null;
+function ensureXlsx(){
+  if(window.XLSX&&window.XLSX.read)return Promise.resolve(window.XLSX);
+  if(xlsxLoading)return xlsxLoading;
+  xlsxLoading=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='vendor/xlsx.full.min.js';
+    script.onload=()=>{
+      if(window.XLSX&&window.XLSX.read)resolve(window.XLSX);
+      else{xlsxLoading=null;reject(new Error('Spreadsheet library loaded but XLSX was not found'));}
+    };
+    script.onerror=()=>{xlsxLoading=null;reject(new Error('Spreadsheet library failed to load'));};
+    document.head.appendChild(script);
+  });
+  return xlsxLoading;
 }
 
 function updateTechResultsFilterUi(){
