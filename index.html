@@ -432,9 +432,12 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .btn-outline{background:#fff;color:#1B3A6B;border:2px solid #1B3A6B}
 .btn-outline:hover{background:#EEF4FF}
 .success-box{background:#E1F5EE;border-left:5px solid #1D9E75;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#0F6E56;font-weight:600}
-.assess-modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:100;align-items:center;justify-content:center;padding:20px}
+.assess-modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
 .assess-modal-overlay.visible{display:flex}
 .assess-modal{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px 24px 20px;box-shadow:0 20px 50px rgba(0,0,0,0.25)}
+.admin-tech-pick-row{width:100%;text-align:left;cursor:pointer;border-radius:0;border-left:none;border-right:none;background:#fff}
+.admin-tech-pick-row:hover{background:#f5f8ff}
+.admin-tech-pick-row.selected{background:#EEF4FF;border-color:#b8d0f5}
 .assess-modal h3{margin:0 0 8px;font-size:18px;color:#1B3A6B}
 .assess-modal p{margin:0 0 18px;font-size:14px;line-height:1.55;color:#444}
 .assess-modal-msg{font-size:15px;font-weight:700;color:#1B3A6B;background:#EEF4FF;border-radius:10px;padding:12px 14px;margin-bottom:18px;line-height:1.45}
@@ -665,7 +668,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="login-logo">User Management</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">📊 PM Login</button>
-          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="chooseRole('tech')">👷 Tech View</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">👷 Pick Technician</button>
           <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
         </div>
       </div>
@@ -1133,6 +1136,22 @@ body.mobile-nav-open{overflow:hidden}
     <div class="assess-modal-msg" id="assess-start-msg"></div>
     <div class="assess-modal-actions">
       <button type="button" class="btn" id="assess-start-continue">Continue to assessment</button>
+    </div>
+  </div>
+</div>
+
+<div class="assess-modal-overlay" id="admin-tech-view-modal" role="dialog" aria-modal="true" aria-labelledby="admin-tech-view-title" onclick="if(event.target===this)closeAdminTechViewPicker()">
+  <div class="assess-modal" style="max-width:520px">
+    <h3 id="admin-tech-view-title">Pick a Technician</h3>
+    <p>Choose who to open in Tech View. Double-click a name to open immediately.</p>
+    <div class="field" style="margin-bottom:10px">
+      <label for="admin-tech-view-search">Search</label>
+      <input type="search" id="admin-tech-view-search" placeholder="Search by name or email…" autocomplete="off" oninput="renderAdminTechViewPickerList()">
+    </div>
+    <div id="admin-tech-view-list" style="max-height:320px;overflow-y:auto;border:1px solid #eee;border-radius:10px;margin-bottom:14px"></div>
+    <div class="assess-modal-actions" style="justify-content:space-between;gap:10px">
+      <button type="button" class="btn btn-outline" onclick="closeAdminTechViewPicker()">Cancel</button>
+      <button type="button" class="btn" id="admin-tech-view-open-btn" style="background:#4A90D9" onclick="confirmAdminTechViewPicker()" disabled>Open Tech View</button>
     </div>
   </div>
 </div>
@@ -1971,6 +1990,100 @@ function applyAdminSectionState(key){
 
 function initAdminSections(){
   Object.keys(adminSecOpen).forEach(applyAdminSectionState);
+}
+
+let adminTechViewPickId=null;
+
+function activeAdminTechnicians(){
+  return(adminPeople||[]).filter(p=>p.role==='technician'&&!p.deleted&&p.tech_id)
+    .slice()
+    .sort((a,b)=>String(a.full_name||a.email||'').localeCompare(String(b.full_name||b.email||''),undefined,{sensitivity:'base'}));
+}
+
+function openAdminTechViewPicker(){
+  const err=document.getElementById('admin-err');
+  if(err){err.textContent='';err.style.display='none';}
+  adminTechViewPickId=null;
+  const search=document.getElementById('admin-tech-view-search');
+  if(search)search.value='';
+  const openBtn=document.getElementById('admin-tech-view-open-btn');
+  if(openBtn)openBtn.disabled=true;
+  // Also expand Technicians so the same people are visible behind the picker.
+  adminSecOpen.techs=true;
+  applyAdminSectionState('techs');
+  const showModal=()=>{
+    renderAdminTechViewPickerList();
+    const modal=document.getElementById('admin-tech-view-modal');
+    if(modal){
+      modal.classList.add('visible');
+      if(search)setTimeout(()=>search.focus(),50);
+    }
+  };
+  if(!adminPeople||!adminPeople.length){
+    Promise.resolve(loadAdminLists()).then(showModal).catch(showModal);
+    return;
+  }
+  showModal();
+}
+
+function closeAdminTechViewPicker(){
+  const modal=document.getElementById('admin-tech-view-modal');
+  if(modal)modal.classList.remove('visible');
+  adminTechViewPickId=null;
+}
+
+function renderAdminTechViewPickerList(){
+  const wrap=document.getElementById('admin-tech-view-list');
+  const openBtn=document.getElementById('admin-tech-view-open-btn');
+  if(!wrap)return;
+  const q=((document.getElementById('admin-tech-view-search')||{}).value||'').trim().toLowerCase();
+  const rows=activeAdminTechnicians().filter(p=>{
+    if(!q)return true;
+    return((p.full_name||'')+' '+(p.email||'')+' '+(p.region||'')).toLowerCase().includes(q);
+  });
+  if(!rows.length){
+    wrap.innerHTML='<div class="admin-empty" style="padding:14px">No technicians found. Open Technicians below and make sure they have a region assigned.</div>';
+    if(openBtn)openBtn.disabled=true;
+    return;
+  }
+  wrap.innerHTML=rows.map(p=>{
+    const selected=String(p.tech_id)===String(adminTechViewPickId);
+    const name=adminEsc(p.full_name||p.email||'Technician');
+    const meta=adminEsc((p.region?regionLabel(p.region)+' · ':'No region · ')+(p.email||''));
+    const disabled=!p.region;
+    return`<button type="button" class="admin-row admin-tech-pick-row${selected?' selected':''}" ${disabled?'disabled style="opacity:.45;cursor:not-allowed"':''} onclick="selectAdminTechViewPick(${p.tech_id})" ondblclick="selectAdminTechViewPick(${p.tech_id});confirmAdminTechViewPicker()"><div class="who"><div class="nm">${name}</div><div class="em">${meta}</div></div></button>`;
+  }).join('');
+  if(openBtn)openBtn.disabled=!adminTechViewPickId;
+}
+
+function selectAdminTechViewPick(techId){
+  const person=(adminPeople||[]).find(p=>String(p.tech_id)===String(techId));
+  if(person&&!person.region)return;
+  adminTechViewPickId=techId;
+  renderAdminTechViewPickerList();
+}
+
+async function confirmAdminTechViewPicker(){
+  const err=document.getElementById('admin-err');
+  if(err){err.textContent='';err.style.display='none';}
+  const person=(adminPeople||[]).find(p=>String(p.tech_id)===String(adminTechViewPickId));
+  if(!person||!person.tech_id){
+    if(err){
+      err.textContent='Select a technician first.';
+      err.style.display='block';
+    }
+    return;
+  }
+  if(!person.region){
+    if(err){
+      err.textContent='That technician has no region set. Edit them in Technicians and assign a region first.';
+      err.style.display='block';
+    }
+    closeAdminTechViewPicker();
+    return;
+  }
+  closeAdminTechViewPicker();
+  await editTechFromAdmin(person.tech_id,person.region,person.full_name||person.email||'');
 }
 
 function regionLabel(code){
