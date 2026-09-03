@@ -622,7 +622,7 @@ body.mobile-nav-open{overflow:hidden}
       <div class="field"><label>Continue as</label></div>
       <button type="button" class="btn btn-full" id="role-admin-btn" style="background:#0F6E56;display:none" onclick="chooseRole('admin')">🛠️ Admin</button>
       <button type="button" class="btn btn-full" id="role-pm-btn" style="display:none" onclick="chooseRole('pm')">📊 Project Manager</button>
-      <button type="button" class="btn btn-full" id="role-tech-btn" style="background:#4A90D9;display:none" onclick="chooseRole('tech')">👷 Tech View</button>
+      <button type="button" class="btn btn-full" id="role-tech-btn" style="background:#4A90D9;display:none" onclick="chooseRole('tech')">👷 Technician</button>
       <div class="err" id="role-err">Something went wrong. Please try again.</div>
       <div class="login-hint"><a href="#" onclick="doLogout();return false;" style="color:#888">Sign out</a></div>
     </div>
@@ -1535,13 +1535,6 @@ function updateTechAssessNav(t,readOnly){
   if(mobile)mobile.classList.remove('visible');
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
-  if(!techStartDate(t)){
-    if(done){
-      done.classList.add('visible');
-      done.textContent='Assessment unavailable until an employee start date is assigned.';
-    }
-    return;
-  }
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
@@ -1791,9 +1784,9 @@ async function handleSession(session){
   document.getElementById('role-pm-btn').style.display='none';
   document.getElementById('role-tech-btn').style.display='none';
   // Reveal role buttons based on the server-verified role:
-  //   admin -> Admin + Project Manager + Tech View,
-  //   pm -> Project Manager + Tech View,
-  //   everyone else with a technician profile -> Tech View only.
+  //   admin -> Admin + Project Manager (Tech View is opened from the Admin page),
+  //   pm -> Project Manager only,
+  //   everyone else with a technician profile -> Technician only.
   try{
     const access=await rpc('app_access_status',{});
     if(!access||!access.has_access){
@@ -1823,8 +1816,8 @@ function applyRoleButtons(role){
   userIsAdmin=isAdmin;
   document.getElementById('role-admin-btn').style.display=isAdmin?'':'none';
   document.getElementById('role-pm-btn').style.display=(isAdmin||isPm)?'':'none';
-  // Tech View is available to everyone with access (admins/PMs use it to open the technician experience).
-  document.getElementById('role-tech-btn').style.display='';
+  // Technicians only — admins open Tech View from the Admin page instead.
+  document.getElementById('role-tech-btn').style.display=(isAdmin||isPm)?'none':'';
 }
 
 function showRoleError(msg){
@@ -3957,11 +3950,11 @@ function requiredAssessmentSections(t){
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
   if(months===null)return{
-    all:false,
-    rated:[],
+    all:true,
+    rated:['safety','basic','intermediate','advanced',...accountSecs],
     checklist:[],
     level:null,
-    message:'No assessment sections available — employee start date required'
+    message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
   };
   const checklist=days!==null&&days<10
     ?['orientation']
@@ -5005,9 +4998,7 @@ function renderTechHome(t,opts){
       ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
       :'');
   const requiredHint=reqInfo.all
-    ?'Complete every scored section. Survey and National Accounts are always required.'
-    :!techStartDate(t)
-      ?'A start date must be assigned before assessment sections become available.'
+    ?'Complete every scored section. Survey and National Accounts are always required.'+(techStartDate(t)?'': ' Assign an employee start date to use tenure-based required levels.')
     :'Based on time with the company'+(levelLabel?` — ${levelLabel}`:'')+'. Survey and National Accounts are always included.'+checklistHint;
   const tenureHtml=`<div class="tech-tenure-info">
     <span><strong>Years employed:</strong> ${tenure||'—'}</span>
@@ -5120,11 +5111,6 @@ async function startQuestionnaire(opts){
         currentTechData=t;
       }
     }catch(e){console.warn('Could not refresh assessments for pre-fill',e);}
-  }
-  if(!techStartDate(currentTechData)){
-    showTechHome();
-    alert('Assessment unavailable until your employee start date is assigned.');
-    return;
   }
   const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
   let draftComment='';
