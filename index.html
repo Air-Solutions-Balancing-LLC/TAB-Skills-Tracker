@@ -2370,7 +2370,7 @@ function buildAdminNebbTableHtml(rows){
     const deadline=r.days_until_expiry===null||r.days_until_expiry===undefined?'—':String(r.days_until_expiry);
     const deadlineCls=reportCertDaysClass(r.days_until_expiry);
     const expEditor=`<input type="date" id="nebb-exp-${r.person_id}" class="admin-edit-field" value="${expVal}">`;
-    const cecsEditor=`<label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="nebb-cecs-${r.person_id}" ${r.cecs_complete?'checked':''} onchange="this.nextElementSibling.textContent=this.checked?'Yes':'No'"> <span>${r.cecs_complete?'Yes':'No'}</span></label>`;
+    const cecsEditor=`<label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="nebb-cecs-${r.person_id}" ${r.cecs_complete?'checked':''} onchange="this.nextElementSibling.textContent=this.checked?'Yes':'No';this.nextElementSibling.style.color=this.checked?'#0F6E56':'#1a1a2e'"> <span style="color:${r.cecs_complete?'#0F6E56':'#1a1a2e'};font-weight:${r.cecs_complete?'700':'400'}">${r.cecs_complete?'Yes':'No'}</span></label>`;
     const siteEditor=`<label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="nebb-siteupd-${r.person_id}" ${r.nebb_site_updated?'checked':''} onchange="this.nextElementSibling.textContent=this.checked?'Yes':'No'"> <span>${r.nebb_site_updated?'Yes':'No'}</span></label>`;
     const fileInputId='nebb-cert-file-'+r.person_id;
     const uploadLabel=r.has_cert_file?'Replace':'Upload';
@@ -3559,6 +3559,11 @@ function buildAdminNebbPdfDoc(rows,reportDateText){
     lineSets.forEach((lines,i)=>{
       doc.setFont('helvetica',i===0?'bold':'normal');
       if(i===5){
+        // CECs complete
+        if(r.cecs_complete)doc.setTextColor(15,110,86);
+        else doc.setTextColor(40,40,40);
+      }else if(i===7){
+        // Cert deadline (days)
         const n=r.days_until_expiry===null||r.days_until_expiry===undefined?null:Number(r.days_until_expiry);
         if(n===null||Number.isNaN(n)||n<=60)doc.setTextColor(192,57,43);
         else if(n<=120)doc.setTextColor(201,160,0);
