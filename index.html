@@ -2530,6 +2530,8 @@ function ataIsFailed(tech,code){
   return !!(c&&c.score!=null&&Number(c.score)<ATA_PASS_PCT);
 }
 function ataResetsThisMonth(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.month_count||0)-1):0;}
+// Total resets ever = total attempts on record - 1 (min 0).
+function ataResetsTotal(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.count||0)-1):0;}
 function ataBestScore(tech,code){
   const c=ataCompletionFor(tech,code);
   const a=ataAttemptInfo(tech,code);
@@ -2556,6 +2558,7 @@ function ataProgramStatus(tech,program,today){
     const done=ataIsDone(tech,code);
     const isFailed=!done&&ataIsFailed(tech,code);
     const resets=ataResetsThisMonth(tech,code);
+    const resetsTotal=ataResetsTotal(tech,code);
     const best=ataBestScore(tech,code);
     const overLimit=resets>=ATA_MAX_RESETS;
     if(isFailed)failed++;
@@ -2568,7 +2571,7 @@ function ataProgramStatus(tech,program,today){
       if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
       else{if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};const diff=Math.round((dl-today)/86400000);if(diff<=7)dueSoon++;st='due';}
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,overLimit:overLimit,best:best});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best});
   });
   let status;
   if(!start)status='not_started';
@@ -3201,11 +3204,11 @@ function buildAtaTechDoc(tech){
   // Lesson tables per program
   const cols=[
     {label:'Code',w:contentW*0.16},
-    {label:'Lesson',w:contentW*0.34},
+    {label:'Lesson',w:contentW*0.30},
     {label:'Due',w:contentW*0.14},
     {label:'Score',w:contentW*0.10},
     {label:'Status',w:contentW*0.14},
-    {label:'Resets',w:contentW*0.12}
+    {label:'Resets (mo·tot)',w:contentW*0.16}
   ];
   function lessonStatusLabel(lr){
     if(lr.done)return {t:'Passed',c:'#0F6E56'};
@@ -3244,7 +3247,8 @@ function buildAtaTechDoc(tech){
       const st=lessonStatusLabel(lr);
       const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
       const score=lr.best==null?'—':(lr.best+'%');
-      const resets=(lr.resets||0)>0||lr.failed?(lr.resets+'/'+ATA_MAX_RESETS+(lr.overLimit?' !':'')):'—';
+      const rm=lr.resets||0,rtot=lr.resetsTotal||0;
+      const resets=(rm>0||lr.failed||rtot>0)?(rm+'/'+ATA_MAX_RESETS+(rtot>rm?(' ('+rtot+' tot)'):'')+(lr.overLimit?' !':'')):'—';
       const values=[
         pdfSafeText(lr.lesson.lesson_code),
         pdfSafeText(lr.lesson.lesson_name),
@@ -3362,10 +3366,11 @@ function renderTechAta(tech){
   }
   const today=ataToday();
   const resetCell=(lr)=>{
-    const i=lr.resets||0;
-    if(!lr.failed&&i===0)return '<span style="color:#bbb">—</span>';
-    const col=lr.overLimit?'#C0392B':i>=2?'#b58900':'#555';
-    let txt=`<span style="color:${col};font-weight:700">${i}/${ATA_MAX_RESETS} resets</span>`;
+    const m=lr.resets||0,tot=lr.resetsTotal||0;
+    if(!lr.failed&&m===0&&tot===0)return '<span style="color:#bbb">—</span>';
+    const col=lr.overLimit?'#C0392B':m>=2?'#b58900':'#555';
+    let txt=`<span style="color:${col};font-weight:700">${m}/${ATA_MAX_RESETS} this mo.</span>`;
+    if(tot>m)txt+=`<span style="color:#888;font-weight:600"> · ${tot} total</span>`;
     if(lr.overLimit)txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
     return txt;
   };
@@ -3386,7 +3391,7 @@ function renderTechAta(tech){
       <td style="white-space:nowrap">${resetCell(lr)}</td>
     </tr>`).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Score</th><th>Status</th><th>Resets (mo.)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Score</th><th>Status</th><th>Resets (this mo. · total)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
