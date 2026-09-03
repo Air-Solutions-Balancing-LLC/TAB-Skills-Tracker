@@ -2491,8 +2491,21 @@ function ataFridayDeadline(startISO,weekIndex){
   return new Date(first.getFullYear(),first.getMonth(),first.getDate()+(Math.max(1,weekIndex)-1)*7);
 }
 
+// Canonical lesson order = the spreadsheet order: by the numeric part of the
+// lesson code (TAB-B-101, 102, 103 … 112, 201 … 210, 301 … 401). Falls back to
+// week_index / sort_order when a code has no number.
+function ataLessonOrder(code){
+  const m=/TAB-[A-Z]+-(\d+)/i.exec(String(code||''));
+  return m?parseInt(m[1],10):Number.MAX_SAFE_INTEGER;
+}
 function ataLessonsByProgram(program){
-  return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>a.sort_order-b.sort_order);
+  return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>{
+    const oa=ataLessonOrder(a.lesson_code),ob=ataLessonOrder(b.lesson_code);
+    if(oa!==ob)return oa-ob;
+    const wa=a.week_index||0,wb=b.week_index||0;
+    if(wa!==wb)return wa-wb;
+    return (a.sort_order||0)-(b.sort_order||0);
+  });
 }
 function ataCompletionFor(tech,code){const c=(tech&&tech.completions)||{};return c[code]||null;}
 function ataAttemptInfo(tech,code){const a=(tech&&tech.attempts)||{};return a[code]||null;}
