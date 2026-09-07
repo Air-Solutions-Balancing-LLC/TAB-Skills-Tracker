@@ -1158,6 +1158,29 @@ body.mobile-nav-open{overflow:hidden}
   </div>
 </div>
 
+<div class="assess-modal-overlay" id="ata-report-modal" role="dialog" aria-modal="true" aria-labelledby="ata-report-title" onclick="if(event.target===this)ataCloseReport()">
+  <div class="assess-modal" style="max-width:920px;width:96%;max-height:94vh;padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+      <h3 id="ata-report-title" style="margin:0;font-size:17px">ATA Report</h3>
+      <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="ataCloseReport()">Close</button>
+    </div>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include, preview below, then download.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px">
+      <span style="font-weight:700;font-size:12px;color:#1B3A6B">Modules:</span>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="basic" checked onchange="ataReportPreview()"> Basic</label>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="intermediate" checked onchange="ataReportPreview()"> Intermediate</label>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="advanced" checked onchange="ataReportPreview()"> Advanced</label>
+      <div style="flex:1"></div>
+      <button type="button" class="btn" id="ata-rep-reset-toggle" style="background:#6b7280;font-size:12px;padding:6px 11px" onclick="ataToggleResetPanel()">Manage resets</button>
+      <button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataReportDownload()">⬇ Download PDF</button>
+    </div>
+    <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe"></div>
+    <div style="flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
+      <iframe id="ata-report-frame" style="width:100%;height:62vh;border:0;display:block" title="ATA report preview"></iframe>
+    </div>
+  </div>
+</div>
+
 <script>
 // SKILL_CATS = scored sections with section averages (PM dashboards read these avg columns).
 // TECH_CATS  = every section incl. admin-added ones (technician views).
@@ -2529,9 +2552,16 @@ function ataIsFailed(tech,code){
   if(a&&(a.count||0)>0)return true;
   return !!(c&&c.score!=null&&Number(c.score)<ATA_PASS_PCT);
 }
-function ataResetsThisMonth(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.month_count||0)-1):0;}
-// Total resets ever = total attempts on record - 1 (min 0).
-function ataResetsTotal(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.count||0)-1):0;}
+// Resets this month = auto retakes (attempts this month - 1, min 0) + manual resets logged this month.
+function ataResetsThisMonth(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.month_count||0)-1)+(i.manual_month||0):0;}
+// Total resets ever = auto retakes (total attempts - 1, min 0) + manual resets logged all-time.
+function ataResetsTotal(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.count||0)-1)+(i.manual_total||0):0;}
+// Continuous week number (1..88) across the three modules, in curriculum order.
+function ataGlobalWeeks(){
+  const map={};let n=0;
+  ATA_PROGRAMS.forEach(pr=>{ataLessonsByProgram(pr).forEach(l=>{n++;map[l.lesson_code]=n;});});
+  return {map,total:n};
+}
 function ataBestScore(tech,code){
   const c=ataCompletionFor(tech,code);
   const a=ataAttemptInfo(tech,code);
@@ -2908,7 +2938,7 @@ function ataRenderAdmin(){
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
       <td>${ataStatusChip(s.status)}${s.totalFailed?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
-      <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">PDF</button></td>
+      <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">Report</button></td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<table class="report-table">
@@ -3139,7 +3169,10 @@ async function ataDownloadWeeklyReport(scope){
 }
 
 // ── PDF: single technician schedule ──────────────────────────────────────────
-function buildAtaTechDoc(tech){
+function buildAtaTechDoc(tech,opts){
+  opts=opts||{};
+  const includePrograms=(opts.programs&&opts.programs.length)?ATA_PROGRAMS.filter(p=>opts.programs.includes(p)):ATA_PROGRAMS.slice();
+  const gw=ataGlobalWeeks();
   const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
   const {jsPDF}=lib;
   const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
@@ -3157,7 +3190,7 @@ function buildAtaTechDoc(tech){
   doc.setFontSize(20);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
   doc.text(pdfSafeText(tech.name||'Technician'),margin,46);
   doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(190,205,230);
-  doc.text(pdfSafeText(regionLabel(tech.region)+'  ·  '+fmtDateFull(new Date().toISOString().slice(0,10))),margin,62);
+  doc.text(pdfSafeText(regionLabel(tech.region)+'  ·  '+fmtDateFull(new Date().toISOString().slice(0,10))+'  ·  '+gw.total+'-week ATA program'),margin,62);
   // Status pill on the right of the header
   doc.setFont('helvetica','bold');doc.setFontSize(9);
   const pillLabel=statusMeta.label.toUpperCase();
@@ -3168,10 +3201,11 @@ function buildAtaTechDoc(tech){
   doc.text(pillLabel,pillX+9,40);
   y=88;
 
-  // Summary cards for Basic / Intermediate / Advanced
+  // Summary cards for the selected modules (Basic / Intermediate / Advanced)
+  const cardProgs=s.progs.filter(p=>includePrograms.includes(p.program));
   const cardGap=10;
-  const cardW=(contentW-(2*cardGap))/3;
-  s.progs.forEach((p,i)=>{
+  const cardW=(contentW-((cardProgs.length-1)*cardGap))/Math.max(1,cardProgs.length);
+  cardProgs.forEach((p,i)=>{
     const x=margin+i*(cardW+cardGap);
     const pct=p.total?Math.round((p.completed/p.total)*100):0;
     const fill=p.status==='behind'?[192,57,43]:p.status==='complete'?[15,110,86]:p.status==='on_track'?[27,58,107]:[150,150,150];
@@ -3201,13 +3235,14 @@ function buildAtaTechDoc(tech){
     y+=32;
   }
 
-  // Lesson tables per program
+  // Lesson tables per program — every lesson is one week (88 weeks across the 3 modules).
   const cols=[
-    {label:'Code',w:contentW*0.16},
-    {label:'Lesson',w:contentW*0.30},
-    {label:'Due',w:contentW*0.14},
-    {label:'Score',w:contentW*0.10},
-    {label:'Status',w:contentW*0.14},
+    {label:'Wk',w:contentW*0.06},
+    {label:'Code',w:contentW*0.15},
+    {label:'Lesson',w:contentW*0.29},
+    {label:'Due',w:contentW*0.13},
+    {label:'Score',w:contentW*0.09},
+    {label:'Status',w:contentW*0.12},
     {label:'Resets (mo·tot)',w:contentW*0.16}
   ];
   function lessonStatusLabel(lr){
@@ -3225,31 +3260,33 @@ function buildAtaTechDoc(tech){
     let x=margin+5;cols.forEach(c=>{doc.text(c.label,x,y+4);x+=c.w;});y+=16;
   }
 
-  s.progs.forEach(p=>{
-    const hasWork=p.start||p.completed>0||(p.failed||0)>0;
+  s.progs.filter(p=>includePrograms.includes(p.program)).forEach(p=>{
     needPage(36);
     doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(27,58,107);
     const title=ATA_PROGRAM_LABEL[p.program]+(p.start?'  ·  started '+fmtDate(p.start):'');
     doc.text(pdfSafeText(title),margin,y);y+=12;
     doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-    if(!hasWork){
-      doc.text('No start date assigned yet. Intermediate and Advanced unlock when the prior program is complete.',margin,y);
-      y+=18;return;
+    if(!p.start){
+      doc.text(pdfSafeText('Not started yet — due dates fill in once a start date is set. Full '+p.total+'-week schedule shown below.'),margin,y);
+      y+=14;
+    }else{
+      const bits=[p.completed+' of '+p.total+' passed'];
+      if(p.overdue)bits.push(p.overdue+' overdue');
+      if(p.failed)bits.push(p.failed+' failed');
+      if(p.atLimit)bits.push(p.atLimit+' at reset limit');
+      doc.text(pdfSafeText(bits.join('  ·  ')),margin,y);y+=12;
     }
-    const bits=[p.completed+' of '+p.total+' passed'];
-    if(p.overdue)bits.push(p.overdue+' overdue');
-    if(p.failed)bits.push(p.failed+' failed');
-    if(p.atLimit)bits.push(p.atLimit+' at reset limit');
-    doc.text(pdfSafeText(bits.join('  ·  ')),margin,y);y+=12;
 
     drawLessonHeader();
     p.lessonRows.forEach((lr,idx)=>{
       const st=lessonStatusLabel(lr);
+      const wk=gw.map[lr.lesson.lesson_code]||'';
       const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
       const score=lr.best==null?'—':(lr.best+'%');
       const rm=lr.resets||0,rtot=lr.resetsTotal||0;
       const resets=(rm>0||lr.failed||rtot>0)?(rm+'/'+ATA_MAX_RESETS+(rtot>rm?(' ('+rtot+' tot)'):'')+(lr.overLimit?' !':'')):'—';
       const values=[
+        String(wk),
         pdfSafeText(lr.lesson.lesson_code),
         pdfSafeText(lr.lesson.lesson_name),
         due,score,st.t,resets
@@ -3261,10 +3298,11 @@ function buildAtaTechDoc(tech){
       if(idx%2===0){doc.setFillColor(248,250,253);doc.rect(margin,y-8,contentW,rowH,'F');}
       let x=margin+5;
       sets.forEach((lines,i)=>{
-        doc.setFont('helvetica',i===0||i===4?'bold':'normal');
-        if(i===4)doc.setTextColor(...ataHexRgb(st.c));
-        else if(i===3&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
-        else if(i===5&&lr.overLimit)doc.setTextColor(192,57,43);
+        doc.setFont('helvetica',i===1||i===5?'bold':'normal');
+        if(i===5)doc.setTextColor(...ataHexRgb(st.c));
+        else if(i===4&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
+        else if(i===6&&lr.overLimit)doc.setTextColor(192,57,43);
+        else if(i===0)doc.setTextColor(120,120,120);
         else doc.setTextColor(45,45,45);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*10,{maxWidth:cols[i].w-6}));
         x+=cols[i].w;
@@ -3285,11 +3323,99 @@ function buildAtaTechDoc(tech){
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
 }
-async function ataDownloadTechPdf(techId){
+// Opens the report modal: choose modules, preview the PDF, then download.
+let ataReportTechId=null,ataReportBlobUrl=null;
+function ataDownloadTechPdf(techId){ataOpenReport(techId);}
+function ataOpenReport(techId){
   const tech=ataFindTech(techId);
   if(!tech)return;
-  try{await ensureJsPdf();const doc=buildAtaTechDoc(tech);doc.save('ATA-'+String(tech.name||'tech').replace(/[^a-z0-9]+/gi,'-')+'.pdf');}
-  catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
+  ataReportTechId=techId;
+  const title=document.getElementById('ata-report-title');
+  if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
+  document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
+  const rt=document.getElementById('ata-rep-reset-toggle');if(rt)rt.style.display=userIsAdmin?'':'none';
+  const rp=document.getElementById('ata-reset-panel');if(rp){rp.style.display='none';rp.innerHTML='';}
+  const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
+  ataReportPreview();
+}
+function ataCloseReport(){
+  const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.remove('visible');
+  const frame=document.getElementById('ata-report-frame');if(frame)frame.removeAttribute('src');
+  if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
+  ataReportTechId=null;
+}
+function ataReportSelectedPrograms(){
+  return Array.from(document.querySelectorAll('.ata-rep-mod')).filter(c=>c.checked).map(c=>c.value);
+}
+async function ataReportPreview(){
+  const tech=ataFindTech(ataReportTechId);if(!tech)return;
+  const frame=document.getElementById('ata-report-frame');
+  const progs=ataReportSelectedPrograms();
+  if(!progs.length){if(frame)frame.removeAttribute('src');return;}
+  try{
+    await ensureJsPdf();
+    const doc=buildAtaTechDoc(tech,{programs:progs});
+    if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}}
+    ataReportBlobUrl=doc.output('bloburl');
+    if(frame)frame.src=ataReportBlobUrl;
+  }catch(e){console.error('ATA preview failed',e);}
+  const rp=document.getElementById('ata-reset-panel');
+  if(rp&&rp.style.display!=='none')ataRenderResetPanel();
+}
+async function ataReportDownload(){
+  const tech=ataFindTech(ataReportTechId);if(!tech)return;
+  const progs=ataReportSelectedPrograms();
+  if(!progs.length){alert('Select at least one module to include.');return;}
+  try{
+    await ensureJsPdf();
+    const doc=buildAtaTechDoc(tech,{programs:progs});
+    const tag=progs.length===3?'':'-'+progs.map(p=>p.charAt(0).toUpperCase()).join('');
+    doc.save('ATA-'+String(tech.name||'tech').replace(/[^a-z0-9]+/gi,'-')+tag+'.pdf');
+  }catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
+}
+// Admin-only reset manager inside the report modal.
+function ataToggleResetPanel(){
+  const rp=document.getElementById('ata-reset-panel');if(!rp)return;
+  if(rp.style.display==='none'){rp.style.display='block';ataRenderResetPanel();}
+  else{rp.style.display='none';}
+}
+function ataRenderResetPanel(){
+  const rp=document.getElementById('ata-reset-panel');if(!rp)return;
+  const tech=ataFindTech(ataReportTechId);if(!tech){rp.innerHTML='';return;}
+  const progs=ataReportSelectedPrograms();
+  if(!progs.length){rp.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to manage its resets.</div>';return;}
+  const gw=ataGlobalWeeks();
+  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — click <b>+ reset</b> when a retake is approved. Max '+ATA_MAX_RESETS+'/month.</div>'
+    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (mo·tot)</th><th style="width:130px">Action</th></tr></thead><tbody>';
+  progs.forEach(pr=>{
+    ataLessonsByProgram(pr).forEach(l=>{
+      const rm=ataResetsThisMonth(tech,l.lesson_code),rt=ataResetsTotal(tech,l.lesson_code);
+      const mt=(ataAttemptInfo(tech,l.lesson_code)||{}).manual_total||0;
+      const over=rm>=ATA_MAX_RESETS;
+      html+='<tr><td style="color:#888">'+(gw.map[l.lesson_code]||'')+'</td>'
+        +'<td><b>'+adminEsc(l.lesson_code)+'</b> — '+adminEsc(l.lesson_name)+'</td>'
+        +'<td'+(over?' style="color:#C0392B;font-weight:700"':'')+'>'+rm+'/'+ATA_MAX_RESETS+(rt>rm?' ('+rt+' tot)':'')+(over?' !':'')+'</td>'
+        +'<td style="white-space:nowrap">'
+        +'<button type="button" class="btn" title="Remove last manual reset" style="padding:3px 8px;font-size:12px;background:#C0392B" '+(mt<=0?'disabled':'')+' onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',-1)">−</button> '
+        +'<button type="button" class="btn" style="padding:3px 8px;font-size:12px;background:#0F6E56" onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',1)">+ reset</button>'
+        +'</td></tr>';
+    });
+  });
+  html+='</tbody></table></div>';
+  rp.innerHTML=html;
+}
+async function ataAdjustReset(techId,code,delta){
+  try{
+    if(delta>0)await rpc('app_ata_add_reset',{p_tech_id:techId,p_lesson_code:code,p_reason:null});
+    else await rpc('app_ata_remove_reset',{p_tech_id:techId,p_lesson_code:code});
+  }catch(e){
+    const msg=e.message||'';
+    alert('Could not update the reset. '+((msg.includes('app_ata_add_reset')||msg.includes('app_ata_remove_reset'))?'Run supabase/ata-manual-resets.sql in Supabase.':(msg||'Try again.')));
+    return;
+  }
+  try{await ataLoadAdmin();}catch(e){}
+  ataRenderResetPanel();
+  ataReportPreview();
 }
 
 // ── PM read-only ATA view ────────────────────────────────────────────────────
@@ -3325,7 +3451,7 @@ function renderPmAta(){
     <td>${cell(s.byProgram.basic)}</td>
     <td>${cell(s.byProgram.intermediate)}</td>
     <td>${cell(s.byProgram.advanced)}</td>
-    <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">PDF</button></td>
+    <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">Report</button></td>
   </tr>`).join('');
   wrap.innerHTML=`<div style="overflow-x:auto"><table class="report-table">
     <thead><tr><th>Technician</th><th>Status</th><th>Basic</th><th>Intermediate</th><th>Advanced</th><th></th></tr></thead>
