@@ -12,6 +12,8 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Every day at 12:00 UTC (7:00 AM US Eastern / 6:00 AM Central).
-[functions."ata-teachable-sync"]
+# Daily job. Must be a separate function: Netlify scheduled functions
+# cannot be called from the browser (HTTP 403). The admin button uses
+# ata-teachable-sync (no schedule).
+[functions."ata-teachable-cron"]
   schedule = "0 12 * * *"
