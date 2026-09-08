@@ -1,0 +1,698 @@
+[
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395104,
+    "lecture_name": "TAB-A-101 Quiz Hydronics vs Air",
+    "quiz_id": 57695034,
+    "lesson_code": "TAB-A-101"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 42437221,
+    "lecture_name": "TAB-A-102 Quiz Hydronic Components",
+    "quiz_id": 76931235,
+    "lesson_code": "TAB-A-102"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395114,
+    "lecture_name": "TAB-A-103 Quiz Chillers",
+    "quiz_id": 57695074,
+    "lesson_code": "TAB-A-103"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395116,
+    "lecture_name": "TAB-A-104 Quiz Cooling Tower",
+    "quiz_id": 57695083,
+    "lesson_code": "TAB-A-104"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395118,
+    "lecture_name": "TAB-A-105 Quiz Boilers",
+    "quiz_id": 57695091,
+    "lesson_code": "TAB-A-105"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395122,
+    "lecture_name": "TAB-A-106 Quiz Condenser Water",
+    "quiz_id": 57695107,
+    "lesson_code": "TAB-A-106"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 42436988,
+    "lecture_name": "TAB-A-107 Quiz Heat Pumps",
+    "quiz_id": 76939074,
+    "lesson_code": "TAB-A-107"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 42436985,
+    "lecture_name": "TAB-A-108 Quiz Piping Systems",
+    "quiz_id": 76941864,
+    "lesson_code": "TAB-A-108"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 42436896,
+    "lecture_name": "TAB-A-109  Quiz Prim Sec Piping",
+    "quiz_id": 76952847,
+    "lesson_code": "TAB-A-109"
+  },
+  {
+    "course_id": 1410431,
+    "course_name": "TAB Advanced 100",
+    "lecture_id": 32395124,
+    "lecture_name": "TAB-A-110 Course Level Final Exam",
+    "quiz_id": 57695112,
+    "lesson_code": "TAB-A-110"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 32395223,
+    "lecture_name": "TAB-A-200 Final Exam",
+    "quiz_id": 57695481,
+    "lesson_code": "TAB-A-200"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 32395209,
+    "lecture_name": "TAB-A-201 Quiz - Balance Valve",
+    "quiz_id": 57695427,
+    "lesson_code": "TAB-A-201"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 32395207,
+    "lecture_name": "TAB-A-202 Quiz Coil Balancing",
+    "quiz_id": 57695419,
+    "lesson_code": "TAB-A-202"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 32395211,
+    "lecture_name": "TAB-A-203 Quiz Pumps",
+    "quiz_id": 57695435,
+    "lesson_code": "TAB-A-203"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 42438035,
+    "lecture_name": "TAB-A-204 Quiz Flow Coefficient",
+    "quiz_id": 76956464,
+    "lesson_code": "TAB-A-204"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 32395219,
+    "lecture_name": "TAB-A-205 Quiz Heat Exchangers",
+    "quiz_id": 57695468,
+    "lesson_code": "TAB-A-205"
+  },
+  {
+    "course_id": 1410435,
+    "course_name": "TAB Advanced 200",
+    "lecture_id": 42438083,
+    "lecture_name": "TAB-A-206 Quiz Ultrasonic Meter",
+    "quiz_id": 76960936,
+    "lesson_code": "TAB-A-206"
+  },
+  {
+    "course_id": 1410436,
+    "course_name": "TAB Advanced 300",
+    "lecture_id": 43111308,
+    "lecture_name": "TAB-A-300 Final Exam",
+    "quiz_id": 78384062,
+    "lesson_code": "TAB-A-300"
+  },
+  {
+    "course_id": 1410436,
+    "course_name": "TAB Advanced 300",
+    "lecture_id": 32395276,
+    "lecture_name": "TAB-A-301 Quiz",
+    "quiz_id": 57695684,
+    "lesson_code": "TAB-A-301"
+  },
+  {
+    "course_id": 1410436,
+    "course_name": "TAB Advanced 300",
+    "lecture_id": 43110596,
+    "lecture_name": "TAB-A-302 Quiz",
+    "quiz_id": 78382911,
+    "lesson_code": "TAB-A-302"
+  },
+  {
+    "course_id": 1410436,
+    "course_name": "TAB Advanced 300",
+    "lecture_id": 43110883,
+    "lecture_name": "TAB-A-303 Quiz",
+    "quiz_id": 78383833,
+    "lesson_code": "TAB-A-303"
+  },
+  {
+    "course_id": 1410436,
+    "course_name": "TAB Advanced 300",
+    "lecture_id": 43110886,
+    "lecture_name": "TAB-A-304 Quiz",
+    "quiz_id": 78383323,
+    "lesson_code": "TAB-A-304"
+  },
+  {
+    "course_id": 1410434,
+    "course_name": "TAB Advanced 400",
+    "lecture_id": 43114424,
+    "lecture_name": "TAB-A-401 Quiz",
+    "quiz_id": 78389442,
+    "lesson_code": "TAB-A-401"
+  },
+  {
+    "course_id": 1410434,
+    "course_name": "TAB Advanced 400",
+    "lecture_id": 32395197,
+    "lecture_name": "TAB-A-402 Quiz",
+    "quiz_id": 57695377,
+    "lesson_code": "TAB-A-402"
+  },
+  {
+    "course_id": 1410434,
+    "course_name": "TAB Advanced 400",
+    "lecture_id": 43114428,
+    "lecture_name": "TAB-A-403 Quiz",
+    "quiz_id": 78431043,
+    "lesson_code": "TAB-A-403"
+  },
+  {
+    "course_id": 1410434,
+    "course_name": "TAB Advanced 400",
+    "lecture_id": 43114429,
+    "lecture_name": "TAB-A-404 Quiz",
+    "quiz_id": 78405588,
+    "lesson_code": "TAB-A-404"
+  },
+  {
+    "course_id": 1410434,
+    "course_name": "TAB Advanced 400",
+    "lecture_id": 43114383,
+    "lecture_name": "TAB-A-405 Quiz",
+    "quiz_id": 78389412,
+    "lesson_code": "TAB-A-405"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093238,
+    "lecture_name": "TAB-B-101 Quiz",
+    "quiz_id": 57069137,
+    "lesson_code": "TAB-B-101"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093228,
+    "lecture_name": "TAB-B-102 Quiz",
+    "quiz_id": 57069113,
+    "lesson_code": "TAB-B-102"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093206,
+    "lecture_name": "TAB-B-103 Quiz",
+    "quiz_id": 57069052,
+    "lesson_code": "TAB-B-103"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093212,
+    "lecture_name": "TAB-B-104 Quiz",
+    "quiz_id": 57069072,
+    "lesson_code": "TAB-B-104"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093210,
+    "lecture_name": "TAB-B-105 Quiz",
+    "quiz_id": 57069064,
+    "lesson_code": "TAB-B-105"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093224,
+    "lecture_name": "TAB-B-106 Quiz History",
+    "quiz_id": 57069104,
+    "lesson_code": "TAB-B-106"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093214,
+    "lecture_name": "TAB-B-107 Quiz",
+    "quiz_id": 57069079,
+    "lesson_code": "TAB-B-107"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093222,
+    "lecture_name": "TAB-B-108 Quiz",
+    "quiz_id": 57069099,
+    "lesson_code": "TAB-B-108"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 35342194,
+    "lecture_name": "TAB-B-109 Quiz",
+    "quiz_id": 63896873,
+    "lesson_code": "TAB-B-109"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093208,
+    "lecture_name": "TAB-B-110 Quiz Grilles",
+    "quiz_id": 57069060,
+    "lesson_code": "TAB-B-110"
+  },
+  {
+    "course_id": 1396989,
+    "course_name": "TAB Basics 100",
+    "lecture_id": 32093220,
+    "lecture_name": "TAB-B-111 Quiz",
+    "quiz_id": 57069094,
+    "lesson_code": "TAB-B-111"
+  },
+  {
+    "course_id": 2186389,
+    "course_name": "TAB Basics 100 -Final Quiz",
+    "lecture_id": 49308490,
+    "lecture_name": "TAB-B-111 Course Level Final Exam",
+    "quiz_id": 90561623,
+    "lesson_code": "TAB-B-112"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32322998,
+    "lecture_name": "TAB-B-201 Quiz",
+    "quiz_id": 57538894,
+    "lesson_code": "TAB-B-201"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32331771,
+    "lecture_name": "TAB-B-202 Quiz",
+    "quiz_id": 58914072,
+    "lesson_code": "TAB-B-202"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32331761,
+    "lecture_name": "TAB-B-203 Quiz",
+    "quiz_id": 58914450,
+    "lesson_code": "TAB-B-203"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32331755,
+    "lecture_name": "TAB-B-204 Quiz",
+    "quiz_id": 57874553,
+    "lesson_code": "TAB-B-204"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32331784,
+    "lecture_name": "TAB-B-205 Quiz",
+    "quiz_id": 64578698,
+    "lesson_code": "TAB-B-205"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32322994,
+    "lecture_name": "TAB-B-206 Quiz",
+    "quiz_id": 57538880,
+    "lesson_code": "TAB-B-206"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32323021,
+    "lecture_name": "TAB-B-207 Quiz",
+    "quiz_id": 57538947,
+    "lesson_code": "TAB-B-207"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32323004,
+    "lecture_name": "TAB-B-208 Quiz",
+    "quiz_id": 57538908,
+    "lesson_code": "TAB-B-208"
+  },
+  {
+    "course_id": 1407062,
+    "course_name": "TAB Basics 200",
+    "lecture_id": 32331850,
+    "lecture_name": "TAB-B-209 Quiz",
+    "quiz_id": 58905857,
+    "lesson_code": "TAB-B-209"
+  },
+  {
+    "course_id": 2186403,
+    "course_name": "TAB Basics 200 -Final Quiz",
+    "lecture_id": 49308765,
+    "lecture_name": "TAB-B-210 Course Level Final Exam",
+    "quiz_id": 90561924,
+    "lesson_code": "TAB-B-210"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342436,
+    "lecture_name": "TAB-B-301 Quiz",
+    "quiz_id": 57589997,
+    "lesson_code": "TAB-B-301"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342455,
+    "lecture_name": "TAB-B-302 Quiz",
+    "quiz_id": 57590039,
+    "lesson_code": "TAB-B-302"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342467,
+    "lecture_name": "TAB-B-303 Quiz",
+    "quiz_id": 57590068,
+    "lesson_code": "TAB-B-303"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342469,
+    "lecture_name": "TAB-B-304 Quiz",
+    "quiz_id": 57590073,
+    "lesson_code": "TAB-B-304"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342471,
+    "lecture_name": "TAB-B-305 Quiz",
+    "quiz_id": 57590077,
+    "lesson_code": "TAB-B-305"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342465,
+    "lecture_name": "TAB-B-306 Quiz",
+    "quiz_id": 57590065,
+    "lesson_code": "TAB-B-306"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342459,
+    "lecture_name": "TAB-B-307 Quiz",
+    "quiz_id": 57590050,
+    "lesson_code": "TAB-B-307"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342463,
+    "lecture_name": "TAB-B-308 Quiz",
+    "quiz_id": 57590060,
+    "lesson_code": "TAB-B-308"
+  },
+  {
+    "course_id": 1407900,
+    "course_name": "TAB Basics 300",
+    "lecture_id": 32342457,
+    "lecture_name": "TAB-B-309 Quiz",
+    "quiz_id": 57590044,
+    "lesson_code": "TAB-B-309"
+  },
+  {
+    "course_id": 2187581,
+    "course_name": "TAB Basics 300 -Final Exam",
+    "lecture_id": 49341725,
+    "lecture_name": "TAB-B-310 Course Level Final Exam",
+    "quiz_id": 90611734,
+    "lesson_code": "TAB-B-310"
+  },
+  {
+    "course_id": 1407931,
+    "course_name": "TAB Basics 400",
+    "lecture_id": 33431559,
+    "lecture_name": "TAB-B-400 Course Level Final Exam",
+    "quiz_id": 59901749,
+    "lesson_code": "TAB-B-400"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387265,
+    "lecture_name": "TAB-I-100 Course Level Final Exam",
+    "quiz_id": 57682661,
+    "lesson_code": "TAB-I-100"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387252,
+    "lecture_name": "TAB-I-101 Quiz",
+    "quiz_id": 57682612,
+    "lesson_code": "TAB-I-101"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 35639657,
+    "lecture_name": "TAB-I-102 Quiz",
+    "quiz_id": 66676143,
+    "lesson_code": "TAB-I-102"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387254,
+    "lecture_name": "TAB-I-103 Quiz",
+    "quiz_id": 57682620,
+    "lesson_code": "TAB-I-103"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387256,
+    "lecture_name": "TAB-I-104 Quiz",
+    "quiz_id": 57682628,
+    "lesson_code": "TAB-I-104"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 35639653,
+    "lecture_name": "TAB-I-105  Quiz",
+    "quiz_id": 64485123,
+    "lesson_code": "TAB-I-105"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387260,
+    "lecture_name": "TAB-I-106  Quiz",
+    "quiz_id": 57682644,
+    "lesson_code": "TAB-I-106"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 32387258,
+    "lecture_name": "TAB-I-107 Quiz",
+    "quiz_id": 57682636,
+    "lesson_code": "TAB-I-107"
+  },
+  {
+    "course_id": 1410152,
+    "course_name": "TAB Intermediate 100",
+    "lecture_id": 35653709,
+    "lecture_name": "TAB-I-108 Quiz",
+    "quiz_id": 65527331,
+    "lesson_code": "TAB-I-108"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 41209069,
+    "lecture_name": "TAB-I-201 Quiz",
+    "quiz_id": 74577259,
+    "lesson_code": "TAB-I-201"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 32387306,
+    "lecture_name": "TAB-I-202 Quiz",
+    "quiz_id": 57682825,
+    "lesson_code": "TAB-I-202"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 41209765,
+    "lecture_name": "TAB-I-203 Quiz",
+    "quiz_id": 74578204,
+    "lesson_code": "TAB-I-203"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 32387317,
+    "lecture_name": "TAB-I-204 Quiz",
+    "quiz_id": 57682864,
+    "lesson_code": "TAB-I-204"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 32387308,
+    "lecture_name": "TAB-I-205 Quiz",
+    "quiz_id": 57682832,
+    "lesson_code": "TAB-I-205"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 32387773,
+    "lecture_name": "TAB-I-206 Quiz",
+    "quiz_id": 74583361,
+    "lesson_code": "TAB-I-206"
+  },
+  {
+    "course_id": 1410153,
+    "course_name": "TAB Intermediate 200",
+    "lecture_id": 32387309,
+    "lecture_name": "TAB-I-207 Course Level Final Exam",
+    "quiz_id": 74627635,
+    "lesson_code": "TAB-I-207"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 41826389,
+    "lecture_name": "TAB-I-301 Quiz",
+    "quiz_id": 75868725,
+    "lesson_code": "TAB-I-301"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 41826642,
+    "lecture_name": "TAB-I-302 Quiz",
+    "quiz_id": 75867841,
+    "lesson_code": "TAB-I-302"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 41826645,
+    "lecture_name": "TAB-I-303 Quiz",
+    "quiz_id": 75605728,
+    "lesson_code": "TAB-I-303"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 41826648,
+    "lecture_name": "TAB-I-304 Quiz",
+    "quiz_id": 75869034,
+    "lesson_code": "TAB-I-304"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 32387193,
+    "lecture_name": "TAB-I-305 Quiz",
+    "quiz_id": 57682447,
+    "lesson_code": "TAB-I-305"
+  },
+  {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 32387195,
+    "lecture_name": "TAB-I-306 Quiz",
+    "quiz_id": 57682455,
+    "lesson_code": "TAB-I-306"
+  },
+  {
+    "course_id": 1410146,
+    "course_name": "TAB Intermediate 400",
+    "lecture_id": 41954116,
+    "lecture_name": "TAB-I-400 Final Exam",
+    "quiz_id": 75896834,
+    "lesson_code": "TAB-I-400"
+  },
+  {
+    "course_id": 1410146,
+    "course_name": "TAB Intermediate 400",
+    "lecture_id": 32387157,
+    "lecture_name": "TAB-I-401 Quiz",
+    "quiz_id": 57682309,
+    "lesson_code": "TAB-I-401"
+  },
+  {
+    "course_id": 1410146,
+    "course_name": "TAB Intermediate 400",
+    "lecture_id": 32387163,
+    "lecture_name": "TAB-I-402 Quiz",
+    "quiz_id": 57682336,
+    "lesson_code": "TAB-I-402"
+  },
+  {
+    "course_id": 1410146,
+    "course_name": "TAB Intermediate 400",
+    "lecture_id": 32387155,
+    "lecture_name": "TAB-I-403 Quiz",
+    "quiz_id": 57682301,
+    "lesson_code": "TAB-I-403"
+  },
+  {
+    "course_id": 1410146,
+    "course_name": "TAB Intermediate 400",
+    "lecture_id": 41942616,
+    "lecture_name": "TAB-I-404 Quiz",
+    "quiz_id": 75892853,
+    "lesson_code": "TAB-I-404"
+  }
+]

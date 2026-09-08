@@ -782,6 +782,7 @@ body.mobile-nav-open{overflow:hidden}
           <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Enter a Basic start date to generate the schedule — each lesson is due the following Friday, one per week. Intermediate and Advanced unlock as the prior program is completed.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
+            <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:6px">
@@ -2796,6 +2797,35 @@ async function ataApplyRows(rows){
   ataSetImportStatus(msg,'ok');
   await ataLoadAdmin();
   return true;
+}
+
+async function ataSyncFromTeachable(){
+  const btn=document.getElementById('ata-teachable-btn');
+  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
+  ataSetImportStatus('Pulling the latest quiz scores from Teachable. This can take about a minute…');
+  try{
+    let secret='';
+    try{secret=await rpc('app_ata_webhook_secret',{})||'';}
+    catch(e){throw new Error('Could not load the webhook secret. Run supabase/ata-attempts.sql in Supabase first.');}
+    if(!secret)throw new Error('No webhook secret on file. Run supabase/ata-attempts.sql in Supabase first.');
+    const res=await fetch('/.netlify/functions/ata-teachable-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret}),cache:'no-store'});
+    let data=null;try{data=await res.json();}catch(_){}
+    if(!res.ok||!data||!data.ok){
+      const err=(data&&data.error)||('HTTP '+res.status);
+      if(/TEACHABLE_API_KEY/i.test(err))throw new Error('Teachable API key is not set on Netlify yet. Add TEACHABLE_API_KEY under Site settings → Environment variables, then retry.');
+      if(/app_ata_import_attempts|unauthorized/i.test(err))throw new Error('Run supabase/ata-teachable-sync.sql in the Supabase SQL Editor, then retry.');
+      throw new Error(err);
+    }
+    let msg='Teachable sync done: '+data.applied+' quiz result'+(data.applied===1?'':'s')+' across '+(data.matched||0)+' technician'+(data.matched===1?'':'s')+'.';
+    if(data.unmatched)msg+=' '+data.unmatched+' result'+(data.unmatched===1?'':'s')+' had no matching technician (email/name).';
+    if(data.quizErrors)msg+=' '+data.quizErrors+' quiz'+(data.quizErrors===1?'':'zes')+' could not be read.';
+    ataSetImportStatus(msg,'ok');
+    await ataLoadAdmin();
+  }catch(e){
+    ataSetImportStatus('Could not sync from Teachable. '+adminEsc(e.message||'')+' The sync runs on the deployed Netlify site — it will not work from a local file.','err');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='↻ Sync from Teachable';}
+  }
 }
 
 async function ataUpdateFromSheet(){

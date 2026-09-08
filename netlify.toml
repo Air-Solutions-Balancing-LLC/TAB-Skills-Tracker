@@ -1,8 +1,7 @@
 # Netlify configuration for TAB Skills Tracker.
-# The site itself is static (served from the repo root). The only server-side
-# piece is the ATA Tracking sheet importer, which must run on the server because
-# Google Sheets does not send CORS headers for the CSV export (a browser fetch is
-# blocked) and the data is spread across one tab per technician.
+# The site itself is static (served from the repo root). Server-side pieces:
+#   * ata-sheet          — legacy Google Sheet importer (CORS workaround)
+#   * ata-teachable-sync — daily + on-demand pull of Teachable quiz results
 
 [build]
   publish = "."
@@ -12,3 +11,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# Every day at 12:00 UTC (7:00 AM US Eastern / 6:00 AM Central).
+[functions."ata-teachable-sync"]
+  schedule = "0 12 * * *"
