@@ -1,22 +1,21 @@
 // ATA Tracking — pull latest graded quiz results from Teachable and write them
-// into Supabase (scores + one attempt per distinct Teachable submission).
+// into Supabase. Uses Node https (same as ata-sheet) so esbuild/Netlify does
+// not depend on global fetch.
 //
-// Triggered by:
-//   * Admin button "Sync from Teachable" (POST with {secret} from the webhook RPC)
-//   * Daily Netlify schedule (needs ATA_WEBHOOK_SECRET + TEACHABLE_API_KEY env vars)
-//
-// Env:
-//   TEACHABLE_API_KEY   — required (Netlify → Site settings → Environment variables)
-//   ATA_WEBHOOK_SECRET  — required for the scheduled run; the button can pass it
-//   SUPABASE_URL        — optional override (defaults to the production project)
-//   SUPABASE_ANON_KEY   — optional override (defaults to the publishable key)
+// Admin button: POST /.netlify/functions/ata-teachable-sync  {secret}
+// Daily cron:   ata-teachable-cron.js (needs ATA_WEBHOOK_SECRET + TEACHABLE_API_KEY)
 
+const https = require('https');
 const QUIZZES = require('./ata-teachable-quizzes.json');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vwjizsgmfjwgnaojgkmt.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY ||
   'sb_publishable_hh7_CD_TuH0X3YugPn_Z6w_VWSAAvlb';
-const TEACHABLE_BASE = 'https://developers.teachable.com/v1';
+
+function env(name) {
+  // Read at runtime so esbuild does not inline an empty build-time value.
+  return (process.env && process.env[name]) || '';
+}
 
 function json(statusCode, body) {
   return {
@@ -28,19 +27,49 @@ function json(statusCode, body) {
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-async function teachableGet(apiKey, path, attempt) {
-  const r = await fetch(TEACHABLE_BASE + path, {
-    headers: { apiKey, Accept: 'application/json' },
+function requestJson(method, urlStr, headers, body) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    const payload = body == null ? null : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
+    const req = https.request({
+      protocol: u.protocol,
+      hostname: u.hostname,
+      port: u.port || 443,
+      path: u.pathname + u.search,
+      method,
+      headers: Object.assign({
+        Accept: 'application/json',
+        'User-Agent': 'TABSkillsTracker/1.0',
+      }, headers || {}, payload ? { 'Content-Length': String(payload.length) } : {}),
+    }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => {
+        let parsed = null;
+        if (data) {
+          try { parsed = JSON.parse(data); } catch (_) { parsed = null; }
+        }
+        resolve({ status: res.statusCode || 0, text: data, json: parsed });
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(25000, () => { req.destroy(new Error('timeout ' + urlStr)); });
+    if (payload) req.write(payload);
+    req.end();
   });
-  if (r.status === 429 && (attempt || 0) < 4) {
-    await sleep(400 * Math.pow(2, attempt || 0));
+}
+
+async function teachableGet(apiKey, path, attempt) {
+  const res = await requestJson('GET', 'https://developers.teachable.com/v1' + path, { apiKey });
+  if (res.status === 429 && (attempt || 0) < 5) {
+    await sleep(500 * Math.pow(2, attempt || 0));
     return teachableGet(apiKey, path, (attempt || 0) + 1);
   }
-  if (!r.ok) {
-    const t = await r.text().catch(() => '');
-    throw new Error('Teachable HTTP ' + r.status + ' ' + path + (t ? ': ' + t.slice(0, 180) : ''));
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error('Teachable HTTP ' + res.status + ' ' + path + (res.text ? ': ' + String(res.text).slice(0, 180) : ''));
   }
-  return r.json();
+  return res.json;
 }
 
 async function mapPool(items, limit, fn) {
@@ -52,8 +81,7 @@ async function mapPool(items, limit, fn) {
       out[idx] = await fn(items[idx], idx);
     }
   }
-  const n = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: n }, worker));
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return out;
 }
 
@@ -85,23 +113,20 @@ function collectRows(quiz, payload) {
 }
 
 async function ingest(secret, rows) {
+  if (!rows.length) return { applied: 0, matched: 0, unmatched: 0 };
   const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/app_ata_import_attempts';
   let applied = 0, matched = 0, unmatched = 0;
   const chunk = 250;
   for (let i = 0; i < rows.length; i += chunk) {
     const slice = rows.slice(i, i + chunk);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ p_secret: secret, p_rows: slice }),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data || data.ok === false) {
-      throw new Error((data && (data.error || data.message)) || ('Ingest HTTP ' + res.status));
+    const res = await requestJson('POST', url, {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    }, { p_secret: secret, p_rows: slice });
+    const data = res.json;
+    if (res.status < 200 || res.status >= 300 || !data || data.ok === false) {
+      throw new Error((data && (data.error || data.message || data.hint)) || ('Ingest HTTP ' + res.status + ' ' + String(res.text || '').slice(0, 180)));
     }
     applied += data.applied || 0;
     matched += data.matched || 0;
@@ -111,17 +136,21 @@ async function ingest(secret, rows) {
 }
 
 async function runSync(apiKey, secret) {
+  const probe = await teachableGet(apiKey, '/courses?per=1');
+  if (!probe || !probe.courses) throw new Error('Teachable login failed — check TEACHABLE_API_KEY on Netlify.');
+
   const all = [];
   let quizErrors = 0;
-  await mapPool(QUIZZES, 8, async (quiz) => {
+  let firstError = '';
+  await mapPool(QUIZZES, 4, async (quiz) => {
     try {
       const path = '/courses/' + quiz.course_id + '/lectures/' + quiz.lecture_id + '/quizzes/' + quiz.quiz_id + '/responses';
       const payload = await teachableGet(apiKey, path);
-      const rows = collectRows(quiz, payload);
-      all.push.apply(all, rows);
+      all.push.apply(all, collectRows(quiz, payload));
     } catch (e) {
       quizErrors += 1;
-      console.error('quiz failed', quiz.lesson_code, e.message);
+      if (!firstError) firstError = (e && e.message) || String(e);
+      console.error('quiz failed', quiz.lesson_code, e && e.message);
     }
   });
   const result = await ingest(secret, all);
@@ -130,6 +159,7 @@ async function runSync(apiKey, secret) {
     quizzes: QUIZZES.length,
     rowCount: all.length,
     quizErrors,
+    firstError: firstError || null,
     applied: result.applied,
     matched: result.matched,
     unmatched: result.unmatched,
@@ -137,11 +167,11 @@ async function runSync(apiKey, secret) {
 }
 
 exports.handler = async function (event) {
-  const apiKey = process.env.TEACHABLE_API_KEY;
+  const apiKey = String(env('TEACHABLE_API_KEY') || '').trim();
   if (!apiKey) {
-    return json(500, { ok: false, error: 'TEACHABLE_API_KEY is not set on Netlify. Add it under Site settings → Environment variables.' });
+    return json(500, { ok: false, error: 'TEACHABLE_API_KEY is not set on Netlify. Add it under Project configuration → Environment variables, then Redeploy.' });
   }
-  let secret = process.env.ATA_WEBHOOK_SECRET || '';
+  let secret = env('ATA_WEBHOOK_SECRET');
   if (event && event.body) {
     try {
       const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
