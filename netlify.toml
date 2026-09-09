@@ -15,5 +15,9 @@
 # Daily job. Must be a separate function: Netlify scheduled functions
 # cannot be called from the browser (HTTP 403). The admin button uses
 # ata-teachable-sync (no schedule).
+[functions."ata-teachable-sync"]
+  timeout = 26
+
 [functions."ata-teachable-cron"]
   schedule = "0 12 * * *"
+  timeout = 26

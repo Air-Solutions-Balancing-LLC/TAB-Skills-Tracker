@@ -2878,6 +2878,7 @@ async function ataSyncFromTeachable(){
     }
     let msg='Teachable sync done: '+data.applied+' quiz result'+(data.applied===1?'':'s')+' across '+(data.matched||0)+' technician'+(data.matched===1?'':'s')+'.';
     if(data.unmatched)msg+=' '+data.unmatched+' result'+(data.unmatched===1?'':'s')+' had no matching technician (email/name).';
+    if(data.completeNoScore)msg+=' '+data.completeNoScore+' lesson'+(data.completeNoScore===1?'':'s')+' marked Complete in Teachable with no score.';
     if(data.quizErrors)msg+=' '+data.quizErrors+' quiz'+(data.quizErrors===1?'':'zes')+' could not be read'+(data.firstError?': '+data.firstError:'')+'.';
     ataSetImportStatus(msg,'ok');
     await ataInferStarts(true);
@@ -3358,7 +3359,7 @@ function buildAtaTechDoc(tech,opts){
     {label:'Resets (mo·tot)',w:contentW*0.16}
   ];
   function lessonStatusLabel(lr){
-    if(lr.done)return {t:'Passed',c:'#0F6E56'};
+    if(lr.done)return {t:lr.best==null?'Complete':'Passed',c:'#0F6E56'};
     if(lr.failed)return {t:'Failed',c:'#C0392B'};
     if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
     if(lr.state==='due')return {t:'Due soon',c:'#B58900'};
@@ -3613,7 +3614,7 @@ function renderTechAta(tech){
     return txt;
   };
   const stateBadge=(lr)=>{
-    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">✓ Passed</span>';
+    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">'+(lr.best==null?'✓ Complete':'✓ Passed')+'</span>';
     if(lr.failed)return '<span style="color:#C0392B;font-weight:700">Failed — retake needed</span>';
     if(lr.state==='overdue')return '<span style="color:#C0392B;font-weight:700">Overdue</span>';
     if(lr.state==='due'){const diff=Math.round((lr.deadline-today)/86400000);return `<span style="color:#b58900;font-weight:700">Due ${diff<=0?'today':'in '+diff+'d'}</span>`;}

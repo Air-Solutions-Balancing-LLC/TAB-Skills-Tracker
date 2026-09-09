@@ -59,7 +59,12 @@ BEGIN
     ELSE
       v_score := NULL;
     END IF;
-    v_passed := v_score IS NOT NULL AND v_score >= 80;
+    -- Teachable "Complete" with no grade still counts as done (no reset).
+    IF coalesce(r->>'complete_no_score','') IN ('true','t','1') THEN
+      v_passed := true;
+    ELSE
+      v_passed := v_score IS NOT NULL AND v_score >= 80;
+    END IF;
 
     IF v_email <> '' THEN
       SELECT id INTO v_tid FROM technicians
@@ -80,6 +85,19 @@ BEGIN
     IF NOT (v_tid::text = ANY (v_seen)) THEN
       v_seen := array_append(v_seen, v_tid::text);
       v_matched := v_matched + 1;
+    END IF;
+
+    -- Complete-without-grade: mark the lesson done, do not insert an attempt (that would look like a reset).
+    IF coalesce(r->>'complete_no_score','') IN ('true','t','1') THEN
+      INSERT INTO ata_completions (tech_id, lesson_code, score_percent, completed_at, passed, source_email, updated_at)
+      VALUES (v_tid, v_code, NULL, v_at, true, nullif(v_email,''), now())
+      ON CONFLICT (tech_id, lesson_code) DO UPDATE
+        SET passed        = true,
+            completed_at  = coalesce(ata_completions.completed_at, EXCLUDED.completed_at),
+            source_email  = coalesce(EXCLUDED.source_email, ata_completions.source_email),
+            updated_at    = now();
+      v_applied := v_applied + 1;
+      CONTINUE;
     END IF;
 
     INSERT INTO ata_attempts (tech_id, lesson_code, score_percent, passed, attempted_at, source, external_id)

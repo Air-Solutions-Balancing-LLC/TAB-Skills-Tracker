@@ -106,6 +106,8 @@ function collectRows(quiz, payload) {
       lesson_code: quiz.lesson_code,
       score,
       attempted_at: submitted || null,
+      course_id: quiz.course_id,
+      student_id: r.student_id || null,
       external_id: 'teachable:' + quiz.quiz_id + ':' + (r.student_id || r.student_email || r.student_name) + ':' + submitted,
     });
   }
@@ -153,17 +155,85 @@ async function runSync(apiKey, secret) {
       console.error('quiz failed', quiz.lesson_code, e && e.message);
     }
   });
-  const result = await ingest(secret, all);
+  const extras = await fillCompleteNoScore(apiKey, all);
+  const result = await ingest(secret, all.concat(extras));
   return {
     ok: true,
     quizzes: QUIZZES.length,
     rowCount: all.length,
+    completeNoScore: extras.length,
     quizErrors,
     firstError: firstError || null,
     applied: result.applied,
     matched: result.matched,
     unmatched: result.unmatched,
   };
+}
+
+function flattenProgress(payload) {
+  const sections = (payload && payload.course_progress && payload.course_progress.lecture_sections) || [];
+  const lectures = [];
+  for (const s of sections) {
+    for (const l of s.lectures || []) lectures.push(l);
+  }
+  return lectures;
+}
+
+// Lectures marked Complete in Teachable with no graded quiz response (dashes
+// instead of a percent). Pull those from course progress so they count as done.
+async function fillCompleteNoScore(apiKey, scoredRows) {
+  const studentsByCourse = {};
+  const scored = new Set();
+  for (const row of scoredRows) {
+    scored.add(String(row.email || row.name).toLowerCase() + '|' + row.lesson_code);
+    if (!row.course_id || !row.student_id) continue;
+    if (!studentsByCourse[row.course_id]) studentsByCourse[row.course_id] = {};
+    studentsByCourse[row.course_id][row.student_id] = { email: row.email || '', name: row.name || '' };
+  }
+  const catalogByCourse = {};
+  QUIZZES.forEach((q) => {
+    if (!catalogByCourse[q.course_id]) catalogByCourse[q.course_id] = [];
+    catalogByCourse[q.course_id].push(q);
+  });
+  const jobs = [];
+  Object.keys(studentsByCourse).forEach((courseId) => {
+    Object.keys(studentsByCourse[courseId]).forEach((uid) => {
+      jobs.push({ courseId, uid, ident: studentsByCourse[courseId][uid] });
+    });
+  });
+  const extra = [];
+  await mapPool(jobs, 5, async (job) => {
+    try {
+      const payload = await teachableGet(apiKey, '/courses/' + job.courseId + '/progress?user_id=' + job.uid + '&per=100');
+      const lectures = flattenProgress(payload);
+      const byLec = {};
+      (catalogByCourse[job.courseId] || []).forEach((q) => { byLec[q.lecture_id] = q; });
+      for (const lec of lectures) {
+        if (!lec.is_completed) continue;
+        let quiz = byLec[lec.id];
+        if (!quiz) {
+          const m = /TAB-[BIA]-\d+/i.exec(lec.name || '');
+          if (m) quiz = QUIZZES.find((q) => q.lesson_code === m[0].toUpperCase());
+        }
+        if (!quiz) continue;
+        const key = String(job.ident.email || job.ident.name).toLowerCase() + '|' + quiz.lesson_code;
+        if (scored.has(key)) continue;
+        scored.add(key);
+        extra.push({
+          email: job.ident.email,
+          name: job.ident.name,
+          lesson_code: quiz.lesson_code,
+          score: null,
+          attempted_at: lec.completed_at || null,
+          complete_no_score: true,
+          external_id: 'teachable-complete:' + quiz.lecture_id + ':' + job.uid,
+        });
+      }
+    } catch (e) {
+      console.error('progress failed', job.courseId, job.uid, e && e.message);
+    }
+  });
+  return extra;
 }
 
 exports.handler = async function (event) {
