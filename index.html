@@ -786,10 +786,11 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Enter a Basic start date to generate the schedule — each lesson is due the following Friday, one per week. Intermediate and Advanced unlock as the prior program is completed.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Brenda can still type the first start date for each module (deadlines fall on that week’s Friday). Empty dates fill in from the <strong>first Teachable quiz</strong> in that module — existing dates are never overwritten.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
+            <button type="button" class="btn" id="ata-infer-starts-btn" style="background:#4A90D9" onclick="ataInferStarts()">Fill empty start dates</button>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:6px">
@@ -2879,11 +2880,32 @@ async function ataSyncFromTeachable(){
     if(data.unmatched)msg+=' '+data.unmatched+' result'+(data.unmatched===1?'':'s')+' had no matching technician (email/name).';
     if(data.quizErrors)msg+=' '+data.quizErrors+' quiz'+(data.quizErrors===1?'':'zes')+' could not be read'+(data.firstError?': '+data.firstError:'')+'.';
     ataSetImportStatus(msg,'ok');
+    await ataInferStarts(true);
     await ataLoadAdmin();
   }catch(e){
     ataSetImportStatus('Could not sync from Teachable. '+adminEsc(e.message||'')+' The sync runs on the deployed Netlify site — it will not work from a local file.','err');
   }finally{
     if(btn){btn.disabled=false;btn.textContent='↻ Sync from Teachable';}
+  }
+}
+
+async function ataInferStarts(quiet){
+  const btn=document.getElementById('ata-infer-starts-btn');
+  if(btn){btn.disabled=true;}
+  try{
+    const result=await rpc('app_ata_infer_starts',{});
+    const n=(result&&result.filled)||0;
+    if(!quiet){
+      ataSetImportStatus(n?('Filled '+n+' empty start date'+(n===1?'':'s')+' from the first Teachable quiz in each module. Dates already entered were left alone.'):'No empty start dates to fill — either they are already set, or those technicians have no Teachable quizzes in that module yet.','ok');
+      await ataLoadAdmin();
+    }else if(n){
+      ataSetImportStatus((document.getElementById('ata-import-status')&&document.getElementById('ata-import-status').textContent?document.getElementById('ata-import-status').textContent+' ':'')+'Filled '+n+' empty start date'+(n===1?'':'s')+' from first quiz.','ok');
+    }
+  }catch(e){
+    const msg=e.message||'';
+    if(!quiet)ataSetImportStatus('Could not fill start dates. '+((msg.includes('app_ata_infer_starts'))?'Run supabase/ata-infer-starts.sql in Supabase.':(msg||'Try again.')),'err');
+  }finally{
+    if(btn){btn.disabled=false;}
   }
 }
 
@@ -3000,8 +3022,9 @@ function ataStartCell(summary,program){
   const ps=summary.byProgram[program];
   const val=adminDateInputValue(ataStart(tech,program));
   let locked=false,lockMsg='';
-  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')){locked=true;lockMsg='Unlocks when Basic is complete';}
-  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')){locked=true;lockMsg='Unlocks when Intermediate is complete';}
+  const hasWork=ps.completed>0||(ps.failed||0)>0;
+  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')&&!val&&!hasWork){locked=true;lockMsg='Unlocks when Basic is complete';}
+  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')&&!val&&!hasWork){locked=true;lockMsg='Unlocks when Intermediate is complete';}
   const input=`<input type="date" class="admin-edit-field" style="min-width:140px" min="2000-01-01" max="2100-12-31" value="${val}" ${locked&&!val?'disabled':''} oninput="ataSaveStart(${tech.id},'${program}',this.value)" onblur="ataStartBlur(${tech.id},'${program}')">`;
   const prog=ps.start?`<div style="font-size:10px;color:#666;margin-top:3px">${ps.completed}/${ps.total} done${ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:''}</div>`
     :locked?`<div style="font-size:10px;color:#b58900;margin-top:3px">🔒 ${lockMsg}</div>`
