@@ -179,10 +179,12 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .sb-nav.active{background:#4A90D9;color:#fff;font-weight:700}
 .sb-nav-assess{background:#E87722;color:#fff;font-weight:700;margin-bottom:4px}
 .sb-nav-assess:hover{background:#d96a1a;color:#fff}
-.sb-assess-wrap{padding:12px 10px 4px}
+.sb-assess-wrap{padding:12px 10px 4px;display:flex;flex-direction:column;gap:8px}
 .sb-assess-btn{display:none;width:100%;padding:12px 14px;border:none;border-radius:10px;background:#E87722;color:#fff;font-size:13px;font-weight:700;cursor:pointer;text-align:left;line-height:1.35;transition:background .2s}
 .sb-assess-btn:hover{background:#d96a1a}
 .sb-assess-btn.visible{display:block}
+.sb-assess-btn.sb-preboot-btn{background:#0F6E56}
+.sb-assess-btn.sb-preboot-btn:hover{background:#0c5a46}
 .sb-assess-done{display:none;font-size:11px;padding:10px 14px;border-radius:10px;color:rgba(255,255,255,0.55);line-height:1.4;background:rgba(255,255,255,0.06)}
 .sb-assess-done.visible{display:block}
 .sb-badge{background:rgba(255,255,255,0.2);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:auto}
@@ -502,6 +504,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .mobile-menu-btn{display:none;align-items:center;justify-content:center;width:42px;height:42px;border:2px solid #1B3A6B;border-radius:10px;background:#EEF4FF;color:#1B3A6B;font-size:20px;cursor:pointer;flex-shrink:0;padding:0;line-height:1}
 .mobile-assess-btn{display:none;align-items:center;justify-content:center;padding:10px 14px;border:none;border-radius:10px;background:#E87722;color:#fff;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;white-space:nowrap;line-height:1.2}
 .mobile-assess-btn:hover{background:#d96a1a}
+.mobile-assess-btn.mobile-preboot-btn{background:#0F6E56}
+.mobile-assess-btn.mobile-preboot-btn:hover{background:#0c5a46}
+.mobile-assess-actions{display:none;align-items:center;gap:6px;flex-shrink:0}
+.cl-box{scroll-margin-top:76px}
 .topbar-grow{flex:1;min-width:0}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9}
 .sidebar-overlay.visible{display:block}
@@ -515,6 +521,7 @@ body.mobile-nav-open{overflow:hidden}
   .sb-collapse-tab{display:block}
   .main-content{margin-left:0;width:100%}
   .mobile-menu-btn{display:inline-flex}
+  .mobile-assess-actions{display:inline-flex}
   .mobile-assess-btn.visible{display:inline-flex}
   .sb-assess-wrap{display:none}
   .topbar{padding:12px 14px;gap:10px;flex-wrap:wrap;align-items:center}
@@ -1053,6 +1060,7 @@ body.mobile-nav-open{overflow:hidden}
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div class="sb-assess-wrap">
+        <button type="button" class="sb-assess-btn sb-preboot-btn" id="tech-preboot-nav" onclick="openPreBootcampAssessment()">📋 Take Pre-Bootcamp assessment</button>
         <button type="button" class="sb-assess-btn" id="tech-assess-nav" onclick="startQuestionnaire()">📝 Take this month's assessment</button>
         <div class="sb-assess-done" id="tech-assess-done"></div>
       </div>
@@ -1079,7 +1087,10 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div>
-          <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
+          <div class="mobile-assess-actions">
+            <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">📋 Pre-Bootcamp</button>
+            <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
+          </div>
         </div>
         <div class="page-body" id="tech-home-body"><div class="loading">Loading...</div></div>
       </div>
@@ -1501,7 +1512,7 @@ function renderChecklistHtml(completed,opts){
   else if(prog.total)progNote=` <strong>${prog.done}/${prog.total}</strong> done.`;
   const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
   const bootcampDateLabel=bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
-  return`<div class="cl-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
+  return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
 }
 function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
 async function setChecklistRating(code,level){
@@ -1578,6 +1589,7 @@ function updateTechAssessNav(t,readOnly){
   if(nav)nav.classList.remove('visible');
   if(done)done.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
+  updateTechPreBootcampNav(t,readOnly);
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
@@ -1599,6 +1611,53 @@ function updateTechAssessNav(t,readOnly){
     done.classList.add('visible');
     done.textContent='Last submitted '+fmtDateFull(last.date)+'. You can update anytime.';
   }
+}
+function preBootcampHasAnyRating(completed){
+  const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
+  if(!sec)return false;
+  return sec.skills.some(sk=>getChecklistRating(completed,sk.id)>0);
+}
+function shouldShowPreBootcampCta(t){
+  if(!ratedChecklistSectionExists())return false;
+  const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
+  const prog=checklistProgress(completed);
+  if(prog.ratedPct<100)return true;
+  return isBeforeBootcamp(t);
+}
+function updateTechPreBootcampNav(t,readOnly){
+  const nav=document.getElementById('tech-preboot-nav');
+  const mobile=document.getElementById('tech-preboot-mobile');
+  if(nav)nav.classList.remove('visible');
+  if(mobile)mobile.classList.remove('visible');
+  if(readOnly||!shouldShowPreBootcampCta(t))return;
+  const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
+  const prog=checklistProgress(completed);
+  const continuing=preBootcampHasAnyRating(completed)&&prog.ratedPct<100;
+  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Take Pre-Bootcamp assessment';
+  const mobileLabel=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
+  if(nav){
+    nav.classList.add('visible');
+    nav.textContent=label;
+    nav.onclick=openPreBootcampAssessment;
+  }
+  if(mobile){
+    mobile.classList.add('visible');
+    mobile.textContent=mobileLabel;
+    mobile.onclick=openPreBootcampAssessment;
+  }
+}
+function openPreBootcampAssessment(){
+  showTechHome();
+  closeMobileNav();
+  requestAnimationFrame(()=>{
+    const box=document.getElementById('tech-prebootcamp-box');
+    if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+    const pre=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
+    if(pre){
+      const mod=document.getElementById('mod-'+pre.key);
+      if(mod&&!mod.classList.contains('open'))toggleMod(pre.key);
+    }
+  });
 }
 function updateTechViewAssessmentNav(t,readOnly){
   const btn=document.getElementById('sb-nav-view-assessment');
