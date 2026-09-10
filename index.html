@@ -2879,6 +2879,7 @@ async function ataSyncFromTeachable(){
     let msg='Teachable sync done: '+data.applied+' quiz result'+(data.applied===1?'':'s')+' across '+(data.matched||0)+' technician'+(data.matched===1?'':'s')+'.';
     if(data.unmatched)msg+=' '+data.unmatched+' result'+(data.unmatched===1?'':'s')+' had no matching technician (email/name).';
     if(data.completeNoScore)msg+=' '+data.completeNoScore+' lesson'+(data.completeNoScore===1?'':'s')+' marked Complete in Teachable with no score.';
+    else if(data.progressJobs===0)msg+=' No Complete-without-score lessons were found to import.';
     if(data.quizErrors)msg+=' '+data.quizErrors+' quiz'+(data.quizErrors===1?'':'zes')+' could not be read'+(data.firstError?': '+data.firstError:'')+'.';
     ataSetImportStatus(msg,'ok');
     await ataInferStarts(true);

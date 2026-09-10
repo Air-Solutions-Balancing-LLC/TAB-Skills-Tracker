@@ -156,12 +156,13 @@ async function runSync(apiKey, secret) {
     }
   });
   const extras = await fillCompleteNoScore(apiKey, all);
-  const result = await ingest(secret, all.concat(extras));
+  const result = await ingest(secret, all.concat(extras.rows));
   return {
     ok: true,
     quizzes: QUIZZES.length,
     rowCount: all.length,
-    completeNoScore: extras.length,
+    completeNoScore: extras.rows.length,
+    progressJobs: extras.jobs,
     quizErrors,
     firstError: firstError || null,
     applied: result.applied,
@@ -182,32 +183,34 @@ function flattenProgress(payload) {
 // Lectures marked Complete in Teachable with no graded quiz response (dashes
 // instead of a percent). Pull those from course progress so they count as done.
 async function fillCompleteNoScore(apiKey, scoredRows) {
+  const scoredCount = {};
   const studentsByCourse = {};
   const scored = new Set();
-  const haveByStudent = {};
   for (const row of scoredRows) {
+    scoredCount[row.lesson_code] = (scoredCount[row.lesson_code] || 0) + 1;
     scored.add(String(row.email || row.name).toLowerCase() + '|' + row.lesson_code);
     if (!row.course_id || !row.student_id) continue;
-    if (!studentsByCourse[row.course_id]) studentsByCourse[row.course_id] = {};
-    studentsByCourse[row.course_id][row.student_id] = { email: row.email || '', name: row.name || '' };
-    const hk = row.course_id + '|' + row.student_id;
-    if (!haveByStudent[hk]) haveByStudent[hk] = new Set();
-    haveByStudent[hk].add(row.lesson_code);
+    const cid = String(row.course_id);
+    if (!studentsByCourse[cid]) studentsByCourse[cid] = {};
+    studentsByCourse[cid][String(row.student_id)] = { email: row.email || '', name: row.name || '' };
   }
   const catalogByCourse = {};
   QUIZZES.forEach((q) => {
-    if (!catalogByCourse[q.course_id]) catalogByCourse[q.course_id] = [];
-    catalogByCourse[q.course_id].push(q);
+    const cid = String(q.course_id);
+    if (!catalogByCourse[cid]) catalogByCourse[cid] = [];
+    catalogByCourse[cid].push(q);
+  });
+  // Only fetch progress in courses that have at least one ATA quiz with no graded responses
+  // (e.g. TAB-A-102: Complete in Teachable, dashes instead of a percent).
+  const gapCourses = new Set();
+  QUIZZES.forEach((q) => {
+    if (!scoredCount[q.lesson_code]) gapCourses.add(String(q.course_id));
   });
   const jobs = [];
-  Object.keys(studentsByCourse).forEach((courseId) => {
-    const catalog = catalogByCourse[courseId] || catalogByCourse[Number(courseId)] || [];
-    const needed = catalog.map((q) => q.lesson_code);
-    if (!needed.length) return;
-    Object.keys(studentsByCourse[courseId]).forEach((uid) => {
-      const have = haveByStudent[courseId + '|' + uid] || haveByStudent[Number(courseId) + '|' + uid] || new Set();
-      if (needed.every((code) => have.has(code))) return;
-      jobs.push({ courseId, uid, ident: studentsByCourse[courseId][uid] });
+  gapCourses.forEach((courseId) => {
+    const students = studentsByCourse[courseId] || {};
+    Object.keys(students).forEach((uid) => {
+      jobs.push({ courseId, uid, ident: students[uid] });
     });
   });
   const extra = [];
@@ -216,10 +219,10 @@ async function fillCompleteNoScore(apiKey, scoredRows) {
       const payload = await teachableGet(apiKey, '/courses/' + job.courseId + '/progress?user_id=' + job.uid + '&per=100');
       const lectures = flattenProgress(payload);
       const byLec = {};
-      (catalogByCourse[job.courseId] || []).forEach((q) => { byLec[q.lecture_id] = q; });
+      (catalogByCourse[job.courseId] || []).forEach((q) => { byLec[String(q.lecture_id)] = q; });
       for (const lec of lectures) {
         if (!lec.is_completed) continue;
-        let quiz = byLec[lec.id];
+        let quiz = byLec[String(lec.id)];
         if (!quiz) {
           const m = /TAB-[BIA]-\d+/i.exec(lec.name || '');
           if (m) quiz = QUIZZES.find((q) => q.lesson_code === m[0].toUpperCase());
@@ -242,7 +245,7 @@ async function fillCompleteNoScore(apiKey, scoredRows) {
       console.error('progress failed', job.courseId, job.uid, e && e.message);
     }
   });
-  return extra;
+  return { rows: extra, jobs: jobs.length };
 }
 
 exports.handler = async function (event) {

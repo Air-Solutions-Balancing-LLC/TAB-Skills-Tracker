@@ -60,7 +60,8 @@ BEGIN
       v_score := NULL;
     END IF;
     -- Teachable "Complete" with no grade still counts as done (no reset).
-    IF coalesce(r->>'complete_no_score','') IN ('true','t','1') THEN
+    IF coalesce(r->>'complete_no_score','') IN ('true','t','1')
+       OR (r->'complete_no_score') = 'true'::jsonb THEN
       v_passed := true;
     ELSE
       v_passed := v_score IS NOT NULL AND v_score >= 80;
@@ -88,7 +89,8 @@ BEGIN
     END IF;
 
     -- Complete-without-grade: mark the lesson done, do not insert an attempt (that would look like a reset).
-    IF coalesce(r->>'complete_no_score','') IN ('true','t','1') THEN
+    IF coalesce(r->>'complete_no_score','') IN ('true','t','1')
+       OR (r->'complete_no_score') = 'true'::jsonb THEN
       INSERT INTO ata_completions (tech_id, lesson_code, score_percent, completed_at, passed, source_email, updated_at)
       VALUES (v_tid, v_code, NULL, v_at, true, nullif(v_email,''), now())
       ON CONFLICT (tech_id, lesson_code) DO UPDATE
