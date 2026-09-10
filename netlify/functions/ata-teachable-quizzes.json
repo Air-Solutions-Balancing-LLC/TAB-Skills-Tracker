@@ -85,7 +85,7 @@
     "lecture_id": 32395223,
     "lecture_name": "TAB-A-200 Final Exam",
     "quiz_id": 57695481,
-    "lesson_code": "TAB-A-200"
+    "lesson_code": "TAB-A-207"
   },
   {
     "course_id": 1410435,
@@ -141,7 +141,7 @@
     "lecture_id": 43111308,
     "lecture_name": "TAB-A-300 Final Exam",
     "quiz_id": 78384062,
-    "lesson_code": "TAB-A-300"
+    "lesson_code": "TAB-A-306"
   },
   {
     "course_id": 1410436,
@@ -477,7 +477,7 @@
     "lecture_id": 33431559,
     "lecture_name": "TAB-B-400 Course Level Final Exam",
     "quiz_id": 59901749,
-    "lesson_code": "TAB-B-400"
+    "lesson_code": "TAB-B-401"
   },
   {
     "course_id": 1410152,
@@ -485,7 +485,7 @@
     "lecture_id": 32387265,
     "lecture_name": "TAB-I-100 Course Level Final Exam",
     "quiz_id": 57682661,
-    "lesson_code": "TAB-I-100"
+    "lesson_code": "TAB-I-109"
   },
   {
     "course_id": 1410152,
@@ -656,12 +656,20 @@
     "lesson_code": "TAB-I-306"
   },
   {
+    "course_id": 1410148,
+    "course_name": "TAB Intermediate 300",
+    "lecture_id": 41941066,
+    "lecture_name": "TAB-Intermediate-300 Final Exam",
+    "quiz_id": 75869814,
+    "lesson_code": "TAB-I-307"
+  },
+  {
     "course_id": 1410146,
     "course_name": "TAB Intermediate 400",
     "lecture_id": 41954116,
     "lecture_name": "TAB-I-400 Final Exam",
     "quiz_id": 75896834,
-    "lesson_code": "TAB-I-400"
+    "lesson_code": "TAB-I-406"
   },
   {
     "course_id": 1410146,

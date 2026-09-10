@@ -8,6 +8,20 @@
 const https = require('https');
 const QUIZZES = require('./ata-teachable-quizzes.json');
 
+// Teachable sometimes numbers finals as TAB-I-100 / TAB-A-200; the tracker curriculum uses I-109 / A-207 etc.
+const LESSON_CODE_REMAP = {
+  'TAB-I-100': 'TAB-I-109',
+  'TAB-I-400': 'TAB-I-406',
+  'TAB-A-200': 'TAB-A-207',
+  'TAB-A-300': 'TAB-A-306',
+  'TAB-B-400': 'TAB-B-401',
+};
+function remapLessonCode(code, lectureName) {
+  const raw = String(code || '').toUpperCase();
+  if (/TAB-Intermediate-300\s+Final/i.test(lectureName || '')) return 'TAB-I-307';
+  return LESSON_CODE_REMAP[raw] || raw;
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vwjizsgmfjwgnaojgkmt.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY ||
   'sb_publishable_hh7_CD_TuH0X3YugPn_Z6w_VWSAAvlb';
@@ -225,7 +239,8 @@ async function fillCompleteNoScore(apiKey, scoredRows) {
         let quiz = byLec[String(lec.id)];
         if (!quiz) {
           const m = /TAB-[BIA]-\d+/i.exec(lec.name || '');
-          if (m) quiz = QUIZZES.find((q) => q.lesson_code === m[0].toUpperCase());
+          const code = remapLessonCode(m && m[0], lec.name);
+          if (code) quiz = QUIZZES.find((q) => q.lesson_code === code);
         }
         if (!quiz) continue;
         const key = String(job.ident.email || job.ident.name).toLowerCase() + '|' + quiz.lesson_code;
