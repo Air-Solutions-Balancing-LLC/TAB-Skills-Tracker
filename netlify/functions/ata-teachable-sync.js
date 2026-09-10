@@ -184,11 +184,15 @@ function flattenProgress(payload) {
 async function fillCompleteNoScore(apiKey, scoredRows) {
   const studentsByCourse = {};
   const scored = new Set();
+  const haveByStudent = {};
   for (const row of scoredRows) {
     scored.add(String(row.email || row.name).toLowerCase() + '|' + row.lesson_code);
     if (!row.course_id || !row.student_id) continue;
     if (!studentsByCourse[row.course_id]) studentsByCourse[row.course_id] = {};
     studentsByCourse[row.course_id][row.student_id] = { email: row.email || '', name: row.name || '' };
+    const hk = row.course_id + '|' + row.student_id;
+    if (!haveByStudent[hk]) haveByStudent[hk] = new Set();
+    haveByStudent[hk].add(row.lesson_code);
   }
   const catalogByCourse = {};
   QUIZZES.forEach((q) => {
@@ -197,12 +201,17 @@ async function fillCompleteNoScore(apiKey, scoredRows) {
   });
   const jobs = [];
   Object.keys(studentsByCourse).forEach((courseId) => {
+    const catalog = catalogByCourse[courseId] || catalogByCourse[Number(courseId)] || [];
+    const needed = catalog.map((q) => q.lesson_code);
+    if (!needed.length) return;
     Object.keys(studentsByCourse[courseId]).forEach((uid) => {
+      const have = haveByStudent[courseId + '|' + uid] || haveByStudent[Number(courseId) + '|' + uid] || new Set();
+      if (needed.every((code) => have.has(code))) return;
       jobs.push({ courseId, uid, ident: studentsByCourse[courseId][uid] });
     });
   });
   const extra = [];
-  await mapPool(jobs, 5, async (job) => {
+  await mapPool(jobs, 6, async (job) => {
     try {
       const payload = await teachableGet(apiKey, '/courses/' + job.courseId + '/progress?user_id=' + job.uid + '&per=100');
       const lectures = flattenProgress(payload);
