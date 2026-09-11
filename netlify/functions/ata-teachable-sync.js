@@ -194,19 +194,36 @@ function flattenProgress(payload) {
   return lectures;
 }
 
-// Lectures marked Complete in Teachable with no graded quiz response (dashes
-// instead of a percent). Pull those from course progress so they count as done.
+async function fetchAllProgress(apiKey, courseId, userId) {
+  const lectures = [];
+  let page = 1;
+  for (;;) {
+    const payload = await teachableGet(apiKey, '/courses/' + courseId + '/progress?user_id=' + userId + '&per=100&page=' + page);
+    lectures.push.apply(lectures, flattenProgress(payload));
+    const meta = payload && payload.meta;
+    const pages = (meta && meta.number_of_pages) || 1;
+    if (page >= pages) break;
+    page += 1;
+  }
+  return lectures;
+}
+
+// Mark a lesson done when Teachable shows the lecture Complete, even if the quiz
+// has no percent (dashes) or the student completed the content lecture instead of the quiz.
 async function fillCompleteNoScore(apiKey, scoredRows) {
-  const scoredCount = {};
   const studentsByCourse = {};
   const scored = new Set();
+  const haveByStudent = {};
   for (const row of scoredRows) {
-    scoredCount[row.lesson_code] = (scoredCount[row.lesson_code] || 0) + 1;
     scored.add(String(row.email || row.name).toLowerCase() + '|' + row.lesson_code);
     if (!row.course_id || !row.student_id) continue;
     const cid = String(row.course_id);
+    const uid = String(row.student_id);
     if (!studentsByCourse[cid]) studentsByCourse[cid] = {};
-    studentsByCourse[cid][String(row.student_id)] = { email: row.email || '', name: row.name || '' };
+    studentsByCourse[cid][uid] = { email: row.email || '', name: row.name || '' };
+    const hk = cid + '|' + uid;
+    if (!haveByStudent[hk]) haveByStudent[hk] = new Set();
+    haveByStudent[hk].add(row.lesson_code);
   }
   const catalogByCourse = {};
   QUIZZES.forEach((q) => {
@@ -214,24 +231,20 @@ async function fillCompleteNoScore(apiKey, scoredRows) {
     if (!catalogByCourse[cid]) catalogByCourse[cid] = [];
     catalogByCourse[cid].push(q);
   });
-  // Only fetch progress in courses that have at least one ATA quiz with no graded responses
-  // (e.g. TAB-A-102: Complete in Teachable, dashes instead of a percent).
-  const gapCourses = new Set();
-  QUIZZES.forEach((q) => {
-    if (!scoredCount[q.lesson_code]) gapCourses.add(String(q.course_id));
-  });
   const jobs = [];
-  gapCourses.forEach((courseId) => {
-    const students = studentsByCourse[courseId] || {};
-    Object.keys(students).forEach((uid) => {
-      jobs.push({ courseId, uid, ident: students[uid] });
+  Object.keys(studentsByCourse).forEach((courseId) => {
+    const needed = (catalogByCourse[courseId] || []).map((q) => q.lesson_code);
+    if (!needed.length) return;
+    Object.keys(studentsByCourse[courseId]).forEach((uid) => {
+      const have = haveByStudent[courseId + '|' + uid] || new Set();
+      if (needed.every((code) => have.has(code))) return;
+      jobs.push({ courseId, uid, ident: studentsByCourse[courseId][uid] });
     });
   });
   const extra = [];
   await mapPool(jobs, 6, async (job) => {
     try {
-      const payload = await teachableGet(apiKey, '/courses/' + job.courseId + '/progress?user_id=' + job.uid + '&per=100');
-      const lectures = flattenProgress(payload);
+      const lectures = await fetchAllProgress(apiKey, job.courseId, job.uid);
       const byLec = {};
       (catalogByCourse[job.courseId] || []).forEach((q) => { byLec[String(q.lecture_id)] = q; });
       for (const lec of lectures) {
