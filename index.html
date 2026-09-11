@@ -1971,6 +1971,15 @@ function redirectUri(){
 }
 
 // Boot Supabase Auth. The signed session (JWT) is the source of truth for who you are.
+let authReady=false;
+function sessionEmail(session){
+  const u=session&&session.user;
+  if(!u)return'';
+  const meta=u.user_metadata||{};
+  const id0=(u.identities&&u.identities[0]&&u.identities[0].identity_data)||{};
+  return String(u.email||meta.email||meta.preferred_username||id0.email||id0.preferred_username||'')
+    .trim().toLowerCase();
+}
 async function initAuth(){
   const errEl=document.getElementById('login-err');
   const btn=document.getElementById('azure-sign-btn');
@@ -1989,13 +1998,28 @@ async function initAuth(){
     if(errEl)errEl.style.display='none';
     if(btn)btn.disabled=false;
 
-    sbClient.auth.onAuthStateChange((event,session)=>{
-      if(event==='SIGNED_OUT'){sbAccessToken=null;showPage('pg-login');return;}
-      if(session)handleSession(session);
-    });
-
+    // Finish OAuth code exchange / storage restore BEFORE listening for auth events.
+    // Subscribing first caused a race: a spurious SIGNED_OUT on first redirect bounced
+    // users back to login even though the session was about to land (2nd try then worked).
     const {data:{session}}=await sbClient.auth.getSession();
+    authReady=true;
     if(session)await handleSession(session);
+
+    sbClient.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION')return;
+      if(event==='SIGNED_OUT'){
+        if(!authReady)return;
+        sbAccessToken=null;
+        currentToken=null;
+        currentRole=null;
+        showPage('pg-login');
+        return;
+      }
+      if(session&&(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')){
+        // Defer out of the auth lock so we don't deadlock supabase-js internals.
+        setTimeout(()=>{handleSession(session);},0);
+      }
+    });
   }catch(e){
     if(errEl){errEl.textContent='Sign-in failed to start: '+(e.message||e);errEl.style.display='block';}
     console.error('initAuth',e);
@@ -2013,6 +2037,13 @@ async function doAzureLogin(){
   }
   btn.disabled=true;
   try{
+    // If a session already exists (e.g. after OAuth return), use it — don't restart OAuth.
+    const {data:{session}}=await sbClient.auth.getSession();
+    if(session){
+      await handleSession(session);
+      btn.disabled=false;
+      return;
+    }
     const {error}=await sbClient.auth.signInWithOAuth({
       provider:'azure',
       options:{redirectTo:redirectUri(),scopes:'openid profile email'}
@@ -2030,7 +2061,7 @@ async function doAzureLogin(){
 async function handleSession(session){
   const err=document.getElementById('login-err');
   sbAccessToken=session.access_token||null;
-  const email=(session.user?.email||'').trim().toLowerCase();
+  const email=sessionEmail(session);
   if(!email){err.textContent='Could not read your Microsoft account email.';err.style.display='block';return;}
   if(!isAllowedEmail(email)){
     err.textContent='Only Airadigm or Kitchen Energy Solutions company accounts can sign in.';
