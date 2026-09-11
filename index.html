@@ -1524,6 +1524,27 @@ function checklistProgress(completed){
   const ratedPct=ratedSec?sectionRatingPct(completed,ratedSec):0;
   return{done,total,pct:total?Math.round((done/total)*100):0,ratedPct,ratedSec};
 }
+function orientationSectionComplete(completed){
+  const secs=CHECKLIST_SECTIONS.filter(s=>!isRatedChecklistSection(s));
+  if(!secs.length)return true;
+  const skills=secs.flatMap(s=>s.skills||[]);
+  if(!skills.length)return true;
+  return skills.every(sk=>isChecklistDone(completed,sk.id));
+}
+function preBootcampSectionComplete(completed){
+  const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
+  if(!sec||!(sec.skills||[]).length)return true;
+  return sectionRatingPct(completed,sec)>=100;
+}
+function visibleChecklistSections(completed){
+  const oriDone=orientationSectionComplete(completed);
+  const pbDone=preBootcampSectionComplete(completed);
+  if(oriDone&&pbDone)return[];
+  return CHECKLIST_SECTIONS.filter(sec=>{
+    if(isRatedChecklistSection(sec))return !pbDone;
+    return !oriDone;
+  });
+}
 function renderChecklistItemHtml(sk,completed,sec,readOnly){
   if(isRatedChecklistSection(sec)){
     const cur=getChecklistRating(completed,sk.id);
@@ -1544,8 +1565,12 @@ function renderChecklistHtml(completed,opts){
   const readOnly=!!opts.readOnly;
   const bootcampStartDate=opts.bootcampStartDate||null;
   if(!CHECKLIST_SECTIONS.length)return'';
+  const visible=visibleChecklistSections(completed);
+  if(!visible.length)return'';
   const prog=checklistProgress(completed);
-  const sections=CHECKLIST_SECTIONS.map(sec=>{
+  const showOri=visible.some(s=>!isRatedChecklistSection(s));
+  const showPb=visible.some(isRatedChecklistSection);
+  const sections=visible.map(sec=>{
     const secKey=sec.key;
     const rated=isRatedChecklistSection(sec);
     const total=sec.skills.length;
@@ -1571,11 +1596,14 @@ function renderChecklistHtml(completed,opts){
     </div>`;
   }).join('');
   let progNote='';
-  if(prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
-  else if(prog.total)progNote=` <strong>${prog.done}/${prog.total}</strong> done.`;
-  const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
-  const bootcampDateLabel=bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
-  return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
+  if(showPb&&prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
+  else if(showOri&&prog.total)progNote=` Orientation: <strong>${prog.done}/${prog.total}</strong> done.`;
+  let subText='These do not affect your skill scores.';
+  if(showPb)subText='Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.';
+  else if(showOri)subText='Mark Orientation tasks complete as you finish them. These do not affect your skill scores.';
+  const bootcampDateLabel=showPb&&bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
+  const title=showOri&&showPb?'Orientation — Pre Bootcamp':(showPb?'Pre-Bootcamp':'Orientation');
+  return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 ${title}${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
 }
 function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
 async function setChecklistRating(code,level){
@@ -5809,9 +5837,9 @@ function renderTechHome(t,opts){
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
   const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
-    ?' Also complete Orientation on My Progress below — it does not block this assessment.'
+    ?' Also complete Orientation at the top of My Progress — it does not block this assessment.'
     :(reqInfo.checklist&&reqInfo.checklist.includes('pre_bootcamp')
-      ?' Also complete Pre-Bootcamp on My Progress below — it does not block this assessment.'
+      ?' Also complete Pre-Bootcamp at the top of My Progress — it does not block this assessment.'
       :'');
   const requiredHint=reqInfo.all
     ?'Complete every scored section. Survey and National Accounts are always required.'+(techStartDate(t)?'': ' Assign an employee start date to use tenure-based required levels.')
@@ -5833,6 +5861,7 @@ function renderTechHome(t,opts){
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date}):"";
 
   container.innerHTML=banner+`
+    ${checklistHtml}
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
@@ -5845,7 +5874,6 @@ function renderTechHome(t,opts){
     </div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
     ${notesHtml}
-    ${checklistHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
   updateTechAssessNav(t,readOnly);
   renderTechSidebarNav();
