@@ -1110,6 +1110,14 @@ body.mobile-nav-open{overflow:hidden}
         </div>
         <div class="q-wrap" id="q-content"></div>
       </div>
+      <div id="tech-view-prebootcamp" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow"><div class="topbar-title">📋 Pre-Bootcamp Assessment</div><div class="topbar-sub">Rate each topic — Seen it / Done it / Multiple Times</div></div>
+          <div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div>
+        </div>
+        <div class="q-wrap" id="preboot-content"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1521,7 +1529,12 @@ async function setChecklistRating(code,level){
     currentChecklist=parseChecklistCompleted(await rpc('app_checklist_rate',{p_token:currentToken,p_skill_code:code,p_level:level}));
     if(currentTechData){
       currentTechData.checklist_completed=currentChecklist;
-      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
+      if(isTechPreBootcampViewActive()){
+        renderPreBootcampAssessment();
+        updateTechAssessNav(currentTechData,techViewMode==='readonly');
+      }else{
+        renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
+      }
     }
   }catch(e){alert('Could not save rating. Please try again.');console.error(e);}
 }
@@ -1647,18 +1660,81 @@ function updateTechPreBootcampNav(t,readOnly){
     mobile.onclick=openPreBootcampAssessment;
   }
 }
-function openPreBootcampAssessment(){
-  showTechHome();
-  closeMobileNav();
-  requestAnimationFrame(()=>{
-    const box=document.getElementById('tech-prebootcamp-box');
-    if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
-    const pre=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
-    if(pre){
-      const mod=document.getElementById('mod-'+pre.key);
-      if(mod&&!mod.classList.contains('open'))toggleMod(pre.key);
-    }
+function setTechMainView(viewId){
+  ['tech-view-home','tech-view-questionnaire','tech-view-ata','tech-view-prebootcamp'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.toggle('active',id===viewId);
   });
+}
+function isTechPreBootcampViewActive(){
+  const el=document.getElementById('tech-view-prebootcamp');
+  return !!(el&&el.classList.contains('active'));
+}
+function openPreBootcampAssessment(){
+  closeMobileNav();
+  closeTechResultsView({keepView:true});
+  ensureSkills().then(()=>{
+    setTechMainView('tech-view-prebootcamp');
+    document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
+    renderPreBootcampAssessment();
+    updateTechAssessNav(currentTechData,techViewMode==='readonly');
+    renderTechSidebarNav();
+    window.scrollTo(0,0);
+  });
+}
+function renderPreBootcampAssessment(){
+  const wrap=document.getElementById('preboot-content');
+  if(!wrap)return;
+  const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
+  const t=currentTechData||{};
+  const completed=parseChecklistCompleted(t.checklist_completed||currentChecklist);
+  const readOnly=techViewMode==='readonly';
+  if(!sec||!sec.skills.length){
+    wrap.innerHTML=`<div class="q-header"><div class="q-title">Pre-Bootcamp Assessment</div><div class="q-sub">No Pre-Bootcamp tasks are available yet.</div></div>
+      <div class="q-nav"><button type="button" class="btn btn-outline" onclick="showTechHome()">← Back to My Progress</button></div>`;
+    return;
+  }
+  const prog=sectionRatingPct(completed,sec);
+  const ratedCount=sec.skills.filter(sk=>getChecklistRating(completed,sk.id)>0).length;
+  const total=sec.skills.length;
+  const bootcampDateLabel=t.bootcamp_start_date?` · Bootcamp Start Date: ${fmtDate(t.bootcamp_start_date)}`:'';
+  // Group skills by category for clearer assessment layout
+  const byCat=[];
+  const catMap={};
+  sec.skills.forEach(sk=>{
+    const cat=sk.cat||'General';
+    if(!catMap[cat]){catMap[cat]=[];byCat.push(cat);}
+    catMap[cat].push(sk);
+  });
+  const sections=byCat.map(cat=>{
+    const items=catMap[cat].map(sk=>{
+      const cur=getChecklistRating(completed,sk.id);
+      const itemPct=checklistItemPct(cur);
+      const ratingHtml=readOnly
+        ?`<span class="cl-rate-badge">${cur?PRE_BOOTCAMP_RATINGS.find(r=>r.v===cur).l:'Not rated'}${cur?` · ${itemPct}%`:''}</span>`
+        :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${cur===r.v?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
+      return`<div class="cl-item cl-rated ${cur?'cl-done':''}"><div class="cl-body"><div class="cl-name">${adminEsc(sk.name)}</div>${cur?`<div class="cl-item-pct">${itemPct}%</div>`:''}</div>${ratingHtml}</div>`;
+    }).join('');
+    return`<div class="q-section">
+      <div class="q-section-title">${adminEsc(cat)}</div>
+      <div class="q-section-sub">Rate each topic for this category.</div>
+      <div class="cl-list">${items}</div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=`
+    <div class="q-header">
+      <div class="q-title">Pre-Bootcamp Assessment${bootcampDateLabel}</div>
+      <div class="q-sub">Rate each topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These ratings do not affect your monthly skill scores.</div>
+      <div class="q-progress"><div class="q-progress-fill" id="preboot-fill" style="width:${prog}%"></div></div>
+      <div class="q-progress-label" id="preboot-label">${ratedCount} of ${total} topics rated · ${prog}% complete</div>
+    </div>
+    ${sections}
+    <div class="q-nav">
+      <button type="button" class="btn btn-outline" onclick="showTechHome()">← Back to My Progress</button>
+      <div class="q-nav-actions">
+        <button type="button" class="btn" style="background:#0F6E56" onclick="showTechHome()">${prog>=100?'Done':'Save & return'}</button>
+      </div>
+    </div>`;
 }
 function updateTechViewAssessmentNav(t,readOnly){
   const btn=document.getElementById('sb-nav-view-assessment');
@@ -1734,8 +1810,9 @@ function renderTechSidebarNav(){
   const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
   const ataEl=document.getElementById('tech-view-ata');
   const inAta=ataEl&&ataEl.classList.contains('active');
+  const inPre=isTechPreBootcampViewActive();
   const homeNav=document.getElementById('sb-nav-home');
-  if(homeNav)homeNav.classList.toggle('active',!inQ&&!inAta);
+  if(homeNav)homeNav.classList.toggle('active',!inQ&&!inAta&&!inPre);
   const sections=inQ?visibleQuestionnaireSections(currentTechData):QUESTIONNAIRE;
   wrap.innerHTML=sections.map(sec=>{
     const pct=techSidebarSectionPct(sec);
@@ -1748,6 +1825,7 @@ function renderTechSidebarNav(){
   if(chev)chev.textContent=sbSkillSectionsOpen?'▼':'▶';
 }
 function jumpToTechSection(key){
+  if(isTechPreBootcampViewActive())showTechHome();
   const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
   closeMobileNav();
   const target=document.getElementById(inQ?'q-sec-'+key:'home-sec-'+key);
@@ -3586,11 +3664,8 @@ function renderPmAta(){
 
 // ── Technician read-only ATA schedule ────────────────────────────────────────
 async function showTechAta(){
-  closeTechResultsView();
-  document.getElementById('tech-view-home').classList.remove('active');
-  document.getElementById('tech-view-questionnaire').classList.remove('active');
-  const v=document.getElementById('tech-view-ata');
-  if(v)v.classList.add('active');
+  closeTechResultsView({keepView:true});
+  setTechMainView('tech-view-ata');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
   const nav=document.getElementById('sb-nav-ata');if(nav)nav.classList.add('active');
   await loadTechAta();
@@ -4803,8 +4878,7 @@ async function viewTechFromAdmin(techId,region,name){
 async function openTechReadOnly(t){
   techViewMode='readonly';
   showPage('pg-tech');
-  document.getElementById('tech-view-home').classList.add('active');
-  document.getElementById('tech-view-questionnaire').classList.remove('active');
+  setTechMainView('tech-view-home');
   await ensureSkills();
   t.checklist_completed=await loadChecklistForTech(t.id);
   currentTechData=t;
@@ -4827,8 +4901,7 @@ async function editTechFromAdmin(techId,region,name){
     techViewBackPage='pg-admin';
     techViewMode='edit';
     showPage('pg-tech');
-    document.getElementById('tech-view-home').classList.add('active');
-    document.getElementById('tech-view-questionnaire').classList.remove('active');
+    setTechMainView('tech-view-home');
     const data=await rpc('app_tech_home',{p_token:token});
     const t=data.tech;
     t.assessments=data.assessments||[];
@@ -5264,14 +5337,14 @@ function openTechResultsView(assessment,opts){
   }
 }
 
-function closeTechResultsView(){
+function closeTechResultsView(opts){
+  opts=opts||{};
   const overlay=document.getElementById('tech-results-overlay');
   techResultsRatingFilter=null;
   techResultsAssessment=null;
   if(overlay)overlay.classList.remove('visible');
   document.body.style.overflow='';
-  document.getElementById('tech-view-home')?.classList.add('active');
-  document.getElementById('tech-view-questionnaire')?.classList.remove('active');
+  if(!opts.keepView)setTechMainView('tech-view-home');
 }
 
 function downloadFilename(name,date){
@@ -5516,13 +5589,16 @@ function renderTechHome(t,opts){
 
 function showTechHome(){
   closeMobileNav();
-  closeTechResultsView();
-  document.getElementById('tech-view-home').classList.add('active');
-  document.getElementById('tech-view-questionnaire').classList.remove('active');
-  const ata=document.getElementById('tech-view-ata');if(ata)ata.classList.remove('active');
+  closeTechResultsView({keepView:true});
+  setTechMainView('tech-view-home');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
   const home=document.getElementById('sb-nav-home');if(home)home.classList.add('active');
-  if(currentTechData)updateTechAssessNav(currentTechData,techViewMode==='readonly');
+  if(currentTechData){
+    updateTechAssessNav(currentTechData,techViewMode==='readonly');
+    if(document.getElementById('tech-home-body')){
+      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
+    }
+  }
   renderTechSidebarNav();
 }
 
@@ -5605,8 +5681,7 @@ async function startQuestionnaire(opts){
     qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
   }
   const openQuestionnaire=()=>{
-    document.getElementById('tech-view-home').classList.remove('active');
-    document.getElementById('tech-view-questionnaire').classList.add('active');
+    setTechMainView('tech-view-questionnaire');
     renderQuestionnaire();
     if(draftComment){
       const el=document.getElementById('q-comment');
