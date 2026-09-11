@@ -2,7 +2,7 @@
 -- Run once in Supabase -> SQL Editor (or: supabase db query --linked -f this file).
 --
 -- Orientation: checkbox items -> checklist_completed[skill_code] = true
--- Pre-Bootcamp: rated items -> rating 3 ("Multiple Times" = 100%)
+-- Pre-Bootcamp: rated items -> rating 3 ("Can Perform Independently" = 100%)
 -- Merges into existing checklist_completed without wiping other keys.
 -- Safe to re-run (idempotent).
 

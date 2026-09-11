@@ -73,7 +73,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit-field:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .admin-start-wrap{display:flex;flex-direction:column;gap:3px;flex:0 0 auto}
 .admin-start-lbl{font-size:10px;font-weight:700;color:#888;letter-spacing:.02em}
-.admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee}
 .admin-add input,.admin-add select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fafafa;outline:none}
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
@@ -379,7 +379,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .cl-empty{font-size:12px;color:#999;padding:8px 4px}
 .cl-item.cl-rated{flex-direction:column;align-items:stretch;gap:10px}
 .cl-rating-row{display:flex;gap:6px;flex-wrap:wrap}
-.cl-rate-btn{flex:1;min-width:90px;padding:8px 6px;border:2px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:#666;transition:all .15s}
+.cl-rate-btn{flex:1;min-width:110px;padding:8px 6px;border:2px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:#666;transition:all .15s;line-height:1.25}
 .cl-rate-btn:hover{border-color:#1B3A6B;background:#EEF4FF;color:#1B3A6B}
 .cl-rate-btn.selected{border-color:#1B3A6B;background:#1B3A6B;color:#fff}
 .cl-rate-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;background:#EEF4FF;color:#1B3A6B}
@@ -560,7 +560,7 @@ body.mobile-nav-open{overflow:hidden}
   .rating-row{flex-wrap:wrap;gap:8px}
   .rating-btn{flex:1 1 calc(50% - 4px);min-width:calc(50% - 4px);padding:12px 6px;font-size:16px}
   .rating-label{font-size:9px;line-height:1.2}
-  .cl-rate-btn{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px);padding:10px 8px;font-size:12px}
+  .cl-rate-btn{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px);padding:10px 8px;font-size:11px}
   .q-header{padding:16px}
   .q-title{font-size:17px}
   .q-nav{flex-direction:column-reverse;align-items:stretch}
@@ -727,6 +727,47 @@ body.mobile-nav-open{overflow:hidden}
               </div>
             </div>
           </div>
+          <div class="report-item" id="report-preboot">
+            <div class="report-head">
+              <button type="button" class="report-toggle" id="report-toggle-preboot" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('preboot')"><span class="admin-sec-chevron">▼</span></button>
+              <div class="report-head-main">
+                <div class="report-title">Pre-Bootcamp Assessment Report</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Required techs (≤100 days &amp; before bootcamp). Days in red if never taken or ≥7 days.</div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootReport()">Refresh</button>
+                <button type="button" class="btn" id="admin-preboot-download-btn" onclick="downloadAdminPreBootReportPdf()">Download PDF</button>
+              </div>
+            </div>
+            <div class="report-table-body collapsed" id="report-table-preboot">
+              <div class="err" id="admin-preboot-report-err" style="display:none"></div>
+              <div class="report-filters">
+                <div class="pm-search-wrap">
+                  <input type="search" id="admin-preboot-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminPreBootFilterChange()">
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-preboot-region">Region</label>
+                  <select id="admin-preboot-region" onchange="onAdminPreBootFilterChange()">
+                    <option value="">All regions</option>
+                    <option value="IM">Intermountain</option>
+                    <option value="KES">KES</option>
+                    <option value="MA">Mid-Atlantic</option>
+                    <option value="MW">Midwest</option>
+                    <option value="National">National</option>
+                    <option value="NE">New England</option>
+                    <option value="PC">Pacific Coast</option>
+                    <option value="RM">Rocky Mountain</option>
+                    <option value="SE">Southeast</option>
+                    <option value="SW">Southwest</option>
+                  </select>
+                </div>
+              </div>
+              <div class="report-filter-hint" id="admin-preboot-filter-hint"></div>
+              <div class="report-wrap" id="admin-preboot-report-wrap">
+                <div class="admin-empty" style="padding:12px">Loading…</div>
+              </div>
+            </div>
+          </div>
           <div class="report-item" id="report-nebb">
             <div class="report-head">
               <button type="button" class="report-toggle" id="report-toggle-nebb" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('nebb')"><span class="admin-sec-chevron">▼</span></button>
@@ -838,7 +879,6 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-admins">
-        <div class="admin-list" id="list-admins"></div>
         <div class="admin-add">
           <input id="add-admin-name" placeholder="Full name">
           <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -857,6 +897,7 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('admin')">Add</button>
         </div>
+        <div class="admin-list" id="list-admins"></div>
         </div>
       </div>
 
@@ -865,7 +906,6 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> PMs/APMs <span class="ct" id="ct-pms">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-pms">
-        <div class="admin-list" id="list-pms"></div>
         <div class="admin-add">
           <input id="add-pm-name" placeholder="Full name">
           <input id="add-pm-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -884,6 +924,7 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('pm')">Add</button>
         </div>
+        <div class="admin-list" id="list-pms"></div>
         </div>
       </div>
 
@@ -892,11 +933,6 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
-        <div class="pm-search-wrap">
-          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
-        </div>
-        <div class="admin-list" id="list-techs"></div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
           <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -914,6 +950,11 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
+        <div class="pm-search-wrap">
+          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        </div>
+        <div class="admin-list" id="list-techs"></div>
         </div>
       </div>
 
@@ -1113,7 +1154,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-prebootcamp" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📋 Pre-Bootcamp Assessment</div><div class="topbar-sub">Rate each topic — Seen it / Done it / Multiple Times</div></div>
+          <div class="topbar-grow"><div class="topbar-title">📋 Pre-Bootcamp Assessment</div><div class="topbar-sub">Rate each topic — Not Yet / Observed / Performed/Assisted / Can Perform Independently</div></div>
           <div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div>
         </div>
         <div class="q-wrap" id="preboot-content"></div>
@@ -1434,7 +1475,20 @@ function buildSkillModel(sections){
   TECH_CATS=QUESTIONNAIRE.map(toCat);
   SKILL_CATS=QUESTIONNAIRE.filter(s=>s.avg_field).map(toCat);
 }
-const PRE_BOOTCAMP_RATINGS=[{v:1,l:'Seen it',pct:33},{v:2,l:'Done it',pct:67},{v:3,l:'Multiple Times',pct:100}];
+const PRE_BOOTCAMP_RATINGS=[
+  {v:0,l:'Not Yet',pct:0},
+  {v:1,l:'Observed',pct:33},
+  {v:2,l:'Performed/Assisted',pct:67},
+  {v:3,l:'Can Perform Independently',pct:100}
+];
+function preBootcampRatingLabel(level){
+  const r=PRE_BOOTCAMP_RATINGS.find(x=>x.v===level);
+  return r?r.l:'Not Yet';
+}
+function isPreBootcampRatingSelected(cur,level){
+  if(level===0)return !cur;
+  return cur===level;
+}
 function isRatedChecklistSection(sec){return sec.checklist_mode==='rated'||sec.key==='pre_bootcamp';}
 function getChecklistRating(completed,code){
   const v=completed&&completed[code];
@@ -1475,8 +1529,8 @@ function renderChecklistItemHtml(sk,completed,sec,readOnly){
     const cur=getChecklistRating(completed,sk.id);
     const itemPct=checklistItemPct(cur);
     const ratingHtml=readOnly
-      ?`<span class="cl-rate-badge">${cur?PRE_BOOTCAMP_RATINGS.find(r=>r.v===cur).l:'Not rated'}${cur?` · ${itemPct}%`:''}</span>`
-      :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${cur===r.v?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
+      ?`<span class="cl-rate-badge">${preBootcampRatingLabel(cur)}${cur?` · ${itemPct}%`:''}</span>`
+      :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${isPreBootcampRatingSelected(cur,r.v)?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
     return`<div class="cl-item cl-rated ${cur?'cl-done':''}"><div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div>${cur?`<div class="cl-item-pct">${itemPct}%</div>`:''}</div>${ratingHtml}</div>`;
   }
   const done=isChecklistDone(completed,sk.id);
@@ -1519,7 +1573,7 @@ function renderChecklistHtml(completed,opts){
   let progNote='';
   if(prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
   else if(prog.total)progNote=` <strong>${prog.done}/${prog.total}</strong> done.`;
-  const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
+  const subText=ratedChecklistSectionExists()?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.':'Mark tasks complete as you finish them. These do not affect your skill scores.';
   const bootcampDateLabel=bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
   return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Orientation — Pre Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
 }
@@ -1711,8 +1765,8 @@ function renderPreBootcampAssessment(){
       const cur=getChecklistRating(completed,sk.id);
       const itemPct=checklistItemPct(cur);
       const ratingHtml=readOnly
-        ?`<span class="cl-rate-badge">${cur?PRE_BOOTCAMP_RATINGS.find(r=>r.v===cur).l:'Not rated'}${cur?` · ${itemPct}%`:''}</span>`
-        :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${cur===r.v?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
+        ?`<span class="cl-rate-badge">${preBootcampRatingLabel(cur)}${cur?` · ${itemPct}%`:''}</span>`
+        :`<div class="cl-rating-row">${PRE_BOOTCAMP_RATINGS.map(r=>`<button type="button" class="cl-rate-btn ${isPreBootcampRatingSelected(cur,r.v)?'selected':''}" onclick="event.stopPropagation();setChecklistRating('${sk.id}',${r.v})">${r.l}</button>`).join('')}</div>`;
       return`<div class="cl-item cl-rated ${cur?'cl-done':''}"><div class="cl-body"><div class="cl-name">${adminEsc(sk.name)}</div>${cur?`<div class="cl-item-pct">${itemPct}%</div>`:''}</div>${ratingHtml}</div>`;
     }).join('');
     return`<div class="q-section">
@@ -1724,7 +1778,7 @@ function renderPreBootcampAssessment(){
   wrap.innerHTML=`
     <div class="q-header">
       <div class="q-title">Pre-Bootcamp Assessment${bootcampDateLabel}</div>
-      <div class="q-sub">Rate each topic — Seen it (33%), Done it (67%), or Multiple Times (100%). These ratings do not affect your monthly skill scores.</div>
+      <div class="q-sub">Rate each topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These ratings do not affect your monthly skill scores.</div>
       <div class="q-progress"><div class="q-progress-fill" id="preboot-fill" style="width:${prog}%"></div></div>
       <div class="q-progress-label" id="preboot-label">${ratedCount} of ${total} topics rated · ${prog}% complete</div>
     </div>
@@ -2112,11 +2166,11 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
 const adminSecOpen={ata:false,admins:false,pms:false,techs:false,deleted:false};
-const reportTableOpen={activity:false,nebb:false};
+const reportTableOpen={activity:false,preboot:false,nebb:false};
 
 function toggleReportTable(key){
   if(!(key in reportTableOpen))return;
@@ -2260,6 +2314,11 @@ function reportDaysClass(days){
   if(n<=30)return 'days-green';
   if(n<=59)return 'days-yellow';
   return 'days-red';
+}
+function reportPreBootDaysClass(days){
+  const n=days===null||days===undefined||days===''?null:Number(days);
+  if(n===null||Number.isNaN(n)||n>=7)return 'days-red';
+  return 'days-green';
 }
 
 function sortAdminReportRows(rows){
@@ -3899,6 +3958,204 @@ async function downloadAdminReportPdf(){
   }
 }
 
+function filteredAdminPreBootRows(){
+  const q=adminPreBootSearch.trim().toLowerCase();
+  const region=adminPreBootRegion;
+  return sortAdminReportRows(adminPreBootRows).filter(r=>{
+    if(region&&r.region!==region)return false;
+    if(!q)return true;
+    return String(r.name||'').toLowerCase().includes(q);
+  });
+}
+function updateAdminPreBootFilterHint(shown,total){
+  const hint=document.getElementById('admin-preboot-filter-hint');
+  if(!hint)return;
+  if(!total){hint.textContent='';return;}
+  if(shown===total&&!adminPreBootSearch.trim()&&!adminPreBootRegion){
+    hint.textContent=total+' required technician'+(total===1?'':'s');
+    return;
+  }
+  hint.textContent='Showing '+shown+' of '+total;
+}
+function onAdminPreBootFilterChange(){
+  const searchEl=document.getElementById('admin-preboot-search');
+  const regionEl=document.getElementById('admin-preboot-region');
+  adminPreBootSearch=searchEl?searchEl.value:'';
+  adminPreBootRegion=regionEl?regionEl.value:'';
+  renderAdminPreBootReport();
+}
+function buildAdminPreBootTableHtml(rows){
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians are currently required for Pre-Bootcamp (or none match filters).</div>';
+  const body=rows.map(r=>{
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const days=r.days_since_update;
+    const daysText=days===null||days===undefined?'—':String(days);
+    const daysCls=reportPreBootDaysClass(days);
+    const pct=r.progress_pct===null||r.progress_pct===undefined?'—':String(r.progress_pct)+'%';
+    const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
+    return `<tr>
+      <td>${adminEsc(r.name)}</td>
+      <td>${adminEsc(regionLabel(r.region))}</td>
+      <td>${adminEsc(pct)}</td>
+      <td>${adminEsc(boot)}</td>
+      <td>${adminEsc(last)}</td>
+      <td class="${daysCls}">${adminEsc(daysText)}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="report-table">
+    <thead><tr>
+      <th>Technician</th><th>Region</th><th>Progress</th><th>Bootcamp start</th><th>Last taken</th><th>Days since</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+function renderAdminPreBootReport(){
+  const wrap=document.getElementById('admin-preboot-report-wrap');
+  if(!wrap)return;
+  const filtered=filteredAdminPreBootRows();
+  updateAdminPreBootFilterHint(filtered.length,adminPreBootRows.length);
+  wrap.innerHTML=buildAdminPreBootTableHtml(filtered);
+}
+async function loadAdminPreBootReport(){
+  const wrap=document.getElementById('admin-preboot-report-wrap');
+  const err=document.getElementById('admin-preboot-report-err');
+  if(!wrap)return;
+  if(err)err.style.display='none';
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  adminPreBootReportDate=new Date();
+  const dateLabel=document.getElementById('admin-preboot-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminPreBootReportDate.toISOString().slice(0,10));
+  try{
+    adminPreBootRows=sortAdminReportRows(await rpc('app_admin_pre_bootcamp_report',{})||[]);
+  }catch(e){
+    wrap.innerHTML='';
+    updateAdminPreBootFilterHint(0,0);
+    if(err){
+      err.textContent='Could not load report. '+(e.message||'Run supabase/pre-bootcamp-report.sql in Supabase.');
+      err.style.display='block';
+    }
+    return;
+  }
+  renderAdminPreBootReport();
+}
+function adminPreBootPdfFilename(reportDateIso){
+  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const parts=['Pre-Bootcamp-Assessment-Report',iso];
+  if(adminPreBootRegion)parts.push(adminPreBootRegion);
+  if(adminPreBootSearch.trim())parts.push('filtered');
+  return parts.join('-')+'.pdf';
+}
+function buildAdminPreBootReportPdfDoc(rows,reportDateText){
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=36;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const lh=12;
+  const cols=[
+    {key:'name',label:'Technician',w:contentW*0.22},
+    {key:'region',label:'Region',w:contentW*0.12},
+    {key:'pct',label:'Progress',w:contentW*0.12},
+    {key:'boot',label:'Bootcamp start',w:contentW*0.16},
+    {key:'last',label:'Last taken',w:contentW*0.18},
+    {key:'days',label:'Days since',w:contentW*0.20}
+  ];
+  function needPage(h){
+    if(y+h>pageH-margin){doc.addPage();y=margin;return true;}
+    return false;
+  }
+  function drawTableHeader(){
+    needPage(28);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    let x=margin+4;
+    cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});
+    y+=22;
+  }
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,58,107);
+  doc.text('Pre-Bootcamp Assessment Report',margin,y);
+  y+=18;
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
+  const filterNote=[
+    'Report date: '+reportDateText,
+    adminPreBootSearch.trim()?('Search: '+adminPreBootSearch.trim()):'',
+    adminPreBootRegion?('Region: '+regionLabel(adminPreBootRegion)):'',
+    'Required techs only · Days red if never or ≥7',
+    'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
+  ].filter(Boolean).join('  ·  ');
+  doc.splitTextToSize(pdfSafeText(filterNote),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
+  y+=10;
+  drawTableHeader();
+  rows.forEach((r,idx)=>{
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const days=r.days_since_update;
+    const daysText=days===null||days===undefined?'—':String(days);
+    const pct=r.progress_pct===null||r.progress_pct===undefined?'—':String(r.progress_pct)+'%';
+    const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
+    const values=[
+      pdfSafeText(r.name),
+      pdfSafeText(regionLabel(r.region)),
+      pdfSafeText(pct),
+      pdfSafeText(boot),
+      pdfSafeText(last),
+      pdfSafeText(daysText)
+    ];
+    doc.setFontSize(9);
+    const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+    const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*11+6;
+    if(needPage(rowH+4))drawTableHeader();
+    if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-8,contentW,rowH,'F');}
+    let x=margin+4;
+    lineSets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===0?'bold':'normal');
+      if(i===5){
+        const n=days===null||days===undefined||days===''?null:Number(days);
+        if(n===null||Number.isNaN(n)||n>=7)doc.setTextColor(192,57,43);
+        else doc.setTextColor(15,110,86);
+      }else doc.setTextColor(40,40,40);
+      lines.forEach((line,li)=>{doc.text(line,x,y+li*11,{maxWidth:cols[i].w-8});});
+      x+=cols[i].w;
+    });
+    y+=rowH;
+    doc.setDrawColor(230,230,230);
+    doc.line(margin,y-4,margin+contentW,y-4);
+  });
+  return doc;
+}
+async function downloadAdminPreBootReportPdf(){
+  const rows=filteredAdminPreBootRows();
+  if(!rows.length){
+    alert(adminPreBootRows.length?'No technicians match the current filters.':'Load the report first.');
+    return;
+  }
+  const btn=document.getElementById('admin-preboot-download-btn');
+  const prevText=btn?btn.textContent:'Download PDF';
+  if(btn){btn.disabled=true;btn.textContent='Generating PDF…';}
+  const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+  const reportDateText=fmtDateFull(reportDateIso);
+  try{
+    await ensureJsPdf();
+    const doc=buildAdminPreBootReportPdfDoc(rows,reportDateText);
+    doc.save(adminPreBootPdfFilename(reportDateIso));
+  }catch(e){
+    console.error('Pre-Bootcamp report PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=prevText;}
+  }
+}
+
 function adminNebbPdfFilename(reportDateIso){
   const iso=reportDateIso||new Date().toISOString().slice(0,10);
   const parts=['NEBB-Certified-Report',iso];
@@ -4028,20 +4285,27 @@ function openAdmin(){
   updateAdminTechSearchHint('',0,0);
   adminReportSearch='';
   adminReportRegion='';
+  adminPreBootSearch='';
+  adminPreBootRegion='';
   adminNebbSearch='';
   adminNebbRegion='';
   adminNebbDeadlineFilter='all';
   const reportSearch=document.getElementById('admin-report-search');
   const reportRegion=document.getElementById('admin-report-region');
+  const prebootSearch=document.getElementById('admin-preboot-search');
+  const prebootRegion=document.getElementById('admin-preboot-region');
   const nebbSearch=document.getElementById('admin-nebb-search');
   const nebbRegion=document.getElementById('admin-nebb-region');
   const nebbDeadline=document.getElementById('admin-nebb-deadline');
   if(reportSearch)reportSearch.value='';
   if(reportRegion)reportRegion.value='';
+  if(prebootSearch)prebootSearch.value='';
+  if(prebootRegion)prebootRegion.value='';
   if(nebbSearch)nebbSearch.value='';
   if(nebbRegion)nebbRegion.value='';
   if(nebbDeadline)nebbDeadline.value='all';
   reportTableOpen.activity=false;
+  reportTableOpen.preboot=false;
   reportTableOpen.nebb=false;
   ataAdminSearch='';ataAdminRegion='';ataAdminStatusFilter='';
   const ataSearchEl=document.getElementById('ata-search');
@@ -4057,7 +4321,7 @@ function openAdmin(){
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminNebbReport(),ataLoadAdmin()]);
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminNebbReport(),ataLoadAdmin()]);
 }
 
 async function loadAdminLists(){

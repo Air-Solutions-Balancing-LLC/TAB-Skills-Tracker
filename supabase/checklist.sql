@@ -11,6 +11,9 @@ ALTER TABLE public.skill_sections
 ALTER TABLE public.technicians
   ADD COLUMN IF NOT EXISTS checklist_completed jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+ALTER TABLE public.technicians
+  ADD COLUMN IF NOT EXISTS pre_bootcamp_updated_at timestamptz;
+
 ALTER TABLE public.skill_sections
   ADD COLUMN IF NOT EXISTS checklist_mode text;
 
@@ -243,8 +246,8 @@ BEGIN
 END;
 $$;
 
--- ── Rate a Pre-Bootcamp task: 1 = Seen it, 2 = Done it, 3 = Multiple Times ───
--- p_level 0 clears the rating. Values are stored as integers in checklist_completed.
+-- ── Rate a Pre-Bootcamp task: 0 = Not Yet, 1 = Observed, 2 = Performed/Assisted, 3 = Can Perform Independently ───
+-- p_level 0 clears the rating (no score). Values 1–3 are stored as integers in checklist_completed.
 CREATE OR REPLACE FUNCTION public.app_checklist_rate(p_token text, p_skill_code text, p_level int)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -283,12 +286,14 @@ BEGIN
 
   IF p_level = 0 THEN
     UPDATE public.technicians
-    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) - v_code
+    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) - v_code,
+        pre_bootcamp_updated_at = now()
     WHERE id = v_tech_id AND deleted_at IS NULL
     RETURNING checklist_completed INTO v_completed;
   ELSE
     UPDATE public.technicians
-    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) || jsonb_build_object(v_code, p_level)
+    SET checklist_completed = COALESCE(checklist_completed, '{}'::jsonb) || jsonb_build_object(v_code, p_level),
+        pre_bootcamp_updated_at = now()
     WHERE id = v_tech_id AND deleted_at IS NULL
     RETURNING checklist_completed INTO v_completed;
   END IF;
