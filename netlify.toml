@@ -1,7 +1,10 @@
 # Netlify configuration for TAB Skills Tracker.
 # The site itself is static (served from the repo root). Server-side pieces:
-#   * ata-sheet          — legacy Google Sheet importer (CORS workaround)
-#   * ata-teachable-sync — daily + on-demand pull of Teachable quiz results
+#   * ata-sheet                       — legacy Google Sheet importer (CORS workaround)
+#   * ata-teachable-sync-background   — on-demand Teachable pull (15 min)
+#   * ata-teachable-cron              — daily trigger that starts the background pull
+# Scheduled functions cannot be called from the browser (HTTP 403) and are
+# limited to 30s, so the long job must stay on the background function.
 
 [build]
   publish = "."
@@ -12,12 +15,8 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Daily job. Must be a separate function: Netlify scheduled functions
-# cannot be called from the browser (HTTP 403). The admin button uses
-# ata-teachable-sync (no schedule).
-[functions."ata-teachable-sync"]
-  timeout = 26
+[functions."ata-teachable-sync-background"]
+  background = true
 
 [functions."ata-teachable-cron"]
   schedule = "0 12 * * *"
-  timeout = 26

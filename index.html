@@ -2862,25 +2862,37 @@ async function ataApplyRows(rows){
 async function ataSyncFromTeachable(){
   const btn=document.getElementById('ata-teachable-btn');
   if(btn){btn.disabled=true;btn.textContent='Syncing…';}
-  ataSetImportStatus('Pulling the latest quiz scores from Teachable. This can take about a minute…');
+  ataSetImportStatus('Starting Teachable sync. This can take a few minutes…');
   try{
     let secret='';
     try{secret=await rpc('app_ata_webhook_secret',{})||'';}
     catch(e){throw new Error('Could not load the webhook secret. Run supabase/ata-attempts.sql in Supabase first.');}
     if(!secret)throw new Error('No webhook secret on file. Run supabase/ata-attempts.sql in Supabase first.');
-    const res=await fetch('/.netlify/functions/ata-teachable-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret}),cache:'no-store'});
-    let data=null;try{data=await res.json();}catch(_){}
-    if(!res.ok||!data||!data.ok){
+    const started=ataAdminData&&ataAdminData.last_import&&ataAdminData.last_import.ran_at;
+    const res=await fetch('/.netlify/functions/ata-teachable-sync-background',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret}),cache:'no-store'});
+    if(res.status!==202 && !res.ok){
+      let data=null;try{data=await res.json();}catch(_){}
       const err=(data&&data.error)||('HTTP '+res.status);
       if(/TEACHABLE_API_KEY/i.test(err))throw new Error('Teachable API key is not set on Netlify yet. Add TEACHABLE_API_KEY under Site settings → Environment variables, then retry.');
       if(/app_ata_import_attempts|unauthorized/i.test(err))throw new Error('Run supabase/ata-teachable-sync.sql in the Supabase SQL Editor, then retry.');
       throw new Error(err);
     }
-    let msg='Teachable sync done: '+data.applied+' quiz result'+(data.applied===1?'':'s')+' across '+(data.matched||0)+' technician'+(data.matched===1?'':'s')+'.';
-    if(data.unmatched)msg+=' '+data.unmatched+' result'+(data.unmatched===1?'':'s')+' had no matching technician (email/name).';
-    if(data.completeNoScore)msg+=' '+data.completeNoScore+' lesson'+(data.completeNoScore===1?'':'s')+' marked Complete in Teachable with no score.';
-    else if(data.progressJobs===0)msg+=' No Complete-without-score lessons were found to import.';
-    if(data.quizErrors)msg+=' '+data.quizErrors+' quiz'+(data.quizErrors===1?'':'zes')+' could not be read'+(data.firstError?': '+data.firstError:'')+'.';
+    ataSetImportStatus('Teachable sync is running in the background. Leave this page open…');
+    let done=null, lastSeen=started, stable=0;
+    for(let i=0;i<168;i++){
+      await new Promise(r=>setTimeout(r,5000));
+      try{await ataLoadAdmin();}catch(_){}
+      const li=ataAdminData&&ataAdminData.last_import;
+      const ran=li&&li.ran_at;
+      if(ran&&ran!==started){
+        if(ran!==lastSeen){lastSeen=ran;done=li;stable=0;}
+        else{stable+=1;if(stable>=2)break;}
+      }
+      ataSetImportStatus('Teachable sync is still running ('+(i+1)*5+'s)…');
+    }
+    if(!done)throw new Error('The sync is taking longer than expected. Wait a minute, refresh, and check “Last update”. If it did not change, try again.');
+    let msg='Teachable sync done: '+(done.applied||0)+' update'+(done.applied===1?'':'s')+' across '+(done.matched||0)+' technician'+(done.matched===1?'':'s')+'.';
+    if(done.unmatched)msg+=' '+(done.unmatched)+' result'+(done.unmatched===1?'':'s')+' had no matching technician.';
     ataSetImportStatus(msg,'ok');
     await ataInferStarts(true);
     await ataLoadAdmin();

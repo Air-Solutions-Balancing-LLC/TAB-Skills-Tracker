@@ -2,8 +2,9 @@
 // into Supabase. Uses Node https (same as ata-sheet) so esbuild/Netlify does
 // not depend on global fetch.
 //
-// Admin button: POST /.netlify/functions/ata-teachable-sync  {secret}
-// Daily cron:   ata-teachable-cron.js (needs ATA_WEBHOOK_SECRET + TEACHABLE_API_KEY)
+// Admin button: POST /.netlify/functions/ata-teachable-sync-background  {secret}
+// Daily cron:   ata-teachable-cron.js POSTs that same background function
+//               (needs ATA_WEBHOOK_SECRET + TEACHABLE_API_KEY)
 
 const https = require('https');
 const QUIZZES = require('./ata-teachable-quizzes.json');
@@ -132,7 +133,7 @@ async function ingest(secret, rows) {
   if (!rows.length) return { applied: 0, matched: 0, unmatched: 0 };
   const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/app_ata_import_attempts';
   let applied = 0, matched = 0, unmatched = 0;
-  const chunk = 250;
+  const chunk = 4000;
   for (let i = 0; i < rows.length; i += chunk) {
     const slice = rows.slice(i, i + chunk);
     const res = await requestJson('POST', url, {
