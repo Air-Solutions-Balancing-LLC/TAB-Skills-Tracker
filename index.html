@@ -933,6 +933,10 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
+        <div class="pm-search-wrap">
+          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        </div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
           <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -949,10 +953,6 @@ body.mobile-nav-open{overflow:hidden}
             <option value="SW">Southwest</option>
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
-        </div>
-        <div class="pm-search-wrap">
-          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
         </div>
         <div class="admin-list" id="list-techs"></div>
         </div>
