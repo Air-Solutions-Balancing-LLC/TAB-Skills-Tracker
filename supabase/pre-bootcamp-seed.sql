@@ -1,6 +1,7 @@
--- Seed Pre-Bootcamp checklist tasks from Pre-Bootcamp_Skills_List.docx
+-- Seed Pre-Bootcamp checklist tasks from Pre-Bootcamp_Skills_List_1.docx
 -- Run in Supabase -> SQL Editor AFTER supabase/checklist.sql
--- For existing DBs that already have pb* rows, prefer pre-bootcamp-skills-2026-09.sql
+-- For EXISTING databases: run pre-bootcamp-skills-replace.sql instead
+-- (that script fully REPLACES the Pre-Bootcamp section — not an addition).
 -- Safe to re-run on empty catalogs: uses skill_code ON CONFLICT DO NOTHING
 
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)
