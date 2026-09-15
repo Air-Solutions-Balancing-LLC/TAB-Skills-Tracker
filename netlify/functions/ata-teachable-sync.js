@@ -17,6 +17,25 @@ const LESSON_CODE_REMAP = {
   'TAB-A-300': 'TAB-A-306',
   'TAB-B-400': 'TAB-B-401',
 };
+// Basic written + practical share one Teachable exam. Copy the scored row to the sibling.
+const SHARED_FINALS = { 'TAB-B-401': 'TAB-B-402', 'TAB-B-402': 'TAB-B-401' };
+function mirrorSharedFinals(rows) {
+  const have = new Set(rows.map((r) => String(r.email || r.name).toLowerCase() + '|' + r.lesson_code));
+  const extra = [];
+  for (const row of rows) {
+    const sibling = SHARED_FINALS[row.lesson_code];
+    if (!sibling) continue;
+    const key = String(row.email || row.name).toLowerCase() + '|' + sibling;
+    if (have.has(key)) continue;
+    have.add(key);
+    extra.push(Object.assign({}, row, {
+      lesson_code: sibling,
+      external_id: (row.external_id || 'teachable-mirror') + ':' + sibling,
+    }));
+  }
+  return rows.concat(extra);
+}
+
 function remapLessonCode(code, lectureName) {
   const raw = String(code || '').toUpperCase();
   if (/TAB-Intermediate-300\s+Final/i.test(lectureName || '')) return 'TAB-I-307';
@@ -171,7 +190,7 @@ async function runSync(apiKey, secret) {
     }
   });
   const extras = await fillCompleteNoScore(apiKey, all);
-  const result = await ingest(secret, all.concat(extras.rows));
+  const result = await ingest(secret, mirrorSharedFinals(all.concat(extras.rows)));
   return {
     ok: true,
     quizzes: QUIZZES.length,

@@ -2787,7 +2787,15 @@ function ataLessonsByProgram(program){
     return (a.sort_order||0)-(b.sort_order||0);
   });
 }
-function ataCompletionFor(tech,code){const c=(tech&&tech.completions)||{};return c[code]||null;}
+// Teachable only grades the Basic written final (B-401). The practical (B-402)
+// is the same exam for tracking — reuse that score when the sibling has none.
+const ATA_SHARED_FINALS={'TAB-B-401':'TAB-B-402','TAB-B-402':'TAB-B-401'};
+function ataCompletionFor(tech,code){
+  const c=(tech&&tech.completions)||{};
+  if(c[code])return c[code];
+  const sibling=ATA_SHARED_FINALS[code];
+  return (sibling&&c[sibling])||null;
+}
 function ataAttemptInfo(tech,code){const a=(tech&&tech.attempts)||{};return a[code]||null;}
 function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program]||null;}
 const ATA_PASS_PCT=80;
