@@ -830,7 +830,7 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Brenda can still type the first start date for each module (deadlines fall on that week’s Friday). Empty dates fill in from the <strong>first Teachable quiz</strong> in that module — existing dates are never overwritten.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Select veterans or former techs and <strong>Archive</strong> them — they stay in the company roster but drop off this list and the Friday PDF. Restore them anytime from the <strong>Former / archived</strong> filter. Empty dates fill in from the <strong>first Teachable quiz</strong> in that module — existing dates are never overwritten.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
@@ -871,6 +871,19 @@ body.mobile-nav-open{overflow:hidden}
                 <option value="not_started">Not started</option>
               </select>
             </div>
+            <div class="report-filter-field">
+              <label for="ata-roster">Roster</label>
+              <select id="ata-roster" onchange="onAtaAdminFilterChange()">
+                <option value="active" selected>Active ATA</option>
+                <option value="archived">Former / archived</option>
+                <option value="all">All technicians</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px">
+            <button type="button" class="btn" id="ata-archive-btn" style="padding:7px 12px;font-size:12px;background:#6b7280" onclick="ataArchiveSelected(true)">Archive selected</button>
+            <button type="button" class="btn" id="ata-restore-btn" style="padding:7px 12px;font-size:12px;background:#0F6E56" onclick="ataArchiveSelected(false)">Restore selected</button>
+            <span id="ata-selected-hint" style="font-size:11px;color:#888"></span>
           </div>
           <div class="report-filter-hint" id="ata-filter-hint"></div>
           <div class="report-wrap" id="ata-roster-wrap"><div class="admin-empty" style="padding:12px">Loading…</div></div>
@@ -2751,7 +2764,8 @@ async function saveNebbReportRow(personId){
 // ── ATA Tracking ─────────────────────────────────────────────────────────────
 let ataCurriculum=null;                 // [{program,lesson_code,lesson_name,sort_order,week_index}]
 let ataAdminData=null;                  // {techs:[...], last_import:{...}}
-let ataAdminSearch='',ataAdminRegion='',ataAdminStatusFilter='';
+let ataAdminSearch='',ataAdminRegion='',ataAdminStatusFilter='',ataAdminRosterFilter='active';
+let ataSelected={};
 let ataPmData=null,ataPmSearch='',ataPmStatusFilter='';
 const ATA_PROGRAMS=['basic','intermediate','advanced'];
 const ATA_PROGRAM_LABEL={basic:'Basic',intermediate:'Intermediate',advanced:'Advanced'};
@@ -2880,6 +2894,8 @@ function ataProgramStatus(tech,program,today){
   return {program,start,total,completed,overdue,dueSoon,failed,atLimit,nextDue,overdueList,lessonRows,status};
 }
 
+function ataIsArchived(tech){return !!(tech&&(tech.ata_archived===true||tech.ata_archived_at));}
+
 function ataTechSummary(tech){
   const today=ataToday();
   const progs=ATA_PROGRAMS.map(p=>ataProgramStatus(tech,p,today));
@@ -2890,7 +2906,8 @@ function ataTechSummary(tech){
   const overdueList=[];
   active.forEach(p=>p.overdueList.forEach(o=>overdueList.push(Object.assign({program:p.program},o))));
   let status;
-  if(!active.length)status='not_started';
+  if(ataIsArchived(tech))status='archived';
+  else if(!active.length)status='not_started';
   else if(active.every(p=>p.status==='complete'))status='complete';
   else if(totalOverdue>0)status='behind';
   else status='on_track';
@@ -2903,6 +2920,7 @@ function ataStatusMeta(status){
     case 'behind':return {label:'Behind',color:'#C0392B',bg:'#FDECEA'};
     case 'on_track':return {label:'On track',color:'#0F6E56',bg:'#E7F5EF'};
     case 'complete':return {label:'Complete',color:'#1B3A6B',bg:'#EEF4FF'};
+    case 'archived':return {label:'Former',color:'#6b7280',bg:'#F3F4F6'};
     default:return {label:'Not started',color:'#8a8a8a',bg:'#F0F0F0'};
   }
 }
@@ -3232,6 +3250,9 @@ function ataFilteredAdminTechs(){
   const techs=(ataAdminData&&ataAdminData.techs)||[];
   const q=ataAdminSearch.trim().toLowerCase();
   return techs.map(t=>ataTechSummary(t)).filter(s=>{
+    const archived=ataIsArchived(s.tech);
+    if(ataAdminRosterFilter==='active'&&archived)return false;
+    if(ataAdminRosterFilter==='archived'&&!archived)return false;
     if(ataAdminRegion&&s.tech.region!==ataAdminRegion)return false;
     if(ataAdminStatusFilter&&s.status!==ataAdminStatusFilter)return false;
     if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
@@ -3254,29 +3275,68 @@ function ataStartCell(summary,program){
   return `<td>${input}${prog}</td>`;
 }
 
+function ataSelectedIds(){return Object.keys(ataSelected).filter(id=>ataSelected[id]).map(Number);}
+function ataUpdateSelectedHint(){
+  const n=ataSelectedIds().length;
+  const el=document.getElementById('ata-selected-hint');
+  if(el)el.textContent=n?(n+' selected'):'';
+}
+function ataToggleSelect(id,on){
+  if(on)ataSelected[id]=true;else delete ataSelected[id];
+  ataUpdateSelectedHint();
+}
+function ataToggleSelectAll(on){
+  ataFilteredAdminTechs().forEach(s=>{if(on)ataSelected[s.tech.id]=true;else delete ataSelected[s.tech.id];});
+  ataRenderAdmin();
+}
+async function ataArchiveSelected(archived){
+  const ids=ataSelectedIds();
+  if(!ids.length){alert('Select one or more technicians first.');return;}
+  const verb=archived?'move to Former / archived':'restore to Active ATA';
+  if(!confirm(verb.charAt(0).toUpperCase()+verb.slice(1)+' for '+ids.length+' technician'+(ids.length===1?'':'s')+'? They stay in the company roster'+(archived?' and can be restored later.':'')+'.'))return;
+  try{
+    await rpc('app_ata_set_archived',{p_tech_ids:ids,p_archived:!!archived});
+    ataSelected={};
+    await ataLoadAdmin();
+    ataSetImportStatus((archived?'Archived ':'Restored ')+ids.length+' technician'+(ids.length===1?'':'s')+'.','ok');
+  }catch(e){
+    const msg=e.message||'';
+    alert('Could not update archive. '+((msg.includes('app_ata_set_archived')||msg.includes('ata_archived'))?'Run supabase/ata-archive.sql in the Supabase SQL Editor first.':(msg||'Try again.')));
+  }
+}
+
 function ataRenderAdmin(){
   const wrap=document.getElementById('ata-roster-wrap');
   if(!wrap)return;
   const rows=ataFilteredAdminTechs();
-  const total=(ataAdminData&&ataAdminData.techs||[]).length;
+  const all=(ataAdminData&&ataAdminData.techs)||[];
+  const archivedN=all.filter(ataIsArchived).length;
+  const total=all.length;
   const hint=document.getElementById('ata-filter-hint');
-  if(hint)hint.textContent=total?(rows.length===total&&!ataAdminSearch&&!ataAdminRegion&&!ataAdminStatusFilter?total+' technician'+(total===1?'':'s'):'Showing '+rows.length+' of '+total):'';
-  if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match the current filters.</div>';return;}
+  if(hint){
+    let t=total?(rows.length+' shown'):'';
+    if(ataAdminRosterFilter==='active'&&archivedN)t+=(t?' · ':'')+archivedN+' former hidden';
+    hint.textContent=t;
+  }
+  ataUpdateSelectedHint();
+  if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">'+(ataAdminRosterFilter==='archived'?'No former / archived technicians. Select people on Active ATA and click Archive selected.':'No technicians match the current filters.')+'</div>';return;}
+  const allChecked=rows.length&&rows.every(s=>ataSelected[s.tech.id]);
   const body=rows.map(s=>{
     const t=s.tech;
     const warn=s.status==='behind'?`<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#C0392B" onclick="ataEmailWarning(${t.id})">✉ Warn</button>`:'';
     return `<tr>
+      <td><input type="checkbox" ${ataSelected[t.id]?'checked':''} onchange="ataToggleSelect(${t.id},this.checked)" aria-label="Select ${adminEsc(t.name)}"></td>
       <td style="font-weight:700;color:#1B3A6B">${adminEsc(t.name)}</td>
       <td>${adminEsc(regionLabel(t.region))}</td>
       ${ataStartCell(s,'basic')}
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
-      <td>${ataStatusChip(s.status)}${s.totalFailed?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
+      <td>${ataStatusChip(s.status)}${s.totalFailed&&s.status!=='archived'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit&&s.status!=='archived'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
       <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">Report</button></td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<table class="report-table">
-    <thead><tr><th>Technician</th><th>Region</th><th>Basic start</th><th>Intermediate start</th><th>Advanced start</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th><input type="checkbox" ${allChecked?'checked':''} onchange="ataToggleSelectAll(this.checked)" title="Select all shown" aria-label="Select all shown"></th><th>Technician</th><th>Region</th><th>Basic start</th><th>Intermediate start</th><th>Advanced start</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${body}</tbody>
   </table>`;
 }
@@ -3285,9 +3345,11 @@ function onAtaAdminFilterChange(){
   const s=document.getElementById('ata-search');
   const r=document.getElementById('ata-region');
   const st=document.getElementById('ata-status');
+  const roster=document.getElementById('ata-roster');
   ataAdminSearch=s?s.value:'';
   ataAdminRegion=r?r.value:'';
   ataAdminStatusFilter=st?st.value:'';
+  ataAdminRosterFilter=roster?roster.value:'active';
   ataRenderAdmin();
 }
 
@@ -3354,7 +3416,7 @@ Training Team`;
 }
 
 // ── PDF helpers (shared ATA styling) ─────────────────────────────────────────
-function ataStatusRank(status){return status==='behind'?0:status==='not_started'?1:status==='on_track'?2:3;}
+function ataStatusRank(status){return status==='behind'?0:status==='not_started'?1:status==='on_track'?2:status==='archived'?4:3;}
 function ataHexRgb(hex){
   const h=String(hex||'#888888').replace('#','');
   return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
@@ -3487,7 +3549,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
 async function ataDownloadWeeklyReport(scope){
   let summaries,scopeLabel;
   if(scope==='pm'){
-    summaries=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary);
+    summaries=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>!ataIsArchived(s.tech));
     scopeLabel='Region: '+regionLabel(currentRegion);
   }else{
     summaries=ataFilteredAdminTechs();
@@ -3773,6 +3835,7 @@ function renderPmAta(){
   const wrap=document.getElementById('pm-ata-wrap');if(!wrap)return;
   const q=ataPmSearch.trim().toLowerCase();
   const rows=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>{
+    if(ataIsArchived(s.tech))return false;
     if(ataPmStatusFilter&&s.status!==ataPmStatusFilter)return false;
     if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
     return true;
@@ -4378,13 +4441,15 @@ function openAdmin(){
   reportTableOpen.activity=false;
   reportTableOpen.preboot=false;
   reportTableOpen.nebb=false;
-  ataAdminSearch='';ataAdminRegion='';ataAdminStatusFilter='';
+  ataAdminSearch='';ataAdminRegion='';ataAdminStatusFilter='';ataAdminRosterFilter='active';ataSelected={};
   const ataSearchEl=document.getElementById('ata-search');
   const ataRegionEl=document.getElementById('ata-region');
   const ataStatusEl=document.getElementById('ata-status');
+  const ataRosterEl=document.getElementById('ata-roster');
   if(ataSearchEl)ataSearchEl.value='';
   if(ataRegionEl)ataRegionEl.innerHTML=ataRegionOptionsHtml('');
   if(ataStatusEl)ataStatusEl.value='';
+  if(ataRosterEl)ataRosterEl.value='active';
   ataSetImportStatus('');
   ataShowFallback(false);
   const ataWebhookBox=document.getElementById('ata-webhook-box');
