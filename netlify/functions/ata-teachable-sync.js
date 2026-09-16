@@ -171,9 +171,107 @@ async function ingest(secret, rows) {
   return { applied, matched, unmatched };
 }
 
+async function ingestEnrollments(secret, rows) {
+  if (!rows.length) return { created: 0, matched: 0, starts: 0, skipped: 0 };
+  const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/app_ata_import_enrollments';
+  const res = await requestJson('POST', url, {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  }, { p_secret: secret, p_rows: rows });
+  const data = res.json;
+  if (res.status < 200 || res.status >= 300 || !data || data.ok === false) {
+    throw new Error((data && (data.error || data.message || data.hint)) || ('Enrollment ingest HTTP ' + res.status + ' ' + String(res.text || '').slice(0, 180)));
+  }
+  return {
+    created: data.created || 0,
+    matched: data.matched || 0,
+    starts: data.starts || 0,
+    skipped: data.skipped || 0,
+  };
+}
+
+function unwrapUser(payload) {
+  if (!payload) return {};
+  if (payload.user) return payload.user;
+  if (payload.users && payload.users[0]) return payload.users[0];
+  return payload;
+}
+
+async function fetchCourseEnrollments(apiKey, courseId) {
+  const out = [];
+  let page = 1;
+  for (;;) {
+    const payload = await teachableGet(apiKey, '/courses/' + courseId + '/enrollments?per=50&page=' + page);
+    const rows = (payload && payload.enrollments) || [];
+    out.push.apply(out, rows);
+    const pages = (payload && payload.meta && payload.meta.number_of_pages) || 1;
+    if (page >= pages || !rows.length) break;
+    page += 1;
+  }
+  return out;
+}
+
+// Starter courses only — enrollment here starts the ATA clock for that module.
+const STARTER_COURSES = [
+  { course_id: 1396989, program: 'basic' },
+  { course_id: 1410152, program: 'intermediate' },
+  { course_id: 1410431, program: 'advanced' },
+];
+
+async function collectEnrollments(apiKey) {
+  const byUser = {};
+  for (const course of STARTER_COURSES) {
+    let enrollments = [];
+    try {
+      enrollments = await fetchCourseEnrollments(apiKey, course.course_id);
+    } catch (e) {
+      console.error('enrollments failed', course.course_id, e && e.message);
+      continue;
+    }
+    for (const en of enrollments) {
+      const uid = String(en.user_id || '');
+      if (!uid) continue;
+      if (!byUser[uid]) byUser[uid] = [];
+      byUser[uid].push({ program: course.program, enrolled_at: en.enrolled_at || null });
+    }
+  }
+  const ids = Object.keys(byUser);
+  const rows = [];
+  await mapPool(ids, 4, async (uid) => {
+    try {
+      const raw = await teachableGet(apiKey, '/users/' + uid);
+      const user = unwrapUser(raw);
+      const email = user.email || '';
+      const name = user.name || '';
+      const role = String(user.role || 'student').toLowerCase();
+      if (role && role !== 'student' && role !== 'custom') return;
+      const earliest = {};
+      byUser[uid].forEach((row) => {
+        const prev = earliest[row.program];
+        if (!prev || (row.enrolled_at && row.enrolled_at < prev)) earliest[row.program] = row.enrolled_at;
+      });
+      Object.keys(earliest).forEach((program) => {
+        rows.push({ email, name, program, enrolled_at: earliest[program] });
+      });
+    } catch (e) {
+      console.error('user failed', uid, e && e.message);
+    }
+  });
+  return rows;
+}
+
 async function runSync(apiKey, secret) {
   const probe = await teachableGet(apiKey, '/courses?per=1');
   if (!probe || !probe.courses) throw new Error('Teachable login failed — check TEACHABLE_API_KEY on Netlify.');
+
+  let enroll = { created: 0, matched: 0, starts: 0, skipped: 0 };
+  try {
+    enroll = await ingestEnrollments(secret, await collectEnrollments(apiKey));
+  } catch (e) {
+    console.error('enrollment import failed', e && e.message);
+    enroll.error = (e && e.message) || String(e);
+  }
 
   const all = [];
   let quizErrors = 0;
@@ -202,6 +300,9 @@ async function runSync(apiKey, secret) {
     applied: result.applied,
     matched: result.matched,
     unmatched: result.unmatched,
+    enrolledCreated: enroll.created,
+    enrolledStarts: enroll.starts,
+    enrollError: enroll.error || null,
   };
 }
 
