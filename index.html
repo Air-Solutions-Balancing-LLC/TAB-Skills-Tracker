@@ -873,7 +873,7 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong> — not from the first quiz. Deadlines are that week’s <strong>Friday</strong>. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong> — not from the first quiz. Deadlines are that week’s <strong>Thursday</strong>; the PDF is run on Friday. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
@@ -1114,7 +1114,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="pm-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Weekly digital ATA progress — one lesson per week, due each Friday</div></div>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Weekly digital ATA progress — one lesson per week, due each Thursday</div></div>
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">📄 Region Report PDF</button>
         </div>
         <div class="page-body">
@@ -2822,13 +2822,14 @@ async function ensureAtaCurriculum(){
 function ataToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function ataIsSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
 
-// One lesson per week; each lesson is due the Friday of its week. Week 1's Friday
-// is the first Friday on or after the program start date.
-function ataFridayDeadline(startISO,weekIndex){
+// One lesson per week; each lesson is due the Thursday of its week. Week 1's
+// Thursday is the first Thursday on or after the program start date. The
+// weekly PDF is generated on Friday.
+function ataLessonDeadline(startISO,weekIndex){
   const d=parseDateOnly(startISO);
   if(!d)return null;
-  const daysUntilFri=(5-d.getDay()+7)%7;
-  const first=new Date(d.getFullYear(),d.getMonth(),d.getDate()+daysUntilFri);
+  const daysUntilThu=(4-d.getDay()+7)%7;
+  const first=new Date(d.getFullYear(),d.getMonth(),d.getDate()+daysUntilThu);
   return new Date(first.getFullYear(),first.getMonth(),first.getDate()+(Math.max(1,weekIndex)-1)*7);
 }
 
@@ -2919,7 +2920,7 @@ function ataProgramStatus(tech,program,today){
     const overLimit=resets>=ATA_MAX_RESETS;
     if(isFailed)failed++;
     if(isFailed&&overLimit)atLimit++;
-    const dl=start?ataFridayDeadline(start,l.week_index):null;
+    const dl=start?ataLessonDeadline(start,l.week_index):null;
     let st='upcoming';
     if(done){completed++;st='complete';}
     else if(isFailed){st='failed';if(start&&dl&&!(dl<today&&!ataIsSameDay(dl,today))){if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};}if(start&&dl&&dl<today&&!ataIsSameDay(dl,today)){overdue++;overdueList.push({lesson:l,deadline:dl});}}
@@ -3447,7 +3448,7 @@ function ataEmailWarning(techId){
   const body=
 `Hi ${first},
 
-I'm reaching out about your ATA training progress. Our records show you're currently behind on your assigned lessons. The ATA program is one lesson per week, with each lesson due by that Friday.
+I'm reaching out about your ATA training progress. Our records show you're currently behind on your assigned lessons. The ATA program is one lesson per week, with each lesson due by that Thursday.
 
 Overdue lesson${overdue.length===1?'':'s'} to complete as soon as possible:
 ${lines.join('\n')}
@@ -3962,7 +3963,7 @@ function renderTechAta(tech){
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
   if(s.totalFailed)alerts.push(`❌ ${s.totalFailed} failed (need ≥${ATA_PASS_PCT}% to pass)`);
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Friday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month</div></div>
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month</div></div>
     ${ataStatusChip(s.status)}</div>
     ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
   </div>`;
