@@ -187,20 +187,20 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.app_ata_set_archived(p_tech_ids bigint[], p_archived boolean)
+DROP FUNCTION IF EXISTS public.app_ata_set_archived(bigint[], boolean);
+
+CREATE OR REPLACE FUNCTION public.app_ata_set_archived(p_tech_id bigint, p_archived boolean)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO public
 AS $$
-DECLARE
-  v_n int := 0;
 BEGIN
   IF NOT app_is_admin() THEN
     RAISE EXCEPTION 'Not authorized';
   END IF;
-  IF p_tech_ids IS NULL OR coalesce(array_length(p_tech_ids, 1), 0) = 0 THEN
-    RETURN json_build_object('ok', true, 'updated', 0);
+  IF p_tech_id IS NULL THEN
+    RETURN json_build_object('ok', false, 'error', 'missing_tech');
   END IF;
 
   UPDATE technicians
@@ -208,15 +208,17 @@ BEGIN
            WHEN p_archived THEN coalesce(ata_archived_at, now())
            ELSE NULL
          END
-   WHERE id = ANY (p_tech_ids)
+   WHERE id = p_tech_id
      AND deleted_at IS NULL;
 
-  GET DIAGNOSTICS v_n = ROW_COUNT;
-  RETURN json_build_object('ok', true, 'updated', v_n);
+  IF NOT FOUND THEN
+    RETURN json_build_object('ok', false, 'error', 'not_found');
+  END IF;
+  RETURN json_build_object('ok', true, 'updated', 1);
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.app_ata_roster_json(text)              TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_ata_tech_data(text)                TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.app_ata_infer_starts()                 TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_ata_set_archived(bigint[], boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_ata_roster_json(text)                 TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_ata_tech_data(text)                   TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_ata_infer_starts()                    TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_ata_set_archived(bigint, boolean)     TO anon, authenticated;
