@@ -63,7 +63,10 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.app_checklist_rate(text, text, int) TO authenticated;
 
--- Techs currently required for Pre-Bootcamp (≤100 days employed AND before bootcamp start)
+-- Techs who have not started bootcamp yet:
+--   include when bootcamp_start_date is blank OR today (ET) is before that date
+--   exclude when today (ET) is on/after bootcamp_start_date
+-- Untaken assessments still appear (progress 0 / Not Yet).
 CREATE OR REPLACE FUNCTION public.app_admin_pre_bootcamp_report()
 RETURNS json
 LANGUAGE plpgsql
@@ -74,6 +77,7 @@ AS $$
 DECLARE
   v_result json;
   v_total  int;
+  v_today  date := (timezone('America/New_York', now()))::date;
 BEGIN
   IF NOT app_is_admin() THEN
     RAISE EXCEPTION 'Not authorized';
@@ -97,7 +101,7 @@ BEGIN
       t.bootcamp_start_date,
       CASE
         WHEN t.start_date IS NULL THEN NULL
-        ELSE (current_date - t.start_date::date)::int
+        ELSE (v_today - t.start_date::date)::int
       END AS days_employed,
       CASE
         WHEN coalesce(v_total, 0) = 0 THEN 0
@@ -125,16 +129,14 @@ BEGIN
       (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date AS last_update_date,
       CASE
         WHEN t.pre_bootcamp_updated_at IS NULL THEN NULL
-        ELSE (current_date - (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date)::int
+        ELSE (v_today - (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date)::int
       END AS days_since_update
     FROM public.technicians t
     JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'
     WHERE t.deleted_at IS NULL
-      AND t.start_date IS NOT NULL
-      AND (current_date - t.start_date::date) <= 100
       AND (
         t.bootcamp_start_date IS NULL
-        OR current_date < t.bootcamp_start_date::date
+        OR v_today < t.bootcamp_start_date::date
       )
   ) x;
 

@@ -741,6 +741,7 @@ body.mobile-nav-open{overflow:hidden}
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminActivityReport()">Refresh</button>
+                <button type="button" class="btn" style="background:#4A90D9" id="admin-report-preview-btn" onclick="previewAdminReportPdf()">Preview</button>
                 <button type="button" class="btn" id="admin-report-download-btn" onclick="downloadAdminReportPdf()">Download PDF</button>
               </div>
             </div>
@@ -778,10 +779,11 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-preboot" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('preboot')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Assessment Report</div>
-                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Required techs (≤100 days &amp; before bootcamp). Days in red if never taken or ≥7 days.</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs who have not started bootcamp (blank or future bootcamp start date). Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootReport()">Refresh</button>
+                <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-preview-btn" onclick="previewAdminPreBootReportPdf()">Preview</button>
                 <button type="button" class="btn" id="admin-preboot-download-btn" onclick="downloadAdminPreBootReportPdf()">Download PDF</button>
               </div>
             </div>
@@ -823,6 +825,7 @@ body.mobile-nav-open{overflow:hidden}
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminNebbReport()">Refresh</button>
+                <button type="button" class="btn" style="background:#4A90D9" id="admin-nebb-preview-btn" onclick="previewAdminNebbReportPdf()">Preview</button>
                 <button type="button" class="btn" id="admin-nebb-download-btn" onclick="downloadAdminNebbReportPdf()">Download PDF</button>
               </div>
             </div>
@@ -1303,6 +1306,22 @@ body.mobile-nav-open{overflow:hidden}
   </div>
 </div>
 
+<div class="assess-modal-overlay" id="admin-pdf-preview-modal" role="dialog" aria-modal="true" aria-labelledby="admin-pdf-preview-title" onclick="if(event.target===this)closeAdminPdfPreview()">
+  <div class="assess-modal" style="max-width:960px;width:96%;max-height:94vh;padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <h3 id="admin-pdf-preview-title" style="margin:0;font-size:17px">Report Preview</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn" style="background:#1B3A6B;padding:6px 12px" onclick="downloadAdminPdfPreview()">⬇ Download PDF</button>
+        <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="closeAdminPdfPreview()">Close</button>
+      </div>
+    </div>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Preview uses your current filters. Download saves the same PDF.</p>
+    <div style="flex:1;min-height:360px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
+      <iframe id="admin-pdf-preview-frame" style="width:100%;height:68vh;border:0;display:block" title="Admin report PDF preview"></iframe>
+    </div>
+  </div>
+</div>
+
 <script>
 // SKILL_CATS = scored sections with section averages (PM dashboards read these avg columns).
 // TECH_CATS  = every section incl. admin-added ones (technician views).
@@ -1773,12 +1792,13 @@ function preBootcampHasAnyRating(completed){
   if(!sec)return false;
   return sec.skills.some(sk=>getChecklistRating(completed,sk.id)>0);
 }
+function hasNotStartedBootcamp(t){
+  // Compare against bootcamp_start_date: blank or still in the future = not started.
+  return isBeforeBootcamp(t);
+}
 function shouldShowPreBootcampCta(t){
   if(!ratedChecklistSectionExists())return false;
-  const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
-  const prog=checklistProgress(completed);
-  if(prog.ratedPct<100)return true;
-  return isBeforeBootcamp(t);
+  return hasNotStartedBootcamp(t);
 }
 function updateTechPreBootcampNav(t,readOnly){
   const nav=document.getElementById('tech-preboot-nav');
@@ -4109,33 +4129,82 @@ function buildAdminActivityReportPdfDoc(rows,reportDateText){
   return doc;
 }
 
+let adminPdfPreviewDoc=null;
+let adminPdfPreviewUrl=null;
+let adminPdfPreviewFilename='report.pdf';
+function closeAdminPdfPreview(){
+  const modal=document.getElementById('admin-pdf-preview-modal');
+  const frame=document.getElementById('admin-pdf-preview-frame');
+  if(modal)modal.classList.remove('visible');
+  if(frame)frame.removeAttribute('src');
+  if(adminPdfPreviewUrl){
+    try{URL.revokeObjectURL(adminPdfPreviewUrl);}catch(e){}
+  }
+  adminPdfPreviewUrl=null;
+  adminPdfPreviewDoc=null;
+}
+function downloadAdminPdfPreview(){
+  if(!adminPdfPreviewDoc){
+    alert('Preview is not ready yet.');
+    return;
+  }
+  try{adminPdfPreviewDoc.save(adminPdfPreviewFilename||'report.pdf');}
+  catch(e){console.error(e);alert('Could not download PDF. Please try again.');}
+}
+async function openAdminPdfPreview(doc,title,filename){
+  const modal=document.getElementById('admin-pdf-preview-modal');
+  const frame=document.getElementById('admin-pdf-preview-frame');
+  const titleEl=document.getElementById('admin-pdf-preview-title');
+  if(!modal||!frame)throw new Error('Preview UI is missing');
+  if(adminPdfPreviewUrl){
+    try{URL.revokeObjectURL(adminPdfPreviewUrl);}catch(e){}
+  }
+  adminPdfPreviewDoc=doc;
+  adminPdfPreviewFilename=filename||'report.pdf';
+  adminPdfPreviewUrl=doc.output('bloburl');
+  if(titleEl)titleEl.textContent=title||'Report Preview';
+  frame.src=adminPdfPreviewUrl;
+  modal.classList.add('visible');
+}
+async function withAdminPdfBusy(btnId,busyLabel,fn){
+  const btn=document.getElementById(btnId);
+  const prevText=btn?btn.textContent:null;
+  if(btn){btn.disabled=true;btn.textContent=busyLabel;}
+  try{await fn();}
+  finally{if(btn){btn.disabled=false;btn.textContent=prevText;}}
+}
+
 async function downloadAdminReportPdf(){
   const rows=filteredAdminReportRows();
   if(!rows.length){
     alert(adminReportRows.length?'No technicians match the current filters.':'Load the report first.');
     return;
   }
-  const btn=document.getElementById('admin-report-download-btn');
-  const prevText=btn?btn.textContent:'Download PDF';
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='Generating PDF…';
-  }
-  const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
-  const reportDateText=fmtDateFull(reportDateIso);
-  try{
+  await withAdminPdfBusy('admin-report-download-btn','Generating PDF…',async()=>{
+    const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
     await ensureJsPdf();
-    const doc=buildAdminActivityReportPdfDoc(rows,reportDateText);
+    const doc=buildAdminActivityReportPdfDoc(rows,fmtDateFull(reportDateIso));
     doc.save(adminReportPdfFilename(reportDateIso));
-  }catch(e){
+  }).catch(e=>{
     console.error('Admin report PDF export failed:',e);
     alert('Could not create PDF. Please try again.');
-  }finally{
-    if(btn){
-      btn.disabled=false;
-      btn.textContent=prevText;
-    }
+  });
+}
+async function previewAdminReportPdf(){
+  const rows=filteredAdminReportRows();
+  if(!rows.length){
+    alert(adminReportRows.length?'No technicians match the current filters.':'Load the report first.');
+    return;
   }
+  await withAdminPdfBusy('admin-report-preview-btn','Preparing…',async()=>{
+    const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminActivityReportPdfDoc(rows,fmtDateFull(reportDateIso));
+    await openAdminPdfPreview(doc,'Technician Activity Report Preview',adminReportPdfFilename(reportDateIso));
+  }).catch(e=>{
+    console.error('Admin report PDF preview failed:',e);
+    alert('Could not preview PDF. Please try again.');
+  });
 }
 
 function filteredAdminPreBootRows(){
@@ -4152,7 +4221,7 @@ function updateAdminPreBootFilterHint(shown,total){
   if(!hint)return;
   if(!total){hint.textContent='';return;}
   if(shown===total&&!adminPreBootSearch.trim()&&!adminPreBootRegion){
-    hint.textContent=total+' required technician'+(total===1?'':'s');
+    hint.textContent=total+' technician'+(total===1?'':'s')+' who have not started bootcamp';
     return;
   }
   hint.textContent='Showing '+shown+' of '+total;
@@ -4164,14 +4233,20 @@ function onAdminPreBootFilterChange(){
   adminPreBootRegion=regionEl?regionEl.value:'';
   renderAdminPreBootReport();
 }
+function adminPreBootProgressLabel(r){
+  const never=!r.last_update_date;
+  const pct=r.progress_pct===null||r.progress_pct===undefined?null:Number(r.progress_pct);
+  if(never||pct===0||pct===null||Number.isNaN(pct))return 'Not Yet';
+  return pct+'%';
+}
 function buildAdminPreBootTableHtml(rows){
-  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians are currently required for Pre-Bootcamp (or none match filters).</div>';
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians who have not started bootcamp (or none match filters).</div>';
   const body=rows.map(r=>{
-    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Not Yet';
     const days=r.days_since_update;
     const daysText=days===null||days===undefined?'—':String(days);
     const daysCls=reportPreBootDaysClass(days);
-    const pct=r.progress_pct===null||r.progress_pct===undefined?'—':String(r.progress_pct)+'%';
+    const pct=adminPreBootProgressLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
     return `<tr>
       <td>${adminEsc(r.name)}</td>
@@ -4211,7 +4286,7 @@ async function loadAdminPreBootReport(){
     wrap.innerHTML='';
     updateAdminPreBootFilterHint(0,0);
     if(err){
-      err.textContent='Could not load report. '+(e.message||'Run supabase/pre-bootcamp-report.sql in Supabase.');
+      err.textContent='Could not load report. Run supabase/pre-bootcamp-report.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
       err.style.display='block';
     }
     return;
@@ -4271,17 +4346,17 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     'Report date: '+reportDateText,
     adminPreBootSearch.trim()?('Search: '+adminPreBootSearch.trim()):'',
     adminPreBootRegion?('Region: '+regionLabel(adminPreBootRegion)):'',
-    'Required techs only · Days red if never or ≥7',
+    'Only techs who have not started bootcamp · Untaken = Not Yet · Days red if never or ≥7',
     'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
   ].filter(Boolean).join('  ·  ');
   doc.splitTextToSize(pdfSafeText(filterNote),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
   y+=10;
   drawTableHeader();
   rows.forEach((r,idx)=>{
-    const last=r.last_update_date?fmtDate(r.last_update_date):'Never';
+    const last=r.last_update_date?fmtDate(r.last_update_date):'Not Yet';
     const days=r.days_since_update;
     const daysText=days===null||days===undefined?'—':String(days);
-    const pct=r.progress_pct===null||r.progress_pct===undefined?'—':String(r.progress_pct)+'%';
+    const pct=adminPreBootProgressLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
     const values=[
       pdfSafeText(r.name),
@@ -4319,21 +4394,31 @@ async function downloadAdminPreBootReportPdf(){
     alert(adminPreBootRows.length?'No technicians match the current filters.':'Load the report first.');
     return;
   }
-  const btn=document.getElementById('admin-preboot-download-btn');
-  const prevText=btn?btn.textContent:'Download PDF';
-  if(btn){btn.disabled=true;btn.textContent='Generating PDF…';}
-  const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
-  const reportDateText=fmtDateFull(reportDateIso);
-  try{
+  await withAdminPdfBusy('admin-preboot-download-btn','Generating PDF…',async()=>{
+    const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
     await ensureJsPdf();
-    const doc=buildAdminPreBootReportPdfDoc(rows,reportDateText);
+    const doc=buildAdminPreBootReportPdfDoc(rows,fmtDateFull(reportDateIso));
     doc.save(adminPreBootPdfFilename(reportDateIso));
-  }catch(e){
+  }).catch(e=>{
     console.error('Pre-Bootcamp report PDF export failed:',e);
     alert('Could not create PDF. Please try again.');
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent=prevText;}
+  });
+}
+async function previewAdminPreBootReportPdf(){
+  const rows=filteredAdminPreBootRows();
+  if(!rows.length){
+    alert(adminPreBootRows.length?'No technicians match the current filters.':'Load the report first.');
+    return;
   }
+  await withAdminPdfBusy('admin-preboot-preview-btn','Preparing…',async()=>{
+    const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminPreBootReportPdfDoc(rows,fmtDateFull(reportDateIso));
+    await openAdminPdfPreview(doc,'Pre-Bootcamp Assessment Report Preview',adminPreBootPdfFilename(reportDateIso));
+  }).catch(e=>{
+    console.error('Pre-Bootcamp report PDF preview failed:',e);
+    alert('Could not preview PDF. Please try again.');
+  });
 }
 
 function adminNebbPdfFilename(reportDateIso){
@@ -4441,20 +4526,31 @@ async function downloadAdminNebbReportPdf(){
     alert(adminNebbRows.length?'No certified employees match the current filters.':'Load the report first.');
     return;
   }
-  const btn=document.getElementById('admin-nebb-download-btn');
-  const prevText=btn?btn.textContent:'Download PDF';
-  if(btn){btn.disabled=true;btn.textContent='Generating PDF…';}
-  const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
-  try{
+  await withAdminPdfBusy('admin-nebb-download-btn','Generating PDF…',async()=>{
+    const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
     await ensureJsPdf();
     const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
     doc.save(adminNebbPdfFilename(iso));
-  }catch(e){
+  }).catch(e=>{
     console.error('NEBB report PDF export failed:',e);
     alert('Could not create PDF. Please try again.');
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent=prevText;}
+  });
+}
+async function previewAdminNebbReportPdf(){
+  const rows=filteredAdminNebbRows();
+  if(!rows.length){
+    alert(adminNebbRows.length?'No certified employees match the current filters.':'Load the report first.');
+    return;
   }
+  await withAdminPdfBusy('admin-nebb-preview-btn','Preparing…',async()=>{
+    const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
+    await openAdminPdfPreview(doc,'NEBB Certified Report Preview',adminNebbPdfFilename(iso));
+  }).catch(e=>{
+    console.error('NEBB report PDF preview failed:',e);
+    alert('Could not preview PDF. Please try again.');
+  });
 }
 
 function openAdmin(){
@@ -4941,7 +5037,7 @@ function requiredAssessmentSections(t){
   };
   const checklist=days!==null&&days<10
     ?['orientation']
-    :(days!==null&&days<=100&&isBeforeBootcamp(t)?['pre_bootcamp']:[]);
+    :(hasNotStartedBootcamp(t)?['pre_bootcamp']:[]);
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,

@@ -1,53 +1,6 @@
--- REPLACE Pre-Bootcamp skills (34 items, including Key Grille Balancing Concept).
--- This is a full replacement of the pre_bootcamp section — not an addition.
--- Run in Supabase -> SQL Editor. Safe to re-run.
---
--- What it does:
---   1) Merges old pb2 progress into pb1 (if still present)
---   2) Upserts the 34 canonical skills (names/categories/order)
---   3) Deletes ANY other skills in the Pre-Bootcamp section
---   4) Strips removed skill codes from technicians.checklist_completed
+-- Add Pre-Bootcamp #14: Key Grille Balancing Concept (GRILLE BALANCING).
+-- Safe to re-run: upserts pb35 and resets absolute sort_order for the list.
 
--- 1) Merge pb2 progress into pb1 (keep the higher rating), then strip pb2 keys
-UPDATE public.technicians t
-SET checklist_completed = (
-  CASE
-    WHEN COALESCE(
-      CASE WHEN jsonb_typeof(t.checklist_completed->'pb1') = 'number'
-           THEN (t.checklist_completed->>'pb1')::int
-           WHEN (t.checklist_completed->>'pb1') = 'true' THEN 2 ELSE 0 END, 0
-    ) >= COALESCE(
-      CASE WHEN jsonb_typeof(t.checklist_completed->'pb2') = 'number'
-           THEN (t.checklist_completed->>'pb2')::int
-           WHEN (t.checklist_completed->>'pb2') = 'true' THEN 2 ELSE 0 END, 0
-    )
-    THEN COALESCE(t.checklist_completed, '{}'::jsonb)
-    ELSE COALESCE(t.checklist_completed, '{}'::jsonb)
-         || jsonb_build_object(
-              'pb1',
-              CASE WHEN jsonb_typeof(t.checklist_completed->'pb2') = 'number'
-                   THEN (t.checklist_completed->'pb2')
-                   WHEN (t.checklist_completed->>'pb2') = 'true' THEN '2'::jsonb
-                   ELSE '0'::jsonb END
-            )
-  END
-) - 'pb2'
-WHERE t.checklist_completed ? 'pb2';
-
--- Canonical skill codes for the replacement list
-CREATE TEMP TABLE IF NOT EXISTS _pb_keep (code text PRIMARY KEY);
-TRUNCATE _pb_keep;
-INSERT INTO _pb_keep (code) VALUES
-  ('pb1'),('pb3'),('pb4'),('pb5'),('pb6'),('pb7'),('pb8'),
-  ('pb9'),('pb11'),('pb12'),('pb13'),('pb14'),('pb10'),
-  ('pb35'),
-  ('pb33'),('pb34'),
-  ('pb15'),('pb16'),('pb17'),('pb18'),('pb19'),('pb20'),
-  ('pb21'),('pb22'),('pb23'),
-  ('pb24'),('pb25'),('pb26'),('pb27'),('pb28'),('pb29'),
-  ('pb30'),('pb31'),('pb32');
-
--- 2) Upsert the replacement list (reactivate if previously inactive)
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order, active)
 SELECT v.code, sec.id, v.cat, v.name, v.ord, true
 FROM (VALUES
@@ -94,47 +47,8 @@ ON CONFLICT (skill_code) DO UPDATE SET
   sort_order = EXCLUDED.sort_order,
   active     = true;
 
--- 3) Strip removed Pre-Bootcamp keys from technician progress JSON
-DO $$
-DECLARE
-  r record;
-  v_code text;
-  v_json jsonb;
-BEGIN
-  FOR r IN
-    SELECT t.id, t.checklist_completed
-    FROM public.technicians t
-    WHERE t.checklist_completed IS NOT NULL
-      AND t.checklist_completed <> '{}'::jsonb
-  LOOP
-    v_json := r.checklist_completed;
-    FOR v_code IN
-      SELECT key
-      FROM jsonb_object_keys(r.checklist_completed) AS key
-      WHERE key LIKE 'pb%'
-        AND key NOT IN (SELECT code FROM _pb_keep)
-    LOOP
-      v_json := v_json - v_code;
-    END LOOP;
-    IF v_json IS DISTINCT FROM r.checklist_completed THEN
-      UPDATE public.technicians
-      SET checklist_completed = v_json
-      WHERE id = r.id;
-    END IF;
-  END LOOP;
-END $$;
-
--- 4) Delete every Pre-Bootcamp skill that is NOT on the replacement list
-DELETE FROM public.skills sk
-USING public.skill_sections sec
-WHERE sk.section_id = sec.id
-  AND sec.skey = 'pre_bootcamp'
-  AND sk.skill_code NOT IN (SELECT code FROM _pb_keep);
-
-DROP TABLE IF EXISTS _pb_keep;
-
--- Verify: should return exactly 34 active Pre-Bootcamp skills
--- SELECT sk.skill_code, sk.category, sk.name, sk.sort_order
+-- Verify: should return 34 active Pre-Bootcamp skills with pb35 at sort_order 14
+-- SELECT sk.sort_order, sk.skill_code, sk.category, sk.name
 -- FROM public.skills sk
 -- JOIN public.skill_sections sec ON sec.id = sk.section_id
 -- WHERE sec.skey = 'pre_bootcamp' AND sk.active
