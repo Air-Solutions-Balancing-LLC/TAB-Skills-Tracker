@@ -137,6 +137,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .report-table th{text-align:left;padding:10px 12px;background:#EEF4FF;color:#1B3A6B;font-weight:700;border-bottom:1px solid #dce7fb;white-space:nowrap}
 .report-table td{padding:9px 12px;border-bottom:1px solid #eee;color:#1a1a2e}
 .report-table tr:last-child td{border-bottom:none}
+.ttb-grid{width:100%;border-collapse:collapse;font-size:11px}
+.ttb-grid th,.ttb-grid td{padding:5px 6px;border-bottom:1px solid #eee;white-space:nowrap;text-align:center}
+.ttb-grid th{background:#EEF4FF;color:#1B3A6B;font-weight:700}
+.ttb-grid th.ttb-name,.ttb-grid td.ttb-name{text-align:left;position:sticky;left:0;background:#f7f9fc;min-width:140px;z-index:1}
+.ttb-grid th.ttb-name{background:#EEF4FF}
+.ttb-grid .ttb-on{background:#c6f6d5;color:#22543d;font-weight:700}
+.ttb-grid .ttb-late{background:#fefcbf;color:#744210;font-weight:700}
+.ttb-grid .ttb-abs{background:#fff5f5;color:#c53030}
+.ttb-grid .ttb-exc{background:#fefcbf;color:#975a16}
+.ttb-grid .ttb-na{background:#f7fafc;color:#a0aec0}
+.ttb-grid .ttb-opt{font-style:italic;color:#718096}
+.ttb-grid tr.ttb-tot td{background:#ebf8ff;font-weight:700;color:#2b6cb0}
+.ttb-cell-btn{border:none;background:transparent;cursor:pointer;font:inherit;color:inherit;padding:0;min-width:42px}
+.ttb-topics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:800px){.ttb-topics{grid-template-columns:1fr}}
+.ttb-topic-item{font-size:12px;padding:8px 0;border-bottom:1px solid #eee}
+.ttb-topic-date{font-size:11px;color:#888;font-weight:700}
 .report-table tbody tr:hover td{background:#fff}
 .report-table td.days-green{color:#0F6E56!important;font-weight:700}
 .report-table td.days-yellow{color:#C9A000!important;font-weight:700}
@@ -865,6 +882,50 @@ body.mobile-nav-open{overflow:hidden}
               <div class="report-filter-hint" id="admin-nebb-filter-hint"></div>
               <div class="report-wrap" id="admin-nebb-report-wrap">
                 <div class="admin-empty" style="padding:12px">Loading…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-sec">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-ttb" aria-expanded="false" onclick="toggleAdminSection('ttb')">
+          <span class="admin-sec-chevron">▼</span> TTB Attendance
+        </button>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-ttb">
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Training Touch Base — Thursday 2:00 PM. Admin only. Sync pulls Teams attendance after the meeting; upload the existing workbook or a Teams CSV anytime. On time = joined by 2:05. Late = after 2:05. Click a cell to mark excused or add a note.</div>
+          <div class="admin-add">
+            <input id="ttb-organizer" type="email" placeholder="Organizer email (who created the Teams meeting)">
+            <input id="ttb-join-url" type="url" placeholder="Teams join link">
+            <button type="button" class="btn" style="background:#1B3A6B" onclick="ttbSaveSettings()">Save settings</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px">
+            <button type="button" class="btn" id="ttb-sync-btn" style="background:#0F6E56" onclick="ttbSyncFromTeams()">↻ Sync from Teams</button>
+            <button type="button" class="btn" style="background:#4A90D9" onclick="document.getElementById('ttb-sheet-file').click()">⬆ Upload TTB spreadsheet</button>
+            <button type="button" class="btn" style="background:#888" onclick="document.getElementById('ttb-csv-file').click()">⬆ Upload Teams CSV</button>
+            <input type="file" id="ttb-sheet-file" accept=".xlsx,.xls" onchange="ttbImportWorkbook(this)" style="display:none">
+            <input type="file" id="ttb-csv-file" accept=".xlsx,.xls,.csv,text/csv" onchange="ttbImportTeamsCsv(this)" style="display:none">
+            <span id="ttb-last-sync" style="font-size:11px;color:#888"></span>
+          </div>
+          <div id="ttb-status" style="font-size:12px;margin:4px 0 8px;min-height:16px"></div>
+          <div class="report-wrap" id="ttb-grid-wrap"><div class="admin-empty" style="padding:12px">Loading…</div></div>
+          <div class="ttb-topics" style="margin-top:14px">
+            <div>
+              <div class="report-title" style="margin-bottom:6px">Content topics</div>
+              <div id="ttb-topics-content"></div>
+              <div class="admin-add" style="border:none;padding-top:8px;margin-top:8px">
+                <input id="ttb-new-content-date" placeholder="Date (e.g. 9/17/2026)">
+                <input id="ttb-new-content-body" placeholder="Topic">
+                <button type="button" class="btn" onclick="ttbAddTopic('content')">Add</button>
+              </div>
+            </div>
+            <div>
+              <div class="report-title" style="margin-bottom:6px">Process decisions</div>
+              <div id="ttb-topics-decision"></div>
+              <div class="admin-add" style="border:none;padding-top:8px;margin-top:8px">
+                <input id="ttb-new-decision-date" placeholder="Date">
+                <input id="ttb-new-decision-body" placeholder="Decision / reminder">
+                <button type="button" class="btn" onclick="ttbAddTopic('decision')">Add</button>
               </div>
             </div>
           </div>
@@ -2308,7 +2369,7 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
-const adminSecOpen={ata:false,admins:false,pms:false,techs:false,deleted:false};
+const adminSecOpen={ttb:false,ata:false,admins:false,pms:false,techs:false,deleted:false};
 const reportTableOpen={activity:false,preboot:false,nebb:false};
 
 function toggleReportTable(key){
@@ -3104,6 +3165,357 @@ function ataSetImportStatus(msg,kind){
 function ataShowFallback(show){
   const el=document.getElementById('ata-import-fallback');
   if(el)el.style.display=show?'block':'none';
+}
+
+let ttbData=null;
+
+function ttbSetStatus(msg,kind){
+  const el=document.getElementById('ttb-status');
+  if(!el)return;
+  el.textContent=msg||'';
+  el.style.color=kind==='err'?'#C0392B':kind==='ok'?'#0F6E56':'#555';
+}
+
+function ttbJoinLocal(ts){
+  if(!ts)return '';
+  const d=new Date(ts);
+  if(Number.isNaN(d.getTime()))return '';
+  return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}).format(d);
+}
+
+function ttbParseClock(s){
+  const m=String(s||'').trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?$/i);
+  if(!m)return '';
+  let h=+m[1];
+  const ap=(m[4]||'').toUpperCase();
+  if(ap==='PM'&&h<12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return String(h).padStart(2,'0')+':'+m[2]+':'+(m[3]||'00');
+}
+
+function ttbSheetDate(label,year){
+  const m=String(label||'').trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if(!m)return '';
+  const y=m[3]?(m[3].length===2?2000+(+m[3]):+m[3]):year;
+  return y+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
+}
+
+function ttbAttended(status){
+  return status==='on_time'||status==='late';
+}
+
+async function ttbLoadAdmin(){
+  const wrap=document.getElementById('ttb-grid-wrap');
+  if(wrap&&!ttbData)wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  try{
+    ttbData=await rpc('app_admin_ttb_data',{})||null;
+  }catch(e){
+    if(wrap)wrap.innerHTML='<div class="admin-empty" style="padding:12px">Run <strong>supabase/ttb.sql</strong> in Supabase, then refresh.</div>';
+    ttbSetStatus('TTB is not installed yet. Paste supabase/ttb.sql in the SQL Editor.','err');
+    return;
+  }
+  ttbRender();
+}
+
+function ttbRender(){
+  if(!ttbData)return;
+  const s=ttbData.settings||{};
+  const org=document.getElementById('ttb-organizer');
+  const url=document.getElementById('ttb-join-url');
+  if(org&&document.activeElement!==org)org.value=s.organizer_email||'';
+  if(url&&document.activeElement!==url)url.value=s.meeting_join_url||'';
+  const last=ttbData.last_sync;
+  const lastEl=document.getElementById('ttb-last-sync');
+  if(lastEl){
+    lastEl.textContent=last&&last.ran_at
+      ?'Last sync: '+new Date(last.ran_at).toLocaleString()+(last.meeting_date?' · '+last.meeting_date:'')
+      :'No Teams sync yet';
+  }
+  ttbRenderGrid();
+  ttbRenderTopics();
+}
+
+function ttbRenderGrid(){
+  const wrap=document.getElementById('ttb-grid-wrap');
+  if(!wrap)return;
+  const sessions=(ttbData.sessions||[]).filter(s=>!s.cancelled).sort((a,b)=>String(a.meeting_date).localeCompare(String(b.meeting_date)));
+  const roster=(ttbData.roster||[]).slice().sort((a,b)=>Number(a.optional)-Number(b.optional)||String(a.display_name).localeCompare(String(b.display_name),undefined,{sensitivity:'base'}));
+  const byKey={};
+  (ttbData.attendance||[]).forEach(a=>{
+    if(a.roster_id)byKey[a.session_id+'|'+a.roster_id]=a;
+  });
+  if(!sessions.length){
+    wrap.innerHTML='<div class="admin-empty" style="padding:12px">No meetings yet. Sync from Teams, or upload your Recurring TTB Topic meeting spreadsheet.</div>';
+    return;
+  }
+  const meetPct=sessions.map(sess=>{
+    const expected=roster.filter(r=>r.expected&&!r.optional&&byKey[sess.id+'|'+r.id]);
+    const attended=expected.filter(r=>ttbAttended((byKey[sess.id+'|'+r.id]||{}).status));
+    return expected.length?Math.round(attended.length/expected.length*100):null;
+  });
+  const onPct=sessions.map(sess=>{
+    const attended=roster.filter(r=>r.expected&&!r.optional&&ttbAttended((byKey[sess.id+'|'+r.id]||{}).status));
+    const on=attended.filter(r=>(byKey[sess.id+'|'+r.id]||{}).status==='on_time');
+    return attended.length?Math.round(on.length/attended.length*100):null;
+  });
+  let html='<table class="ttb-grid"><thead><tr><th class="ttb-name">Technician</th>';
+  sessions.forEach(s=>{
+    const d=String(s.meeting_date).slice(5).replace('-','/');
+    html+='<th title="'+adminEsc(s.meeting_date+(s.topic?' · '+s.topic:''))+'">'+adminEsc(d)+'</th>';
+  });
+  html+='<th>Attended</th><th>Rate</th><th>On-time</th></tr></thead><tbody>';
+  roster.forEach(r=>{
+    let exp=0,att=0,on=0;
+    html+='<tr class="'+(r.optional?'ttb-opt':'')+'"><td class="ttb-name">'+adminEsc(r.display_name)+(r.optional?' <span style="font-size:10px">(optional)</span>':'')+'</td>';
+    sessions.forEach(sess=>{
+      const cell=byKey[sess.id+'|'+r.id];
+      if(!cell){html+='<td class="ttb-na"></td>';return;}
+      if(r.expected&&!r.optional)exp+=1;
+      const joined=ttbAttended(cell.status);
+      if(joined){att+=1;if(cell.status==='on_time')on+=1;}
+      const cls=cell.status==='on_time'?'ttb-on':cell.status==='late'?'ttb-late':cell.status==='excused'?'ttb-exc':'ttb-abs';
+      const label=cell.status==='absent'||cell.status==='excused'?'✗':(ttbJoinLocal(cell.first_join)||'✓');
+      html+='<td class="'+cls+'"><button type="button" class="ttb-cell-btn" title="'+adminEsc(cell.status+(cell.notes?' — '+cell.notes:''))+'" onclick="ttbEditCell('+sess.id+','+r.id+')">'+adminEsc(label)+'</button></td>';
+    });
+    const rate=exp?Math.round(att/exp*100):'';
+    const ot=att?Math.round(on/att*100):'';
+    html+='<td>'+(exp?att+' / '+exp:'')+'</td><td>'+(rate!==''?rate+'%':'')+'</td><td>'+(ot!==''?ot+'%':'')+'</td></tr>';
+  });
+  html+='<tr class="ttb-tot"><td class="ttb-name">Meeting attendance %</td>';
+  meetPct.forEach(p=>html+='<td>'+(p==null?'':p+'%')+'</td>');
+  html+='<td></td><td></td><td></td></tr><tr class="ttb-tot"><td class="ttb-name">Meeting on-time %</td>';
+  onPct.forEach(p=>html+='<td>'+(p==null?'':p+'%')+'</td>');
+  html+='<td></td><td></td><td></td></tr></tbody></table>';
+  wrap.innerHTML=html;
+}
+
+function ttbRenderTopics(){
+  ['content','decision'].forEach(kind=>{
+    const el=document.getElementById('ttb-topics-'+kind);
+    if(!el)return;
+    const rows=(ttbData.topics||[]).filter(t=>t.kind===kind);
+    if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
+    el.innerHTML=rows.map(t=>'<div class="ttb-topic-item"><div class="ttb-topic-date">'+adminEsc(t.occurred_on||'')+'</div><div>'+adminEsc(t.body)+' <button type="button" class="admin-cancel" onclick="ttbDeleteTopic('+t.id+')">Remove</button></div></div>').join('');
+  });
+}
+
+async function ttbSaveSettings(){
+  ttbSetStatus('Saving settings…');
+  try{
+    ttbData=await rpc('app_admin_ttb_save_settings',{
+      p_organizer_email:(document.getElementById('ttb-organizer').value||'').trim(),
+      p_meeting_join_url:(document.getElementById('ttb-join-url').value||'').trim()||null
+    });
+    ttbSetStatus('Settings saved. Sync from Teams needs this organizer email plus Azure permissions on Netlify.','ok');
+    ttbRender();
+  }catch(e){
+    ttbSetStatus('Could not save settings. Run supabase/ttb.sql first. '+(e.message||''),'err');
+  }
+}
+
+async function ttbAddTopic(kind){
+  const dateEl=document.getElementById(kind==='decision'?'ttb-new-decision-date':'ttb-new-content-date');
+  const bodyEl=document.getElementById(kind==='decision'?'ttb-new-decision-body':'ttb-new-content-body');
+  const body=(bodyEl&&bodyEl.value||'').trim();
+  if(!body)return;
+  try{
+    ttbData=await rpc('app_admin_ttb_upsert_topic',{
+      p_id:null,
+      p_kind:kind,
+      p_occurred_on:(dateEl&&dateEl.value||'').trim()||null,
+      p_body:body
+    });
+    if(dateEl)dateEl.value='';
+    if(bodyEl)bodyEl.value='';
+    ttbRender();
+  }catch(e){ttbSetStatus('Could not add topic. '+(e.message||''),'err');}
+}
+
+async function ttbDeleteTopic(id){
+  if(!confirm('Remove this topic?'))return;
+  try{
+    ttbData=await rpc('app_admin_ttb_delete_topic',{p_id:id});
+    ttbRender();
+  }catch(e){ttbSetStatus('Could not remove topic.','err');}
+}
+
+async function ttbEditCell(sessionId,rosterId){
+  const cell=(ttbData.attendance||[]).find(a=>a.session_id===sessionId&&a.roster_id===rosterId);
+  const next=prompt('Status for this meeting: on_time, late, absent, or excused', (cell&&cell.status)||'absent');
+  if(next==null)return;
+  const status=String(next).trim().toLowerCase().replace(' ','_');
+  if(!['on_time','late','absent','excused'].includes(status)){ttbSetStatus('Use on_time, late, absent, or excused.','err');return;}
+  const notes=prompt('Note (optional — e.g. jobsite / informed later)', (cell&&cell.notes)||'');
+  if(notes==null)return;
+  try{
+    ttbData=await rpc('app_admin_ttb_set_cell',{
+      p_session_id:sessionId,
+      p_roster_id:rosterId,
+      p_status:status,
+      p_notes:notes,
+      p_informed:status==='excused'
+    });
+    ttbRender();
+  }catch(e){ttbSetStatus('Could not update that cell. '+(e.message||''),'err');}
+}
+
+async function ttbSyncFromTeams(){
+  const btn=document.getElementById('ttb-sync-btn');
+  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
+  ttbSetStatus('Pulling Teams attendance…');
+  try{
+    if(!(ttbData&&ttbData.settings&&ttbData.settings.organizer_email)){
+      const typed=(document.getElementById('ttb-organizer')||{}).value||'';
+      if(typed.trim())await ttbSaveSettings();
+    }
+    let secret='';
+    try{secret=await rpc('app_ata_webhook_secret',{})||'';}
+    catch(e){throw new Error('Could not load the webhook secret. Run supabase/ata-attempts.sql first.');}
+    if(!secret)throw new Error('No webhook secret on file.');
+    const settings=(ttbData&&ttbData.settings)||{};
+    const res=await fetch('/.netlify/functions/ttb-teams-sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        secret,
+        organizer_email:settings.organizer_email||(document.getElementById('ttb-organizer').value||'').trim(),
+        meeting_join_url:settings.meeting_join_url||(document.getElementById('ttb-join-url').value||'').trim()
+      }),
+      cache:'no-store'
+    });
+    let data=null;try{data=await res.json();}catch(_){}
+    if(!res.ok||(data&&data.ok===false)){
+      const err=(data&&data.error)||('HTTP '+res.status);
+      if(/AZURE_TTB_CLIENT_SECRET|application access policy|Azure login/i.test(err)){
+        throw new Error(err+' IT still needs to add Graph permissions and the organizer policy. Until then, upload the Teams CSV.');
+      }
+      throw new Error(err);
+    }
+    await ttbLoadAdmin();
+    const n=((data&&data.imported)||[]).filter(x=>x&&x.ok!==false&&!x.skipped).length;
+    ttbSetStatus('Teams sync done'+(n?' — '+n+' meeting'+(n===1?'':'s')+' imported.':' — no new attendance report yet. Wait a few minutes after the call ends.'), 'ok');
+  }catch(e){
+    ttbSetStatus((e&&e.message)||'Teams sync failed.','err');
+  }
+  if(btn){btn.disabled=false;btn.textContent='↻ Sync from Teams';}
+}
+
+function ttbFindSheet(wb,re){
+  return (wb.SheetNames||[]).find(n=>re.test(n))||'';
+}
+
+async function ttbImportWorkbook(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  ttbSetStatus('Reading spreadsheet…');
+  try{
+    const XLSX=await ensureXlsx();
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+    const payload={roster:[],sessions:[],cells:[],topics:[]};
+    const year=2026;
+    const logName=ttbFindSheet(wb,/arrival|ttb arrival/i)||ttbFindSheet(wb,/ttb/i);
+    if(logName){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[logName],{header:1,raw:false,defval:''});
+      let headerIdx=rows.findIndex(r=>/technician/i.test(String(r[0]||'')));
+      if(headerIdx<0)headerIdx=4;
+      const header=rows[headerIdx]||[];
+      const dates=[];
+      for(let c=1;c<header.length;c++){
+        const d=ttbSheetDate(header[c],year);
+        if(d){
+          dates.push({c,date:d});
+          payload.sessions.push({date:d,cancelled:false});
+        }
+      }
+      let optional=false;
+      for(let i=headerIdx+1;i<rows.length;i++){
+        const name=String(rows[i][0]||'').trim();
+        if(!name)continue;
+        if(/optional attendees/i.test(name)||/^meeting /i.test(name)){
+          if(/optional/i.test(name))optional=true;
+          continue;
+        }
+        payload.roster.push({name,optional});
+        dates.forEach(({c,date})=>{
+          const raw=String(rows[i][c]||'').trim();
+          if(!raw)return;
+          const absent=/^(✗|x|absent)$/i.test(raw);
+          payload.cells.push({
+            name,date,optional,absent,
+            join_local:absent?'':ttbParseClock(raw),
+            source:'sheet'
+          });
+        });
+      }
+    }
+    const topicName=ttbFindSheet(wb,/topic/i);
+    if(topicName){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[topicName],{header:1,raw:false,defval:''});
+      let kind='content';
+      rows.forEach(r=>{
+        const a=String(r[0]||'').trim();
+        const b=String(r[1]||'').trim();
+        if(/format & process|decision/i.test(a)){kind='decision';return;}
+        if(/content topics/i.test(a)){kind='content';return;}
+        if(!b||a==='Date'||a==='—'||/last updated/i.test(a))return;
+        payload.topics.push({kind,occurred_on:a,body:b});
+      });
+    }
+    if(!payload.cells.length&&!payload.topics.length)throw new Error('Could not find the Arrival Log or Topics sheets.');
+    const result=await rpc('app_admin_ttb_import_sheet',{p_payload:payload});
+    ttbData=(result&&result.data)||await rpc('app_admin_ttb_data',{});
+    ttbRender();
+    ttbSetStatus('Imported '+(result.cells||0)+' attendance cells and '+(result.topics||0)+' topics.','ok');
+  }catch(e){
+    ttbSetStatus('Spreadsheet import failed. '+(e.message||''),'err');
+  }
+  input.value='';
+}
+
+async function ttbImportTeamsCsv(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  const date=prompt('Meeting date (YYYY-MM-DD)', new Date().toISOString().slice(0,10));
+  if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)){input.value='';return;}
+  ttbSetStatus('Reading Teams attendance…');
+  try{
+    const XLSX=await ensureXlsx();
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    const headerIdx=rows.findIndex(r=>r.some(c=>/full name|^name$/i.test(String(c)))&&r.some(c=>/join/i.test(String(c))));
+    if(headerIdx<0)throw new Error('No Name / Join Time columns found.');
+    const header=rows[headerIdx].map(c=>String(c||'').trim().toLowerCase());
+    const idx=(re)=>header.findIndex(h=>re.test(h));
+    const iName=idx(/full name|^name$/);
+    const iEmail=idx(/e-?mail/);
+    const iJoin=idx(/first join|^join time$|join/);
+    const iLeave=idx(/last leave|leave time|leave/);
+    const iDur=idx(/duration|in-meeting/);
+    const cells=[];
+    for(let i=headerIdx+1;i<rows.length;i++){
+      const name=String(rows[i][iName]||'').trim();
+      if(!name||/^total/i.test(name))continue;
+      const join=ttbParseClock(rows[i][iJoin]);
+      cells.push({
+        name,
+        email:iEmail>=0?String(rows[i][iEmail]||'').trim():'',
+        date,
+        join_local:join,
+        last_leave:null,
+        source:'teams-csv'
+      });
+    }
+    const result=await rpc('app_admin_ttb_import_sheet',{p_payload:{sessions:[{date,cancelled:false}],cells}});
+    ttbData=(result&&result.data)||await rpc('app_admin_ttb_data',{});
+    ttbRender();
+    ttbSetStatus('Imported '+(result.cells||0)+' Teams attendees for '+date+'.','ok');
+  }catch(e){
+    ttbSetStatus('Teams CSV import failed. '+(e.message||''),'err');
+  }
+  input.value='';
 }
 
 async function ataShowWebhookSetup(){
@@ -4599,7 +5011,7 @@ function openAdmin(){
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminNebbReport(),ataLoadAdmin()]);
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminNebbReport(),ataLoadAdmin(),ttbLoadAdmin()]);
 }
 
 async function loadAdminLists(){

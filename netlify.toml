@@ -3,6 +3,8 @@
 #   * ata-sheet                       — legacy Google Sheet importer (CORS workaround)
 #   * ata-teachable-sync-background   — on-demand Teachable pull (15 min)
 #   * ata-teachable-cron              — daily trigger that starts the background pull
+#   * ttb-teams-sync                  — Graph pull of TTB Teams attendance (admin / Friday cron)
+#   * ttb-teams-cron                  — Friday trigger after the Thursday TTB meeting
 # Scheduled functions cannot be called from the browser (HTTP 403) and are
 # limited to 30s, so the long job must stay on the background function.
 
@@ -20,3 +22,6 @@
 
 [functions."ata-teachable-cron"]
   schedule = "0 12 * * *"
+
+[functions."ttb-teams-cron"]
+  schedule = "0 12 * * 5"
