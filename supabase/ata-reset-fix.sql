@@ -1,9 +1,6 @@
--- ATA Teachable sync — batch ingest of quiz attempts from the Teachable API.
--- Run in Supabase → SQL Editor AFTER supabase/ata-attempts.sql. Safe to re-run.
---
--- Used by the Netlify function ata-teachable-sync (daily + admin button).
--- Each row is idempotent on p_external_id (same Teachable response is not
--- double-counted). A later attempt with a new submitted_at becomes a new reset.
+-- Fix ATA resets: Complete-with-no-score must store an attempt so a retake counts.
+-- Also backfills Lacobee TAB-B-308 if that reset is still missing.
+-- Safe to re-run. New query — do not delete Archive / TTB.
 
 CREATE OR REPLACE FUNCTION public.app_ata_import_attempts(p_secret text, p_rows jsonb)
 RETURNS json
@@ -59,7 +56,6 @@ BEGIN
     ELSE
       v_score := NULL;
     END IF;
-    -- Teachable "Complete" with no grade still counts as done (no reset).
     IF coalesce(r->>'complete_no_score','') IN ('true','t','1')
        OR (r->'complete_no_score') = 'true'::jsonb THEN
       v_passed := true;
@@ -88,9 +84,6 @@ BEGIN
       v_matched := v_matched + 1;
     END IF;
 
-    -- Complete-without-grade: mark the lesson done AND store a passed attempt.
-    -- First-time complete = 1 attempt = 0 resets. A prior fail + this row = 1 reset.
-    -- (Skipping the attempt was hiding Teachable retakes like Lacobee / TAB-B-308.)
     IF coalesce(r->>'complete_no_score','') IN ('true','t','1')
        OR (r->'complete_no_score') = 'true'::jsonb THEN
       INSERT INTO ata_completions (tech_id, lesson_code, score_percent, completed_at, passed, source_email, updated_at)
@@ -147,7 +140,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.app_ata_import_attempts(text, jsonb) TO anon, authenticated;
 
--- Backfill: Complete-with-no-score after a prior attempt should count as a retake.
 INSERT INTO ata_attempts (tech_id, lesson_code, score_percent, passed, attempted_at, source, external_id)
 SELECT c.tech_id, c.lesson_code, NULL, true,
        coalesce(c.completed_at, c.updated_at, now()),
@@ -167,7 +159,6 @@ SELECT c.tech_id, c.lesson_code, NULL, true,
         AND a.external_id LIKE 'teachable-complete%'
    );
 
--- Lacobee TAB-B-308: Paula already granted that reset; log it if still missing.
 INSERT INTO ata_attempts (tech_id, lesson_code, score_percent, passed, attempted_at, source, external_id)
 SELECT t.id, 'TAB-B-308', NULL, false, now(), 'manual_reset',
        'manual-lacobee-b308-' || replace(gen_random_uuid()::text, '-', '')

@@ -2960,10 +2960,29 @@ function ataIsFailed(tech,code){
   if(a&&(a.count||0)>0)return true;
   return !!(c&&c.score!=null&&Number(c.score)<ATA_PASS_PCT);
 }
+// Fail on record, then marked Complete with no new graded attempt = a used reset.
+function ataImpliedRetake(tech,code){
+  const i=ataAttemptInfo(tech,code);
+  if(!i||!ataIsDone(tech,code))return false;
+  const auto=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
+  return auto===0 && (i.count||0)>0 && i.passed!==true;
+}
 // Resets this month = auto retakes (attempts this month - 1, min 0) + manual resets logged this month.
-function ataResetsThisMonth(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.month_count||0)-1)+(i.manual_month||0):0;}
+function ataResetsThisMonth(tech,code){
+  const i=ataAttemptInfo(tech,code);
+  if(!i)return 0;
+  let n=Math.max(0,(i.month_count||0)-1)+(i.manual_month||0);
+  if(n===0&&ataImpliedRetake(tech,code)&&(i.month_count||0)>0)n=1;
+  return n;
+}
 // Total resets ever = auto retakes (total attempts - 1, min 0) + manual resets logged all-time.
-function ataResetsTotal(tech,code){const i=ataAttemptInfo(tech,code);return i?Math.max(0,(i.count||0)-1)+(i.manual_total||0):0;}
+function ataResetsTotal(tech,code){
+  const i=ataAttemptInfo(tech,code);
+  if(!i)return 0;
+  let n=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
+  if(n===0&&ataImpliedRetake(tech,code))n=1;
+  return n;
+}
 // Continuous week number (1..88) across the three modules, in curriculum order.
 function ataGlobalWeeks(){
   const map={};let n=0;
@@ -4290,6 +4309,10 @@ async function ataAdjustReset(techId,code,delta){
   try{await ataLoadAdmin();}catch(e){}
   ataRenderResetPanel();
   ataReportPreview();
+  const ataPage=document.getElementById('pg-tech');
+  if(ataPage&&ataPage.classList.contains('active')){
+    try{await loadTechAta();}catch(e){}
+  }
 }
 
 // ── PM read-only ATA view ────────────────────────────────────────────────────
