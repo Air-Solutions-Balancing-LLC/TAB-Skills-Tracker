@@ -2036,6 +2036,24 @@ let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,
 let regionTechs=[],qAnswers={},qNebbStatus='',azureEmailAddr=null;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
+const APP_SESSION_KEY='tabSkillsAppSession';
+
+function saveAppSession(){
+  try{
+    if(!currentRole){sessionStorage.removeItem(APP_SESSION_KEY);return;}
+    sessionStorage.setItem(APP_SESSION_KEY,JSON.stringify({
+      role:currentRole,
+      region:currentRegion||null
+    }));
+  }catch(e){}
+}
+function readAppSession(){
+  try{return JSON.parse(sessionStorage.getItem(APP_SESSION_KEY)||'null');}
+  catch(e){return null;}
+}
+function clearAppSession(){
+  try{sessionStorage.removeItem(APP_SESSION_KEY);}catch(e){}
+}
 
 // Company Microsoft domains allowed to sign in
 const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com'];
@@ -2089,10 +2107,21 @@ async function initAuth(){
       if(event==='INITIAL_SESSION')return;
       if(event==='SIGNED_OUT'){
         if(!authReady)return;
-        sbAccessToken=null;
-        currentToken=null;
-        currentRole=null;
-        showPage('pg-login');
+        // Ignore transient signed-out blips while a Microsoft session still exists.
+        sbClient.auth.getSession().then(({data})=>{
+          if(data&&data.session)return;
+          sbAccessToken=null;
+          currentToken=null;
+          currentRole=null;
+          clearAppSession();
+          showPage('pg-login');
+        }).catch(()=>{
+          sbAccessToken=null;
+          currentToken=null;
+          currentRole=null;
+          clearAppSession();
+          showPage('pg-login');
+        });
         return;
       }
       if(session&&(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')){
@@ -2149,8 +2178,11 @@ async function handleSession(session){
     try{await sbClient.auth.signOut();}catch(e){console.warn(e);}
     return;
   }
-  // Already past the login screen? Don't bounce the user back to the role picker.
-  if(currentToken)return;
+  // Already in-app (Admin never sets currentToken) — don't bounce on token refresh.
+  if(currentRole||currentToken){
+    azureEmailAddr=email;
+    return;
+  }
   err.style.display='none';
   azureEmailAddr=email;
   document.getElementById('role-email').textContent=email;
@@ -2170,20 +2202,56 @@ async function handleSession(session){
       showPage('pg-no-access');
       return;
     }
-    showPage('pg-role');
     applyRoleButtons(access.registry_role);
+    if(await restoreAppSession(access.registry_role))return;
+    showPage('pg-role');
   }catch(e){
     console.warn('access check',e);
     try{
       const role=await rpc('app_my_role',{});
-      showPage('pg-role');
       applyRoleButtons(role);
+      if(await restoreAppSession(role))return;
+      showPage('pg-role');
     }catch(e2){
       console.warn('role check',e2);
       document.getElementById('no-access-email').textContent=email;
       showPage('pg-no-access');
     }
   }
+}
+
+async function restoreAppSession(registryRole){
+  const saved=readAppSession();
+  if(!saved||!saved.role)return false;
+  try{
+    if(saved.role==='admin'&&registryRole==='admin'){
+      openAdmin();
+      return true;
+    }
+    if(saved.role==='pm'&&(registryRole==='admin'||registryRole==='pm')&&saved.region){
+      const token=await rpc('app_pm_azure_login',{p_region:saved.region});
+      if(!token){clearAppSession();return false;}
+      currentRole='pm';currentRegion=saved.region;currentToken=token;
+      saveAppSession();
+      setPmRegionLabels(saved.region);
+      await loadPMDashboard();
+      showPage('pg-pm');
+      return true;
+    }
+    if(saved.role==='tech'&&registryRole!=='admin'&&registryRole!=='pm'){
+      const token=await rpc('app_tech_azure_login',{});
+      if(!token){clearAppSession();return false;}
+      currentRole='tech';currentToken=token;techViewMode=null;techViewBackPage=null;
+      saveAppSession();
+      showPage('pg-tech');
+      await loadTechHome();
+      return true;
+    }
+  }catch(e){
+    console.warn('restore session',e);
+    clearAppSession();
+  }
+  return false;
 }
 
 function applyRoleButtons(role){
@@ -2233,6 +2301,7 @@ async function chooseRole(role){
       return;
     }
     currentRole='tech';currentToken=token;techViewMode=null;techViewBackPage=null;
+    saveAppSession();
     showPage('pg-tech');
     await loadTechHome();
   }catch(e){
@@ -2252,6 +2321,7 @@ async function submitRegion(){
     const token=await rpc('app_pm_azure_login',{p_region:region});
     if(!token){err.textContent='No access for this region. Contact your admin.';err.style.display='block';return;}
     currentRole='pm';currentRegion=region;currentToken=token;
+    saveAppSession();
     setPmRegionLabels(region);
     await loadPMDashboard();
     showPage('pg-pm');
@@ -2278,6 +2348,7 @@ async function switchRegion(region){
     const token=await rpc('app_pm_azure_login',{p_region:region});
     if(!token){alert('No access for this region. Contact your admin.');if(sw)sw.value=currentRegion;return;}
     currentRole='pm';currentRegion=region;currentToken=token;
+    saveAppSession();
     setPmRegionLabels(region);
     await loadPMDashboard();
     setPMView('dashboard',document.getElementById('nav-dashboard'));
@@ -2297,6 +2368,7 @@ function azureSetupError(e){
 
 async function doLogout(){
   currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;azureEmailAddr=null;techViewMode=null;
+  clearAppSession();
   document.getElementById('login-err').style.display='none';
   try{if(sbClient)await sbClient.auth.signOut();}catch(e){console.warn('sign out',e);}
   showPage('pg-login');
@@ -2709,14 +2781,9 @@ async function viewNebbCertPdf(personId){
   const err=document.getElementById('admin-nebb-report-err');
   if(err)err.style.display='none';
   try{
-    const {blob}=await fetchNebbCertPdfBlob(personId);
-    const url=URL.createObjectURL(blob);
-    const win=window.open(url,'_blank','noopener,noreferrer');
-    if(!win){
-      URL.revokeObjectURL(url);
-      throw new Error('Popup blocked. Allow popups to view the certificate.');
-    }
-    setTimeout(()=>URL.revokeObjectURL(url),120000);
+    const {blob,fileName}=await fetchNebbCertPdfBlob(personId);
+    // In-app modal avoids popup blockers and the noopener null-window false positive.
+    await openAdminBlobPdfPreview(blob, 'Certification PDF — '+fileName, fileName);
   }catch(e){
     if(err){
       err.textContent='Could not view certification PDF. '+(e.message||'Try again.');
@@ -4133,6 +4200,7 @@ function buildAdminActivityReportPdfDoc(rows,reportDateText){
 let adminPdfPreviewDoc=null;
 let adminPdfPreviewUrl=null;
 let adminPdfPreviewFilename='report.pdf';
+let adminPdfPreviewBlob=null;
 function closeAdminPdfPreview(){
   const modal=document.getElementById('admin-pdf-preview-modal');
   const frame=document.getElementById('admin-pdf-preview-frame');
@@ -4143,14 +4211,24 @@ function closeAdminPdfPreview(){
   }
   adminPdfPreviewUrl=null;
   adminPdfPreviewDoc=null;
+  adminPdfPreviewBlob=null;
 }
 function downloadAdminPdfPreview(){
-  if(!adminPdfPreviewDoc){
-    alert('Preview is not ready yet.');
+  if(adminPdfPreviewDoc){
+    try{adminPdfPreviewDoc.save(adminPdfPreviewFilename||'report.pdf');}
+    catch(e){console.error(e);alert('Could not download PDF. Please try again.');}
     return;
   }
-  try{adminPdfPreviewDoc.save(adminPdfPreviewFilename||'report.pdf');}
-  catch(e){console.error(e);alert('Could not download PDF. Please try again.');}
+  if(adminPdfPreviewBlob&&adminPdfPreviewUrl){
+    const link=document.createElement('a');
+    link.href=adminPdfPreviewUrl;
+    link.download=adminPdfPreviewFilename||'certification.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return;
+  }
+  alert('Preview is not ready yet.');
 }
 async function openAdminPdfPreview(doc,title,filename){
   const modal=document.getElementById('admin-pdf-preview-modal');
@@ -4161,9 +4239,26 @@ async function openAdminPdfPreview(doc,title,filename){
     try{URL.revokeObjectURL(adminPdfPreviewUrl);}catch(e){}
   }
   adminPdfPreviewDoc=doc;
+  adminPdfPreviewBlob=null;
   adminPdfPreviewFilename=filename||'report.pdf';
   adminPdfPreviewUrl=doc.output('bloburl');
   if(titleEl)titleEl.textContent=title||'Report Preview';
+  frame.src=adminPdfPreviewUrl;
+  modal.classList.add('visible');
+}
+async function openAdminBlobPdfPreview(blob,title,filename){
+  const modal=document.getElementById('admin-pdf-preview-modal');
+  const frame=document.getElementById('admin-pdf-preview-frame');
+  const titleEl=document.getElementById('admin-pdf-preview-title');
+  if(!modal||!frame)throw new Error('Preview UI is missing');
+  if(adminPdfPreviewUrl){
+    try{URL.revokeObjectURL(adminPdfPreviewUrl);}catch(e){}
+  }
+  adminPdfPreviewDoc=null;
+  adminPdfPreviewBlob=blob;
+  adminPdfPreviewFilename=filename||'certification.pdf';
+  adminPdfPreviewUrl=URL.createObjectURL(blob);
+  if(titleEl)titleEl.textContent=title||'PDF Preview';
   frame.src=adminPdfPreviewUrl;
   modal.classList.add('visible');
 }
@@ -4556,6 +4651,7 @@ async function previewAdminNebbReportPdf(){
 
 function openAdmin(){
   currentRole='admin';
+  saveAppSession();
   adminEditId=null;
   const searchEl=document.getElementById('admin-tech-search');
   if(searchEl)searchEl.value='';
