@@ -2811,8 +2811,9 @@ async function saveNebbReportRow(personId){
     await rpc('app_admin_save_nebb_report_row',{
       p_person_id:personId,
       p_cert_expires_on:exp?exp.value:null,
-      p_cecs_complete:cecs?!!cecs.checked:false,
-      p_nebb_site_updated:siteUpdated?!!siteUpdated.checked:false
+      // Only send booleans when the control exists — null preserves the stored value.
+      p_cecs_complete:cecs?!!cecs.checked:null,
+      p_nebb_site_updated:siteUpdated?!!siteUpdated.checked:null
     });
     await loadAdminNebbReport();
     await loadAdminLists();
