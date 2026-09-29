@@ -937,7 +937,7 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong> — not from the first quiz. Deadlines are that week’s <strong>Thursday</strong>; the PDF is run on Friday. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; you run the PDF on Friday. Technicians open the same schedule at this site: sign in with Microsoft → <strong>ATA Tracking</strong> in the left menu. Admins preview it with <strong>Pick Technician</strong> above. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
@@ -1263,7 +1263,8 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Your weekly digital ATA lesson schedule</div></div>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Scores and resets show as soon as Teachable has them — you don’t wait for Thursday</div></div>
+          <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
         </div>
         <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
       </div>
@@ -2997,8 +2998,14 @@ function ataBestScore(tech,code){
   if(a&&a.best!=null)vals.push(Number(a.best));
   return vals.length?Math.max.apply(null,vals):null;
 }
+// Teachable does not yet offer these Advanced 400/500 items (no Advanced 500
+// course, and Advanced 400 has no A-406 final). Keep them on the 88-week
+// schedule, but don't mark them Due soon / Behind / incomplete.
+const ATA_UNTRACKED_LESSON_CODES=new Set(['TAB-A-406','TAB-A-501','TAB-A-502','TAB-A-503','TAB-A-504','TAB-A-505','TAB-A-506','TAB-A-507']);
+function ataLessonIsTracked(code){return !ATA_UNTRACKED_LESSON_CODES.has(String(code||'').toUpperCase());}
+
 function ataProgramComplete(tech,program){
-  const lessons=ataLessonsByProgram(program);
+  const lessons=ataLessonsByProgram(program).filter(l=>ataLessonIsTracked(l.lesson_code)||ataIsDone(tech,l.lesson_code)||ataIsFailed(tech,l.lesson_code));
   if(!lessons.length)return false;
   return lessons.every(l=>ataIsDone(tech,l.lesson_code));
 }
@@ -3007,29 +3014,37 @@ function ataProgramStatus(tech,program,today){
   today=today||ataToday();
   const start=ataStart(tech,program);
   const lessons=ataLessonsByProgram(program);
-  const total=lessons.length;
-  let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,nextDue=null;
+  let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,counted=0,nextDue=null;
   const overdueList=[],lessonRows=[];
   lessons.forEach(l=>{
     const code=l.lesson_code;
     const done=ataIsDone(tech,code);
     const isFailed=!done&&ataIsFailed(tech,code);
+    const tracked=ataLessonIsTracked(code)||done||isFailed;
     const resets=ataResetsThisMonth(tech,code);
     const resetsTotal=ataResetsTotal(tech,code);
     const best=ataBestScore(tech,code);
     const overLimit=resets>=ATA_MAX_RESETS;
+    if(tracked)counted++;
     if(isFailed)failed++;
     if(isFailed&&overLimit)atLimit++;
     const dl=start?ataLessonDeadline(start,l.week_index):null;
     let st='upcoming';
     if(done){completed++;st='complete';}
+    else if(!tracked){st='untracked';}
     else if(isFailed){st='failed';if(start&&dl&&!(dl<today&&!ataIsSameDay(dl,today))){if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};}if(start&&dl&&dl<today&&!ataIsSameDay(dl,today)){overdue++;overdueList.push({lesson:l,deadline:dl});}}
     else if(start&&dl){
       if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
-      else{if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};const diff=Math.round((dl-today)/86400000);if(diff<=7)dueSoon++;st='due';}
+      else{
+        if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};
+        const diff=Math.round((dl-today)/86400000);
+        if(diff<=7){dueSoon++;st='due';}
+        else st='upcoming';
+      }
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked});
   });
+  const total=counted||lessons.length;
   let status;
   if(!start)status='not_started';
   else if(completed>=total&&total>0)status='complete';
@@ -3040,6 +3055,36 @@ function ataProgramStatus(tech,program,today){
 
 function ataIsArchived(tech){return !!(tech&&(tech.ata_archived===true||tech.ata_archived_at));}
 
+function ataTechResetCounts(tech){
+  let month=0,total=0,atLimit=0;
+  (ataCurriculum||[]).forEach(l=>{
+    const m=ataResetsThisMonth(tech,l.lesson_code);
+    const t=ataResetsTotal(tech,l.lesson_code);
+    month+=m;total+=t;
+    if(m>=ATA_MAX_RESETS)atLimit++;
+  });
+  return {month,total,atLimit};
+}
+function ataResetDisplay(lr){
+  const rm=lr.resets||0,tot=lr.resetsTotal||0;
+  const has=lr.best!=null||rm>0||tot>0||lr.failed||lr.done;
+  if(!has)return {text:'—',empty:true};
+  return {text:rm+'/'+ATA_MAX_RESETS+(tot>rm?(' · '+tot+' tot'):''),empty:false,over:!!lr.overLimit};
+}
+function ataLessonStatusLabel(lr,today){
+  today=today||ataToday();
+  if(lr.done)return {t:lr.best==null?'Complete':'Passed',c:'#0F6E56'};
+  if(lr.failed)return {t:'Failed',c:'#C0392B'};
+  if(lr.state==='untracked')return {t:'Not in Teachable',c:'#888888'};
+  if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
+  if(lr.state==='due'){
+    const diff=lr.deadline?Math.round((lr.deadline-today)/86400000):0;
+    return {t:diff<=0?'Due today':'Due soon',c:'#B58900'};
+  }
+  if(lr.state==='pending'||!lr.deadline)return {t:'Upcoming',c:'#888888'};
+  return {t:'Upcoming',c:'#888888'};
+}
+
 function ataTechSummary(tech){
   const today=ataToday();
   const progs=ATA_PROGRAMS.map(p=>ataProgramStatus(tech,p,today));
@@ -3047,6 +3092,7 @@ function ataTechSummary(tech){
   const totalOverdue=active.reduce((s,p)=>s+p.overdue,0);
   const totalFailed=progs.reduce((s,p)=>s+(p.failed||0),0);
   const totalAtLimit=progs.reduce((s,p)=>s+(p.atLimit||0),0);
+  const resets=ataTechResetCounts(tech);
   const overdueList=[];
   active.forEach(p=>p.overdueList.forEach(o=>overdueList.push(Object.assign({program:p.program},o))));
   let status;
@@ -3056,7 +3102,7 @@ function ataTechSummary(tech){
   else if(totalOverdue>0)status='behind';
   else status='on_track';
   const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
-  return {tech,progs,byProgram,active,totalOverdue,totalFailed,totalAtLimit,overdueList,status};
+  return {tech,progs,byProgram,active,totalOverdue,totalFailed,totalAtLimit,totalResetsMonth:resets.month,totalResets:resets.total,overdueList,status};
 }
 
 function ataStatusMeta(status){
@@ -3950,13 +3996,14 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;let y=margin;
   const cols=[
-    {label:'Technician',w:contentW*0.22},
-    {label:'Status',w:contentW*0.11},
-    {label:'Basic',w:contentW*0.15},
-    {label:'Intermediate',w:contentW*0.15},
-    {label:'Advanced',w:contentW*0.15},
-    {label:'Overdue',w:contentW*0.11},
-    {label:'Failed',w:contentW*0.11}
+    {label:'Technician',w:contentW*0.20},
+    {label:'Status',w:contentW*0.10},
+    {label:'Basic',w:contentW*0.13},
+    {label:'Intermediate',w:contentW*0.13},
+    {label:'Advanced',w:contentW*0.13},
+    {label:'Overdue',w:contentW*0.09},
+    {label:'Failed',w:contentW*0.09},
+    {label:'Resets (mo)',w:contentW*0.13}
   ];
   const bottom=pageH-40;
   function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
@@ -4019,7 +4066,8 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.intermediate)),
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
-        String(s.totalFailed||0)
+        String(s.totalFailed||0),
+        (s.totalResetsMonth||s.totalResets)?(String(s.totalResetsMonth||0)+' this mo.'+(s.totalResets>s.totalResetsMonth?(' / '+s.totalResets+' tot'):'')):'0'
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -4031,6 +4079,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
         else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
+        else if(i===7&&(s.totalResetsMonth||0)>0)doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
@@ -4138,14 +4187,7 @@ function buildAtaTechDoc(tech,opts){
     {label:'Status',w:contentW*0.12},
     {label:'Resets (mo·tot)',w:contentW*0.16}
   ];
-  function lessonStatusLabel(lr){
-    if(lr.done)return {t:lr.best==null?'Complete':'Passed',c:'#0F6E56'};
-    if(lr.failed)return {t:'Failed',c:'#C0392B'};
-    if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
-    if(lr.state==='due')return {t:'Due soon',c:'#B58900'};
-    if(lr.state==='pending'||!lr.deadline)return {t:'Upcoming',c:'#888888'};
-    return {t:'Upcoming',c:'#888888'};
-  }
+  function lessonStatusLabel(lr){return ataLessonStatusLabel(lr);}
   function drawLessonHeader(){
     needPage(24);
     doc.setFillColor(27,58,107);doc.roundedRect(margin,y-8,contentW,18,2,2,'F');
@@ -4175,9 +4217,9 @@ function buildAtaTechDoc(tech,opts){
       const st=lessonStatusLabel(lr);
       const wk=gw.map[lr.lesson.lesson_code]||'';
       const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
-      const score=lr.best==null?'—':(lr.best+'%');
-      const rm=lr.resets||0,rtot=lr.resetsTotal||0;
-      const resets=(rm>0||lr.failed||rtot>0)?(rm+'/'+ATA_MAX_RESETS+(rtot>rm?(' ('+rtot+' tot)'):'')+(lr.overLimit?' !':'')):'—';
+      const score=lr.best==null?(lr.done?'Complete':'—'):(lr.best+'%');
+      const rd=ataResetDisplay(lr);
+      const resets=rd.text+(lr.overLimit?' !':'');
       const values=[
         String(wk),
         pdfSafeText(lr.lesson.lesson_code),
@@ -4211,7 +4253,7 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
@@ -4345,7 +4387,7 @@ function renderPmAta(){
   const cell=p=>p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
   const body=rows.map(s=>`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
-    <td>${ataStatusChip(s.status)}${s.totalFailed?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}</td>
+    <td>${ataStatusChip(s.status)}${s.totalFailed?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}${s.totalResetsMonth?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${s.totalResetsMonth} reset${s.totalResetsMonth===1?'':'s'} this month</div>`:''}</td>
     <td>${cell(s.byProgram.basic)}</td>
     <td>${cell(s.byProgram.intermediate)}</td>
     <td>${cell(s.byProgram.advanced)}</td>
@@ -4357,6 +4399,7 @@ function renderPmAta(){
 }
 
 // ── Technician read-only ATA schedule ────────────────────────────────────────
+let ataTechSelfData=null;
 async function showTechAta(){
   closeTechResultsView({keepView:true});
   setTechMainView('tech-view-ata');
@@ -4364,50 +4407,101 @@ async function showTechAta(){
   const nav=document.getElementById('sb-nav-ata');if(nav)nav.classList.add('active');
   await loadTechAta();
 }
+async function ataFindTechRecord(techId){
+  const tid=techId||currentTechId||(currentTechData&&currentTechData.id);
+  if(ataTechSelfData&&(!tid||String(ataTechSelfData.id)===String(tid)))return ataTechSelfData;
+  if(tid&&ataAdminData&&ataAdminData.techs){
+    const hit=(ataAdminData.techs||[]).find(t=>String(t.id)===String(tid));
+    if(hit)return hit;
+  }
+  if(tid&&ataPmData&&ataPmData.techs){
+    const hit=(ataPmData.techs||[]).find(t=>String(t.id)===String(tid));
+    if(hit)return hit;
+  }
+  return null;
+}
 async function loadTechAta(){
   const body=document.getElementById('tech-ata-body');
   if(body)body.innerHTML='<div class="loading">Loading your ATA schedule…</div>';
-  let tech;
+  let tech=null,errMsg='';
   try{
     await ensureAtaCurriculum();
-    tech=await rpc('app_ata_tech_data',{p_token:currentToken});
+    if(currentToken){
+      try{tech=await rpc('app_ata_tech_data',{p_token:currentToken});}catch(e){errMsg=e.message||'';}
+    }
+    if(!tech)tech=await ataFindTechRecord();
+    if(!tech&&userIsAdmin&&(currentTechId||(currentTechData&&currentTechData.id))){
+      try{
+        ataAdminData=await rpc('app_ata_admin_data',{})||ataAdminData;
+        tech=await ataFindTechRecord();
+      }catch(_){}
+    }
   }catch(e){
-    if(body)body.innerHTML='<div class="err" style="display:block">Could not load your ATA schedule. '+adminEsc((e.message||'').includes('app_ata_tech_data')?'Ask an admin to run supabase/ata-tracking.sql.':(e.message||'Try again.'))+'</div>';
+    errMsg=e.message||errMsg;
+  }
+  if(!tech){
+    if(body)body.innerHTML='<div class="err" style="display:block">Could not load your ATA schedule. '+(errMsg&&String(errMsg).includes('app_ata_tech_data')?'Ask an admin to run supabase/ata-tracking.sql.':adminEsc(errMsg||'No ATA record found for this account yet.'))+'</div>';
     return;
   }
+  ataTechSelfData=tech;
   renderTechAta(tech);
+  renderTechAtaHomeCard(tech);
+}
+async function ataDownloadSelfPdf(){
+  const tech=ataTechSelfData||await ataFindTechRecord();
+  if(!tech){alert('Load your ATA schedule first.');return;}
+  try{
+    await ensureJsPdf();
+    const doc=buildAtaTechDoc(tech,{});
+    doc.save('ATA-Schedule-'+(tech.name||'Technician').replace(/[^\w]+/g,'-')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+  }catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
+}
+function renderTechAtaHomeCard(tech){
+  const host=document.getElementById('tech-ata-home-card');
+  if(!host)return;
+  if(!tech){
+    host.innerHTML=`<div class="my-scores" style="margin-top:14px"><div class="detail-name">📚 ATA Tracking</div><div class="detail-sub" style="margin:6px 0 10px">Open your weekly quiz schedule, scores, and resets from the left menu.</div><button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px" onclick="showTechAta()">Open ATA Tracking</button></div>`;
+    return;
+  }
+  const s=ataTechSummary(tech);
+  const bits=s.progs.filter(p=>p.start||p.completed).map(p=>`${ATA_PROGRAM_LABEL[p.program]} ${p.completed}/${p.total}`).join(' · ')||'Not started yet';
+  host.innerHTML=`<div class="my-scores" style="margin-top:14px;cursor:pointer" onclick="showTechAta()">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div><div class="detail-name">📚 ATA Tracking</div><div class="detail-sub">${adminEsc(bits)} · scores show even before Thursday</div></div>
+      ${ataStatusChip(s.status)}
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:#1B3A6B;font-weight:700">View full schedule →</div>
+  </div>`;
 }
 function renderTechAta(tech){
   const body=document.getElementById('tech-ata-body');if(!body)return;
   if(!tech){body.innerHTML='<div class="admin-empty" style="padding:12px">No ATA record found for your account yet.</div>';return;}
+  ataTechSelfData=tech;
   const s=ataTechSummary(tech);
-  if(!s.active.length){
+  const visible=s.progs.filter(p=>p.start||p.completed>0||p.failed>0||p.lessonRows.some(lr=>lr.best!=null));
+  if(!visible.length){
     body.innerHTML='<div class="my-scores"><div style="font-size:13px;color:#555">Your ATA program hasn\'t been started yet. Once an admin assigns your Basic start date, your weekly lesson schedule will appear here.</div></div>';
     return;
   }
   const today=ataToday();
   const resetCell=(lr)=>{
-    const m=lr.resets||0,tot=lr.resetsTotal||0;
-    if(!lr.failed&&m===0&&tot===0)return '<span style="color:#bbb">—</span>';
-    const col=lr.overLimit?'#C0392B':m>=2?'#b58900':'#555';
-    let txt=`<span style="color:${col};font-weight:700">${m}/${ATA_MAX_RESETS} this mo.</span>`;
-    if(tot>m)txt+=`<span style="color:#888;font-weight:600"> · ${tot} total</span>`;
+    const rd=ataResetDisplay(lr);
+    if(rd.empty)return '<span style="color:#bbb">—</span>';
+    const col=lr.overLimit?'#C0392B':(lr.resets||0)>=2?'#b58900':'#555';
+    let txt=`<span style="color:${col};font-weight:700">${adminEsc(rd.text)}</span>`;
     if(lr.overLimit)txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
     return txt;
   };
   const stateBadge=(lr)=>{
-    if(lr.done)return '<span style="color:#0F6E56;font-weight:700">'+(lr.best==null?'✓ Complete':'✓ Passed')+'</span>';
-    if(lr.failed)return '<span style="color:#C0392B;font-weight:700">Failed — retake needed</span>';
-    if(lr.state==='overdue')return '<span style="color:#C0392B;font-weight:700">Overdue</span>';
-    if(lr.state==='due'){const diff=Math.round((lr.deadline-today)/86400000);return `<span style="color:#b58900;font-weight:700">Due ${diff<=0?'today':'in '+diff+'d'}</span>`;}
-    return '<span style="color:#999">Upcoming</span>';
+    const st=ataLessonStatusLabel(lr,today);
+    return `<span style="color:${st.c};font-weight:700">${st.t==='Passed'?'✓ Passed':st.t==='Complete'?'✓ Complete':adminEsc(st.t)}</span>`;
   };
-  const sections=s.progs.filter(p=>p.start).map(p=>{
+  const sections=visible.map(p=>{
     const rows=p.lessonRows.map(lr=>`<tr>
       <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(lr.lesson.lesson_code)}</td>
       <td>${adminEsc(lr.lesson.lesson_name)}</td>
       <td style="white-space:nowrap">${lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—'}</td>
-      <td style="white-space:nowrap;text-align:center">${lr.best==null?'<span style="color:#bbb">—</span>':`<span style="color:${lr.best>=ATA_PASS_PCT?'#0F6E56':'#C0392B'};font-weight:700">${lr.best}%</span>`}</td>
+      <td style="white-space:nowrap;text-align:center">${lr.best==null?(lr.done?'<span style="color:#0F6E56;font-weight:700">Complete</span>':'<span style="color:#bbb">—</span>'):`<span style="color:${lr.best>=ATA_PASS_PCT?'#0F6E56':'#C0392B'};font-weight:700">${lr.best}%</span>`}</td>
       <td style="white-space:nowrap">${stateBadge(lr)}</td>
       <td style="white-space:nowrap">${resetCell(lr)}</td>
     </tr>`).join('');
@@ -4418,7 +4512,7 @@ function renderTechAta(tech){
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
   if(s.totalFailed)alerts.push(`❌ ${s.totalFailed} failed (need ≥${ATA_PASS_PCT}% to pass)`);
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month</div></div>
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
     ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
   </div>`;
@@ -6467,6 +6561,17 @@ async function loadTechHome(){
   currentTechData=t;
   renderTechHome(t,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
 }
+async function prefetchTechAtaHomeCard(){
+  try{
+    await ensureAtaCurriculum();
+    let tech=ataTechSelfData;
+    if(currentToken){
+      try{const row=await rpc('app_ata_tech_data',{p_token:currentToken});if(row)tech=row;}catch(_){}
+    }
+    if(!tech)tech=await ataFindTechRecord();
+    if(tech){ataTechSelfData=tech;renderTechAtaHomeCard(tech);}
+  }catch(_){}
+}
 
 function renderTechHome(t,opts){
   opts=opts||{};
@@ -6557,11 +6662,15 @@ function renderTechHome(t,opts){
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
+    <div id="tech-ata-home-card"></div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
     ${notesHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
   updateTechAssessNav(t,readOnly);
   renderTechSidebarNav();
+  if(ataTechSelfData)renderTechAtaHomeCard(ataTechSelfData);
+  else renderTechAtaHomeCard(null);
+  prefetchTechAtaHomeCard();
 }
 
 function showTechHome(){
