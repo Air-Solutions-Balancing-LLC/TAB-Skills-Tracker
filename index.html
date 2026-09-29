@@ -2929,20 +2929,20 @@ function ataLessonDeadline(startISO,weekIndex){
   return new Date(first.getFullYear(),first.getMonth(),first.getDate()+(Math.max(1,weekIndex)-1)*7);
 }
 
-// Canonical lesson order = the spreadsheet order: by the numeric part of the
-// lesson code (TAB-B-101, 102, 103 … 112, 201 … 210, 301 … 401). Falls back to
-// week_index / sort_order when a code has no number.
+// Canonical lesson order = the ATA weekly schedule (week_index / sort_order),
+// not the numeric lesson code. Basic is assigned as 101, 102, 104, 105, 110…
+// so sorting by code scrambled due dates (B-103 looked later than B-104).
 function ataLessonOrder(code){
   const m=/TAB-[A-Z]+-(\d+)/i.exec(String(code||''));
   return m?parseInt(m[1],10):Number.MAX_SAFE_INTEGER;
 }
 function ataLessonsByProgram(program){
   return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>{
-    const oa=ataLessonOrder(a.lesson_code),ob=ataLessonOrder(b.lesson_code);
-    if(oa!==ob)return oa-ob;
     const wa=a.week_index||0,wb=b.week_index||0;
     if(wa!==wb)return wa-wb;
-    return (a.sort_order||0)-(b.sort_order||0);
+    const sa=a.sort_order||0,sb=b.sort_order||0;
+    if(sa!==sb)return sa-sb;
+    return ataLessonOrder(a.lesson_code)-ataLessonOrder(b.lesson_code);
   });
 }
 // Teachable only grades the Basic written final (B-401). The practical (B-402)
@@ -3030,7 +3030,7 @@ function ataProgramStatus(tech,program,today){
   const lessons=ataLessonsByProgram(program);
   let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,counted=0,nextDue=null;
   const overdueList=[],lessonRows=[];
-  lessons.forEach(l=>{
+  lessons.forEach((l,i)=>{
     const code=l.lesson_code;
     const done=ataIsDone(tech,code);
     const isFailed=!done&&ataIsFailed(tech,code);
@@ -3042,7 +3042,8 @@ function ataProgramStatus(tech,program,today){
     if(tracked)counted++;
     if(isFailed)failed++;
     if(isFailed&&overLimit)atLimit++;
-    const dl=start?ataLessonDeadline(start,l.week_index):null;
+    const weekNum=i+1;
+    const dl=start?ataLessonDeadline(start,weekNum):null;
     let st='upcoming';
     if(done){completed++;st='complete';}
     else if(!tracked){st='untracked';}
@@ -3056,7 +3057,7 @@ function ataProgramStatus(tech,program,today){
         else st='upcoming';
       }
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum});
   });
   const total=counted||lessons.length;
   let status;
@@ -4513,6 +4514,7 @@ function renderTechAta(tech){
   };
   const sections=visible.map(p=>{
     const rows=p.lessonRows.map(lr=>`<tr>
+      <td style="white-space:nowrap;color:#888;font-weight:700">${lr.weekNum||''}</td>
       <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(lr.lesson.lesson_code)}</td>
       <td>${adminEsc(lr.lesson.lesson_name)}</td>
       <td style="white-space:nowrap">${lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—'}</td>
@@ -4521,7 +4523,7 @@ function renderTechAta(tech){
       <td style="white-space:nowrap">${resetCell(lr)}</td>
     </tr>`).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Code</th><th>Lesson</th><th>Due</th><th>Score</th><th>Status</th><th>Resets (this mo. · total)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (this mo. · total)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
