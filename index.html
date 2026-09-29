@@ -230,6 +230,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .sb-assess-done.visible{display:block}
 .sb-badge{background:rgba(255,255,255,0.2);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:auto}
 .sb-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08)}
+.sb-admin-switch{display:none;padding:0 10px 10px;flex-direction:column;gap:6px}
+.sb-admin-switch.visible{display:flex}
+.sb-admin-switch .btn{width:100%;justify-content:center;font-size:12px;padding:8px 10px}
 .sb-logout{font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:10px;transition:all .2s}
 .sb-logout:hover{color:#fff;background:rgba(255,255,255,0.06)}
 .sb-section-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 8px 6px}
@@ -1225,6 +1228,10 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-logo-fallback">Airadigm <span>Skills</span></div>
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
+      <div id="tech-admin-switch" class="sb-admin-switch">
+        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">👷 Change technician</button>
+        <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
+      </div>
       <div class="sb-assess-wrap">
         <button type="button" class="sb-assess-btn sb-preboot-btn" id="tech-preboot-nav" onclick="openPreBootcampAssessment()">📋 Take Pre-Bootcamp assessment</button>
         <button type="button" class="sb-assess-btn" id="tech-assess-nav" onclick="startQuestionnaire()">📝 Take this month's assessment</button>
@@ -1264,6 +1271,8 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Scores and resets show as soon as Teachable has them — you don’t wait for Thursday</div></div>
+          <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
+          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
         </div>
         <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
@@ -4405,6 +4414,7 @@ async function showTechAta(){
   setTechMainView('tech-view-ata');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
   const nav=document.getElementById('sb-nav-ata');if(nav)nav.classList.add('active');
+  updateTechViewAdminChrome();
   await loadTechAta();
 }
 async function ataFindTechRecord(techId){
@@ -5953,6 +5963,7 @@ async function openTechReadOnly(t){
   await ensureSkills();
   t.checklist_completed=await loadChecklistForTech(t.id);
   currentTechData=t;
+  updateTechViewAdminChrome();
   renderTechHome(t,{readOnly:true});
   window.scrollTo(0,0);
 }
@@ -5971,6 +5982,7 @@ async function editTechFromAdmin(techId,region,name){
     currentRegion=region;
     techViewBackPage='pg-admin';
     techViewMode='edit';
+    ataTechSelfData=null;
     showPage('pg-tech');
     setTechMainView('tech-view-home');
     const data=await rpc('app_tech_home',{p_token:token});
@@ -5981,6 +5993,7 @@ async function editTechFromAdmin(techId,region,name){
     currentChecklist=await loadChecklistForTech();
     t.checklist_completed=currentChecklist;
     currentTechData=t;
+    updateTechViewAdminChrome();
     renderTechHome(t,{readOnly:false,adminEdit:true});
     window.scrollTo(0,0);
   }catch(e){
@@ -5989,9 +6002,31 @@ async function editTechFromAdmin(techId,region,name){
   }
 }
 
+function updateTechViewAdminChrome(){
+  const on=!!techViewMode;
+  const fromAdmin=on&&techViewBackPage==='pg-admin';
+  const box=document.getElementById('tech-admin-switch');
+  if(box)box.classList.toggle('visible',on);
+  const change=document.getElementById('tech-admin-change-btn');
+  if(change)change.style.display=fromAdmin?'':'none';
+  const ataBack=document.getElementById('ata-admin-back-btn');
+  if(ataBack)ataBack.style.display=on?'':'none';
+  const ataSwitch=document.getElementById('ata-admin-switch-btn');
+  if(ataSwitch)ataSwitch.style.display=fromAdmin?'':'none';
+  const backBtn=document.getElementById('tech-admin-back-btn');
+  if(backBtn)backBtn.textContent=fromAdmin?'← Back to admin':(techViewBackPage==='pg-pm'?'← Back to PM':'← Back');
+}
+function switchAdminTechView(){
+  const reopen=techViewBackPage==='pg-admin';
+  closeMobileNav();
+  exitTechView();
+  if(reopen)openAdminTechViewPicker();
+}
 function exitTechView(){
   const back=techViewBackPage;
   techViewMode=null;
+  ataTechSelfData=null;
+  updateTechViewAdminChrome();
   if(back==='pg-admin'){
     currentToken=null;
     currentTechId=null;
@@ -6646,8 +6681,8 @@ function renderTechHome(t,opts){
   </div>`;
 
   const banner=adminEdit
-    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`
-    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></div>`:'';
+    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
+    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'';
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date}):"";
 
   container.innerHTML=banner+`
@@ -6668,6 +6703,7 @@ function renderTechHome(t,opts){
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
   updateTechAssessNav(t,readOnly);
   renderTechSidebarNav();
+  updateTechViewAdminChrome();
   if(ataTechSelfData)renderTechAtaHomeCard(ataTechSelfData);
   else renderTechAtaHomeCard(null);
   prefetchTechAtaHomeCard();
