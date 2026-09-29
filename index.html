@@ -3063,6 +3063,7 @@ function ataProgramStatus(tech,program,today){
   today=today||ataToday();
   const start=ataStart(tech,program);
   const lessons=ataLessonsByProgram(program);
+  const gwMap=ataGlobalWeeks().map;
   let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,counted=0,nextDue=null;
   const overdueList=[],lessonRows=[];
   lessons.forEach((l,i)=>{
@@ -3092,7 +3093,7 @@ function ataProgramStatus(tech,program,today){
         else st='upcoming';
       }
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum,globalWeek:gwMap[code]||weekNum});
   });
   const total=counted||lessons.length;
   let status;
@@ -3120,6 +3121,22 @@ function ataResetDisplay(lr){
   const has=lr.best!=null||rm>0||tot>0||lr.failed||lr.done;
   if(!has)return {text:'—',empty:true};
   return {text:rm+'/'+ATA_MAX_RESETS+(tot>rm?(' · '+tot+' tot'):''),empty:false,over:!!lr.overLimit};
+}
+function ataFmtDeadline(d){
+  if(!d)return '—';
+  const dt=(d instanceof Date)?d:parseDateOnly(d);
+  if(!dt||isNaN(dt.getTime()))return '—';
+  const iso=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  return fmtDate(iso);
+}
+function ataLessonDisplay(lr,today){
+  const st=ataLessonStatusLabel(lr,today);
+  const rd=ataResetDisplay(lr);
+  const week=lr.globalWeek||ataGlobalWeeks().map[lr.lesson.lesson_code]||lr.weekNum||'';
+  let score='—';
+  if(lr.best!=null)score=lr.best+'%';
+  else if(lr.done)score='Complete';
+  return {week:String(week),code:lr.lesson.lesson_code,name:lr.lesson.lesson_name,due:ataFmtDeadline(lr.deadline),score:score,status:st,resets:rd.text+(lr.overLimit?' !':''),reset:rd};
 }
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
@@ -4232,12 +4249,11 @@ function buildAtaTechDoc(tech,opts){
     {label:'Wk',w:contentW*0.06},
     {label:'Code',w:contentW*0.15},
     {label:'Lesson',w:contentW*0.29},
-    {label:'Due',w:contentW*0.13},
+    {label:'Due Thursday',w:contentW*0.13},
     {label:'Score',w:contentW*0.09},
     {label:'Status',w:contentW*0.12},
     {label:'Resets (mo·tot)',w:contentW*0.16}
   ];
-  function lessonStatusLabel(lr){return ataLessonStatusLabel(lr);}
   function drawLessonHeader(){
     needPage(24);
     doc.setFillColor(27,58,107);doc.roundedRect(margin,y-8,contentW,18,2,2,'F');
@@ -4264,17 +4280,13 @@ function buildAtaTechDoc(tech,opts){
 
     drawLessonHeader();
     p.lessonRows.forEach((lr,idx)=>{
-      const st=lessonStatusLabel(lr);
-      const wk=gw.map[lr.lesson.lesson_code]||'';
-      const due=lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—';
-      const score=lr.best==null?(lr.done?'Complete':'—'):(lr.best+'%');
-      const rd=ataResetDisplay(lr);
-      const resets=rd.text+(lr.overLimit?' !':'');
+      const row=ataLessonDisplay(lr);
+      const st=row.status;
       const values=[
-        String(wk),
-        pdfSafeText(lr.lesson.lesson_code),
-        pdfSafeText(lr.lesson.lesson_name),
-        due,score,st.t,resets
+        row.week,
+        pdfSafeText(row.code),
+        pdfSafeText(row.name),
+        row.due,row.score,st.t,row.resets
       ];
       doc.setFontSize(8);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-6));
@@ -4548,15 +4560,18 @@ function renderTechAta(tech){
     return `<span style="color:${st.c};font-weight:700">${st.t==='Passed'?'✓ Passed':st.t==='Complete'?'✓ Complete':adminEsc(st.t)}</span>`;
   };
   const sections=visible.map(p=>{
-    const rows=p.lessonRows.map(lr=>`<tr>
-      <td style="white-space:nowrap;color:#888;font-weight:700">${lr.weekNum||''}</td>
-      <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(lr.lesson.lesson_code)}</td>
-      <td>${adminEsc(lr.lesson.lesson_name)}</td>
-      <td style="white-space:nowrap">${lr.deadline?fmtDate(lr.deadline.toISOString().slice(0,10)):'—'}</td>
+    const rows=p.lessonRows.map(lr=>{
+      const row=ataLessonDisplay(lr,today);
+      return `<tr>
+      <td style="white-space:nowrap;color:#888;font-weight:700">${adminEsc(row.week)}</td>
+      <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(row.code)}</td>
+      <td>${adminEsc(row.name)}</td>
+      <td style="white-space:nowrap">${adminEsc(row.due)}</td>
       <td style="white-space:nowrap;text-align:center">${lr.best==null?(lr.done?'<span style="color:#0F6E56;font-weight:700">Complete</span>':'<span style="color:#bbb">—</span>'):`<span style="color:${lr.best>=ATA_PASS_PCT?'#0F6E56':'#C0392B'};font-weight:700">${lr.best}%</span>`}</td>
       <td style="white-space:nowrap">${stateBadge(lr)}</td>
       <td style="white-space:nowrap">${resetCell(lr)}</td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
       <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (this mo. · total)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
