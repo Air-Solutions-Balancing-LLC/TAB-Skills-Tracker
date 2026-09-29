@@ -1,0 +1,22 @@
+{
+  "name": "TAB Skills Tracker",
+  "short_name": "TAB Skills",
+  "description": "Airadigm technician skills, assessments, and ATA tracking",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1B3A6B",
+  "theme_color": "#1B3A6B",
+  "icons": [
+    {
+      "src": "assets/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
