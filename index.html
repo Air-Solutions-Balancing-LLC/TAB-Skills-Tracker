@@ -945,7 +945,7 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; you run the PDF on Friday. Technicians open the same schedule at this site: sign in with Microsoft → <strong>ATA Tracking</strong> in the left menu. Admins preview it with <strong>Pick Technician</strong> above. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; if that Thursday is a holiday, the due date moves to the <strong>next Thursday</strong>. You run the PDF on Friday. Technicians open the same schedule at this site: sign in with Microsoft → <strong>ATA Tracking</strong> in the left menu. Admins preview it with <strong>Pick Technician</strong> above. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
@@ -1186,7 +1186,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="pm-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Weekly digital ATA progress — one lesson per week, due each Thursday</div></div>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">One lesson per week, due Thursday — holiday Thursdays move to the next Thursday</div></div>
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">📄 Region Report PDF</button>
         </div>
         <div class="page-body">
@@ -1275,7 +1275,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Scores and resets show as soon as Teachable has them — you don’t wait for Thursday</div></div>
+          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
           <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
           <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
@@ -2917,16 +2917,51 @@ async function ensureAtaCurriculum(){
 
 function ataToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function ataIsSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+function ataDateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function ataNthWeekday(year,monthIndex,weekday,n){
+  const first=new Date(year,monthIndex,1);
+  const add=(weekday-first.getDay()+7)%7;
+  return new Date(year,monthIndex,1+add+(n-1)*7);
+}
+const ataHolidayCache={};
+function ataHolidaySet(year){
+  if(ataHolidayCache[year])return ataHolidayCache[year];
+  const days=[
+    new Date(year,0,1),                 // New Year's Day
+    new Date(year,5,19),                // Juneteenth
+    new Date(year,6,4),                 // Independence Day
+    new Date(year,10,11),               // Veterans Day
+    ataNthWeekday(year,10,4,4),         // Thanksgiving (always Thursday)
+    new Date(year,11,24),               // Christmas Eve
+    new Date(year,11,25),               // Christmas
+    new Date(year,11,31)                // New Year's Eve
+  ];
+  const set=new Set(days.map(ataDateKey));
+  ataHolidayCache[year]=set;
+  return set;
+}
+function ataIsHoliday(d){return ataHolidaySet(d.getFullYear()).has(ataDateKey(d));}
+function ataNextDueThursday(fromDate){
+  let d=new Date(fromDate.getFullYear(),fromDate.getMonth(),fromDate.getDate());
+  const daysUntilThu=(4-d.getDay()+7)%7;
+  d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+daysUntilThu);
+  while(ataIsHoliday(d)){
+    d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+7);
+  }
+  return d;
+}
 
-// One lesson per week; each lesson is due the Thursday of its week. Week 1's
-// Thursday is the first Thursday on or after the program start date. The
-// weekly PDF is generated on Friday.
+// One lesson per week, due Thursday. Week 1 is the first Thursday on or after
+// the start date that is not a company holiday. If a Thursday is a holiday,
+// that lesson (and the ones after it) move to the next Thursday.
 function ataLessonDeadline(startISO,weekIndex){
   const d=parseDateOnly(startISO);
   if(!d)return null;
-  const daysUntilThu=(4-d.getDay()+7)%7;
-  const first=new Date(d.getFullYear(),d.getMonth(),d.getDate()+daysUntilThu);
-  return new Date(first.getFullYear(),first.getMonth(),first.getDate()+(Math.max(1,weekIndex)-1)*7);
+  let thu=ataNextDueThursday(d);
+  for(let i=1;i<Math.max(1,weekIndex);i++){
+    thu=ataNextDueThursday(new Date(thu.getFullYear(),thu.getMonth(),thu.getDate()+7));
+  }
+  return thu;
 }
 
 // Canonical lesson order = the ATA weekly schedule (week_index / sort_order),
@@ -4268,7 +4303,7 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   If a due Thursday is a holiday, that lesson moves to the next Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
@@ -4529,7 +4564,7 @@ function renderTechAta(tech){
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
   if(s.totalFailed)alerts.push(`❌ ${s.totalFailed} failed (need ≥${ATA_PASS_PCT}% to pass)`);
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due each Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due Thursday (holiday Thursdays skip to the next Thursday) · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
     ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
   </div>`;
