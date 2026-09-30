@@ -888,6 +888,17 @@ body.mobile-nav-open{overflow:hidden}
                 </div>
               </div>
               <div class="report-filter-hint" id="admin-nebb-filter-hint"></div>
+              <div class="admin-add" style="margin:8px 0 10px;padding-bottom:10px">
+                <select id="nebb-add-person" aria-label="Technician to add">
+                  <option value="">Select a technician…</option>
+                </select>
+                <select id="nebb-add-cert" aria-label="NEBB cert">
+                  <option value="NEBB CT" selected>NEBB CT</option>
+                  <option value="NEBB CP">NEBB CP</option>
+                </select>
+                <input id="nebb-add-expires" type="date" title="Certification expiration" aria-label="Expires">
+                <button type="button" class="btn" style="background:#0F6E56" onclick="addNebbCertifiedPerson()">Add to NEBB list</button>
+              </div>
               <div class="report-wrap" id="admin-nebb-report-wrap">
                 <div class="admin-empty" style="padding:12px">Loading…</div>
               </div>
@@ -2852,6 +2863,73 @@ function renderAdminNebbReport(){
   const filtered=filteredAdminNebbRows();
   updateAdminNebbFilterHint(filtered.length,adminNebbRows.length);
   wrap.innerHTML=buildAdminNebbTableHtml(filtered);
+  fillNebbAddPersonOptions();
+}
+
+function nebbEligiblePeople(){
+  const onList=new Set((adminNebbRows||[]).map(r=>String(r.person_id)));
+  return (adminPeople||[]).filter(p=>!p.deleted&&p.role==='technician'&&!onList.has(String(p.id)))
+    .slice()
+    .sort((a,b)=>String(a.full_name||a.email||'').localeCompare(String(b.full_name||b.email||''),undefined,{sensitivity:'base'}));
+}
+function fillNebbAddPersonOptions(){
+  const sel=document.getElementById('nebb-add-person');
+  if(!sel)return;
+  const keep=sel.value;
+  const rows=nebbEligiblePeople();
+  sel.innerHTML='<option value="">Select a technician…</option>'+rows.map(p=>{
+    const label=adminEsc(p.full_name||p.email||'Technician')+(p.region?' · '+adminEsc(regionLabel(p.region)):'');
+    return `<option value="${p.id}">${label}</option>`;
+  }).join('');
+  if(keep&&rows.some(p=>String(p.id)===String(keep)))sel.value=keep;
+}
+async function addNebbCertifiedPerson(){
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  if(!adminPeople||!adminPeople.length){
+    try{await loadAdminLists();}catch(_){}
+  }
+  fillNebbAddPersonOptions();
+  const sel=document.getElementById('nebb-add-person');
+  const cert=document.getElementById('nebb-add-cert');
+  const exp=document.getElementById('nebb-add-expires');
+  const personId=sel?Number(sel.value):0;
+  const person=(adminPeople||[]).find(p=>Number(p.id)===personId);
+  if(!personId||!person){
+    if(err){err.textContent='Select a technician to add.';err.style.display='block';}
+    return;
+  }
+  const status=(cert&&cert.value)||'NEBB CT';
+  try{
+    await rpc('app_admin_update_person',{
+      p_id:personId,
+      p_name:null,
+      p_email:null,
+      p_role:null,
+      p_region:null,
+      p_start_date:null,
+      p_bootcamp_start_date:null,
+      p_nebb_status:status,
+      p_cert_expires_on:(exp&&exp.value)||null,
+      p_cecs_complete:null,
+      p_nebb_site_updated:null
+    });
+    if(sel)sel.value='';
+    if(exp)exp.value='';
+    try{await loadAdminLists();}catch(_){}
+    await loadAdminNebbReport();
+    const search=document.getElementById('admin-nebb-search');
+    if(search){
+      search.value=person.full_name||'';
+      adminNebbSearch=search.value;
+      renderAdminNebbReport();
+    }
+  }catch(e){
+    if(err){
+      err.textContent='Could not add to the NEBB list. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
 }
 
 async function loadAdminNebbReport(){
@@ -2864,6 +2942,9 @@ async function loadAdminNebbReport(){
   const dateLabel=document.getElementById('admin-nebb-report-date-label');
   if(dateLabel)dateLabel.textContent=fmtDateFull(adminNebbReportDate.toISOString().slice(0,10));
   try{
+    if(!adminPeople||!adminPeople.length){
+      try{await loadAdminLists();}catch(_){}
+    }
     adminNebbRows=sortAdminNebbRows(await rpc('app_admin_nebb_certified_report',{})||[]);
   }catch(e){
     wrap.innerHTML='';
