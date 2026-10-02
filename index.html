@@ -889,6 +889,7 @@ body.mobile-nav-open{overflow:hidden}
               </div>
               <div class="report-filter-hint" id="admin-nebb-filter-hint"></div>
               <div class="admin-add" style="margin:8px 0 10px;padding-bottom:10px">
+                <input id="nebb-add-search" type="search" placeholder="Search technicians…" autocomplete="off" oninput="fillNebbAddPersonOptions()">
                 <select id="nebb-add-person" aria-label="Technician to add">
                   <option value="">Select a technician…</option>
                 </select>
@@ -898,6 +899,24 @@ body.mobile-nav-open{overflow:hidden}
                 </select>
                 <input id="nebb-add-expires" type="date" title="Certification expiration" aria-label="Expires">
                 <button type="button" class="btn" style="background:#0F6E56" onclick="addNebbCertifiedPerson()">Add to NEBB list</button>
+              </div>
+              <div class="login-sub" style="color:#666;margin:-4px 0 10px">If they are not in the dropdown, add them here as a technician and they will go on the NEBB list.</div>
+              <div class="admin-add" style="margin:0 0 10px;padding-bottom:10px">
+                <input id="nebb-new-name" placeholder="Full name">
+                <input id="nebb-new-email" type="email" placeholder="name@airadigmsolutions.com">
+                <select id="nebb-new-region" aria-label="Region">
+                  <option value="IM">Intermountain</option>
+                  <option value="KES">KES</option>
+                  <option value="MA">Mid-Atlantic</option>
+                  <option value="MW">Midwest</option>
+                  <option value="National">National</option>
+                  <option value="NE">New England</option>
+                  <option value="PC">Pacific Coast</option>
+                  <option value="RM">Rocky Mountain</option>
+                  <option value="SE">Southeast</option>
+                  <option value="SW">Southwest</option>
+                </select>
+                <button type="button" class="btn" style="background:#1B3A6B" onclick="addNebbCertifiedPerson(true)">Add new tech to NEBB</button>
               </div>
               <div class="report-wrap" id="admin-nebb-report-wrap">
                 <div class="admin-empty" style="padding:12px">Loading…</div>
@@ -2841,14 +2860,19 @@ function buildAdminNebbTableHtml(rows){
       <td>${siteEditor}</td>
       <td class="${deadlineCls}">${adminEsc(deadline)}</td>
       <td>${certActions}</td>
-      <td><button type="button" class="btn" style="padding:5px 8px;font-size:10px" onclick="saveNebbReportRow(${r.person_id})">Save</button></td>
+      <td>
+        <div class="nebb-cert-actions">
+          <button type="button" class="btn" style="padding:5px 8px;font-size:10px" onclick="saveNebbReportRow(${r.person_id})">Save</button>
+          <button type="button" class="btn" style="padding:5px 8px;font-size:10px;background:#C0392B" onclick="removeNebbCertifiedPerson(${r.person_id})">Remove</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
   return `<table class="report-table nebb-cert-table">
     <colgroup>
       <col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:8%">
       <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:7%">
-      <col style="width:20%"><col style="width:5%">
+      <col style="width:18%"><col style="width:8%">
     </colgroup>
     <thead><tr>
       <th>Name</th><th>Role</th><th>Region</th><th>Cert</th><th>Expires</th><th>CECs</th><th>Site Updated</th><th>Days</th><th>Certification PDF</th><th></th>
@@ -2868,22 +2892,29 @@ function renderAdminNebbReport(){
 
 function nebbEligiblePeople(){
   const onList=new Set((adminNebbRows||[]).map(r=>String(r.person_id)));
-  return (adminPeople||[]).filter(p=>!p.deleted&&p.role==='technician'&&!onList.has(String(p.id)))
-    .slice()
-    .sort((a,b)=>String(a.full_name||a.email||'').localeCompare(String(b.full_name||b.email||''),undefined,{sensitivity:'base'}));
+  return (adminPeople||[]).filter(p=>{
+    if(p.deleted)return false;
+    if(onList.has(String(p.id)))return false;
+    return true;
+  }).slice().sort((a,b)=>String(a.full_name||a.email||'').localeCompare(String(b.full_name||b.email||''),undefined,{sensitivity:'base'}));
 }
 function fillNebbAddPersonOptions(){
   const sel=document.getElementById('nebb-add-person');
   if(!sel)return;
   const keep=sel.value;
-  const rows=nebbEligiblePeople();
-  sel.innerHTML='<option value="">Select a technician…</option>'+rows.map(p=>{
-    const label=adminEsc(p.full_name||p.email||'Technician')+(p.region?' · '+adminEsc(regionLabel(p.region)):'');
+  const q=((document.getElementById('nebb-add-search')||{}).value||'').trim().toLowerCase();
+  const rows=nebbEligiblePeople().filter(p=>{
+    if(!q)return true;
+    return((p.full_name||'')+' '+(p.email||'')+' '+(p.region||'')+' '+(p.role||'')).toLowerCase().includes(q);
+  });
+  sel.innerHTML='<option value="">'+(rows.length?(q?'Matching technicians…':'Select a technician…'):'No matching technician — add them below')+'</option>'+rows.map(p=>{
+    const label=adminEsc(p.full_name||p.email||'Technician')+(p.region?' · '+adminEsc(regionLabel(p.region)):'')+(p.role&&p.role!=='technician'?' · '+adminEsc(String(p.role).toUpperCase()):'');
     return `<option value="${p.id}">${label}</option>`;
   }).join('');
   if(keep&&rows.some(p=>String(p.id)===String(keep)))sel.value=keep;
+  else if(rows.length===1&&q)sel.value=String(rows[0].id);
 }
-async function addNebbCertifiedPerson(){
+async function addNebbCertifiedPerson(createNew){
   const err=document.getElementById('admin-nebb-report-err');
   if(err)err.style.display='none';
   if(!adminPeople||!adminPeople.length){
@@ -2893,14 +2924,32 @@ async function addNebbCertifiedPerson(){
   const sel=document.getElementById('nebb-add-person');
   const cert=document.getElementById('nebb-add-cert');
   const exp=document.getElementById('nebb-add-expires');
-  const personId=sel?Number(sel.value):0;
-  const person=(adminPeople||[]).find(p=>Number(p.id)===personId);
-  if(!personId||!person){
-    if(err){err.textContent='Select a technician to add.';err.style.display='block';}
-    return;
-  }
   const status=(cert&&cert.value)||'NEBB CT';
+  const expires=(exp&&exp.value)||null;
+  let personId=sel?Number(sel.value):0;
+  let person=(adminPeople||[]).find(p=>Number(p.id)===personId)||null;
   try{
+    if(createNew || !personId){
+      const name=((document.getElementById('nebb-new-name')||{}).value||'').trim();
+      const email=((document.getElementById('nebb-new-email')||{}).value||'').trim();
+      const region=((document.getElementById('nebb-new-region')||{}).value||'').trim();
+      if(createNew || (name&&email)){
+        if(!name||!email){
+          if(err){err.textContent='To add someone new, enter their full name and company email.';err.style.display='block';}
+          return;
+        }
+        if(!region){
+          if(err){err.textContent='Choose a region for the new technician.';err.style.display='block';}
+          return;
+        }
+        personId=await rpc('app_admin_add_person',{p_email:email,p_role:'technician',p_name:name,p_region:region});
+        person={id:personId,full_name:name,email:email};
+      }
+    }
+    if(!personId){
+      if(err){err.textContent='Search and select a technician, or add them with name and email below.';err.style.display='block';}
+      return;
+    }
     await rpc('app_admin_update_person',{
       p_id:personId,
       p_name:null,
@@ -2910,23 +2959,51 @@ async function addNebbCertifiedPerson(){
       p_start_date:null,
       p_bootcamp_start_date:null,
       p_nebb_status:status,
-      p_cert_expires_on:(exp&&exp.value)||null,
+      p_cert_expires_on:expires,
       p_cecs_complete:null,
       p_nebb_site_updated:null
     });
-    if(sel)sel.value='';
-    if(exp)exp.value='';
+    ['nebb-add-search','nebb-new-name','nebb-new-email','nebb-add-expires'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.value='';
+    });
+    const tableSearch=document.getElementById('admin-nebb-search');
+    if(tableSearch){tableSearch.value='';adminNebbSearch='';}
     try{await loadAdminLists();}catch(_){}
     await loadAdminNebbReport();
-    const search=document.getElementById('admin-nebb-search');
-    if(search){
-      search.value=person.full_name||'';
-      adminNebbSearch=search.value;
-      renderAdminNebbReport();
-    }
   }catch(e){
     if(err){
       err.textContent='Could not add to the NEBB list. '+(e.message||'Try again.');
+      err.style.display='block';
+    }
+  }
+}
+async function removeNebbCertifiedPerson(personId){
+  const row=(adminNebbRows||[]).find(r=>Number(r.person_id)===Number(personId));
+  const name=(row&&row.name)||'this person';
+  if(!confirm('Remove '+name+' from the NEBB Certified list? They stay in Technicians and can be added again later.'))return;
+  const err=document.getElementById('admin-nebb-report-err');
+  if(err)err.style.display='none';
+  try{
+    await rpc('app_admin_update_person',{
+      p_id:personId,
+      p_name:null,
+      p_email:null,
+      p_role:null,
+      p_region:null,
+      p_start_date:null,
+      p_bootcamp_start_date:null,
+      p_nebb_status:'',
+      p_cert_expires_on:'',
+      p_cecs_complete:false,
+      p_nebb_site_updated:false
+    });
+    const tableSearch=document.getElementById('admin-nebb-search');
+    if(tableSearch){tableSearch.value='';adminNebbSearch='';}
+    try{await loadAdminLists();}catch(_){}
+    await loadAdminNebbReport();
+  }catch(e){
+    if(err){
+      err.textContent='Could not remove them from the NEBB list. '+(e.message||'Try again.');
       err.style.display='block';
     }
   }
