@@ -1,6 +1,6 @@
 -- Fix ATA resets: Complete-with-no-score must store an attempt so a retake counts.
 -- Also backfills Lacobee TAB-B-308 if that reset is still missing.
--- Safe to re-run. New query — do not delete Archive / TTB.
+-- Safe to re-run. New query — do not delete Archive SQL.
 
 CREATE OR REPLACE FUNCTION public.app_ata_import_attempts(p_secret text, p_rows jsonb)
 RETURNS json
