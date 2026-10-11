@@ -169,6 +169,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 /* SKILLS BOARD */
 .sk-sec{margin-top:16px;border:1px solid #e6e6e6;border-radius:12px;overflow:hidden}
 .sk-sec-h{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EEF4FF;border-bottom:1px solid #dce7fb}
+.sk-sec-h.sk-sec-toggle{cursor:pointer;user-select:none}
+.sk-sec-h.sk-sec-toggle[aria-expanded="false"]{border-bottom:none}
+.sk-sec-h.sk-sec-toggle[aria-expanded="false"] .admin-sec-chevron{transform:rotate(-90deg)}
+.sk-sec-body.collapsed{display:none}
 .sk-sec-emoji{font-size:16px}
 .sk-sec-name{flex:1;min-width:0;font-size:14px;font-weight:800;color:#1B3A6B;border:1.5px solid transparent;background:transparent;border-radius:8px;padding:5px 8px;outline:none}
 .sk-sec-name:focus{border-color:#1B3A6B;background:#fff}
@@ -5131,13 +5135,32 @@ async function restoreTech(id){
 }
 
 // ── Admin: skills & categories (drag and drop) ───────────────────────────────
-let adminSkills=[],skEditId=null,skDragId=null;
+let adminSkills=[],skEditId=null,skDragId=null,skSecOpen={};
 function skErr(msg){const e=document.getElementById('skills-err');if(!msg){e.style.display='none';return;}e.textContent=msg;e.style.display='block';}
 
 function openSkills(){
   skEditId=null;
+  skSecOpen={};
   showPage('pg-skills');
   loadSkillsAdmin();
+}
+
+function toggleSkSection(sectionId){
+  const id=Number(sectionId);
+  skSecOpen[id]=!skSecOpen[id];
+  applySkSectionState(id);
+}
+function applySkSectionState(sectionId){
+  const id=Number(sectionId);
+  const body=document.getElementById('sk-sec-body-'+id);
+  const head=document.getElementById('sk-sec-h-'+id);
+  if(!body||!head)return;
+  const open=!!skSecOpen[id];
+  body.classList.toggle('collapsed',!open);
+  head.setAttribute('aria-expanded',open?'true':'false');
+}
+function skSectionOpen(sectionId){
+  return !!skSecOpen[Number(sectionId)];
 }
 
 async function loadSkillsAdmin(){
@@ -5158,24 +5181,28 @@ function renderSkillsBoard(){
   const board=document.getElementById('skills-board');
   board.innerHTML=adminSkills.map(sec=>{
     const isChecklist=(sec.section_type==='checklist');
+    const open=skSectionOpen(sec.id);
     const tag=`<span class="sk-sec-tag ${isChecklist?'checklist':'rated'}">${isChecklist?'Checklist':'Scored'}</span>`;
     const items=(sec.skills&&sec.skills.length)
       ? sec.skills.map(skItemHtml).join('')
       : `<div class="sk-empty">No ${isChecklist?'tasks':'skills'} — drag one here or add below.</div>`;
     return `<div class="sk-sec" data-section-type="${isChecklist?'checklist':'rated'}">
-      <div class="sk-sec-h">
+      <div class="sk-sec-h sk-sec-toggle" id="sk-sec-h-${sec.id}" role="button" tabindex="0" aria-expanded="${open?'true':'false'}" onclick="toggleSkSection(${sec.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSkSection(${sec.id});}">
+        <span class="admin-sec-chevron">▼</span>
         <span class="sk-sec-emoji">${adminEsc(sec.emoji||'')}</span>
-        <input class="sk-sec-name" value="${adminEsc(sec.section)}" onchange="renameSection(${sec.id},this.value)" title="Rename category">
+        <input class="sk-sec-name" value="${adminEsc(sec.section)}" onchange="renameSection(${sec.id},this.value)" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" title="Rename category">
         ${tag}
         <span class="sk-sec-ct">${sec.skills?sec.skills.length:0}</span>
       </div>
-      <div class="sk-list" data-section-id="${sec.id}" ondragover="skDragOver(event,this)" ondragleave="skDragLeave(event,this)" ondrop="skDrop(event,${sec.id},this)">
-        ${items}
-      </div>
-      <div class="sk-add">
-        <input id="sk-add-cat-${sec.id}" placeholder="Category (optional)">
-        <input id="sk-add-name-${sec.id}" placeholder="${isChecklist?'New task name':'New skill name'}">
-        <button type="button" class="btn" style="padding:8px 14px" onclick="addSkill(${sec.id})">Add</button>
+      <div class="sk-sec-body${open?'':' collapsed'}" id="sk-sec-body-${sec.id}">
+        <div class="sk-list" data-section-id="${sec.id}" ondragover="skDragOver(event,this)" ondragleave="skDragLeave(event,this)" ondrop="skDrop(event,${sec.id},this)">
+          ${items}
+        </div>
+        <div class="sk-add">
+          <input id="sk-add-cat-${sec.id}" placeholder="Category (optional)">
+          <input id="sk-add-name-${sec.id}" placeholder="${isChecklist?'New task name':'New skill name'}">
+          <button type="button" class="btn" style="padding:8px 14px" onclick="addSkill(${sec.id})">Add</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -5251,6 +5278,7 @@ async function addSkill(sectionId){
   const name=(nameEl?nameEl.value:'').trim();
   if(!name){skErr('Enter a skill name.');return;}
   skErr('');
+  skSecOpen[Number(sectionId)]=true;
   try{
     await rpc('app_admin_add_skill',{p_section_id:sectionId,p_name:name,p_category:(catEl?catEl.value:'').trim()||null});
     skillsLoaded=false;
@@ -5258,7 +5286,12 @@ async function addSkill(sectionId){
   }catch(e){skErr('Could not add skill: '+(e.message||'try again'));}
 }
 
-function editSkill(id){skEditId=id;renderSkillsBoard();}
+function editSkill(id){
+  skEditId=id;
+  const sec=adminSkills.find(s=>(s.skills||[]).some(sk=>sk.id===id));
+  if(sec)skSecOpen[sec.id]=true;
+  renderSkillsBoard();
+}
 function cancelSkillEdit(){skEditId=null;renderSkillsBoard();}
 
 async function saveSkill(id){
