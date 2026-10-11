@@ -1378,6 +1378,7 @@ body.mobile-nav-open{overflow:hidden}
 // the fallback used if the skills service can't be reached.
 let SKILL_CATS=[
   {key:'safety_avg',skey:'safety',label:'Safety / Core Values',emoji:'🛡️',codes:[]},
+  {key:null,skey:'safety_instruments',label:'Safety and Instruments',emoji:'🧰',codes:[]},
   {key:'basic_avg',skey:'basic',label:'Basic',emoji:'🟩',codes:[]},
   {key:'intermediate_avg',skey:'intermediate',label:'Intermediate',emoji:'🟦',codes:[]},
   {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[]},
@@ -1402,6 +1403,7 @@ let QUESTIONNAIRE=[
     {id:'s12',cat:'CORE VALUES',name:'Accountability: Take ownership of actions and follow through on commitments.'},
     {id:'s13',cat:'TOOLS',name:'100% Tooled-Up: Keep the Tool Report on USABalancer up to date to maintain full inventory.'}
   ]},
+  {section:'Safety and Instruments',emoji:'🧰',key:'safety_instruments',color:'#0F6E56',avg_field:null,skills:[]},
   {section:'Basic Skills (0–3 months)',emoji:'🟩',key:'basic',color:'#1D9E75',skills:[
     {id:'b1',cat:'TAB MATH',name:'Area & Volume Calculations'},
     {id:'b2',cat:'TAB MATH',name:'Basic Algebra'},
@@ -1617,9 +1619,10 @@ function buildSkillModel(sections){
   const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',checklist_mode:s.checklist_mode||null,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
   CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist');
   QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist');
-  const toCat=s=>({key:s.avg_field,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
+  const toCat=s=>({key:s.avg_field||null,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
   TECH_CATS=QUESTIONNAIRE.map(toCat);
-  SKILL_CATS=QUESTIONNAIRE.filter(s=>s.avg_field).map(toCat);
+  // Include scored sections even without a legacy avg column (scores come from raw_scores).
+  SKILL_CATS=QUESTIONNAIRE.filter(s=>(s.section_type||'rated')!=='checklist').map(toCat);
 }
 const PRE_BOOTCAMP_RATINGS=[
   {v:0,l:'Not Yet',pct:0},
@@ -1791,12 +1794,14 @@ function assessmentHasRawScores(a){
 // Score for a section on one assessment: legacy avg column if present, else
 // computed from the per-skill raw_scores snapshot (works for new sections).
 function sectionScore(a,cat){
+  if(!a||!cat)return null;
   if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null)return a[cat.key];
   const raw=rawOf(a);
   if(!raw||!cat.codes||!cat.codes.length)return null;
   const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null);
   return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
 }
+function catScore(a,cat){return sectionScore(a,cat);}
 function sectionProficiencyPct(avg,secOrKey){
   if(avg===null||avg===undefined)return null;
   return ratingPct(avg,sectionScaleMax(secOrKey));
@@ -5421,9 +5426,10 @@ function requiredAssessmentSections(t){
   const months=employmentTenureMonths(t);
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
+  const coreSecs=['safety','safety_instruments','basic'];
   if(months===null)return{
     all:true,
-    rated:['safety','basic','intermediate','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','advanced',...accountSecs],
     checklist:[],
     level:null,
     message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
@@ -5434,26 +5440,26 @@ function requiredAssessmentSections(t){
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,
-    rated:['safety','basic','intermediate','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','advanced',...accountSecs],
     checklist,
     level:'advanced',
-    message:'Required Sections: Core, Basics, Intermediate, Advanced, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Intermediate, Advanced, National & Survey'
   };
   // INTERMEDIATE — 4.0–12.9 months
   if(months>=4)return{
     all:false,
-    rated:['safety','basic','intermediate',...accountSecs],
+    rated:[...coreSecs,'intermediate',...accountSecs],
     checklist,
     level:'intermediate',
-    message:'Required Sections: Core, Basics, Intermediate, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Intermediate, National & Survey'
   };
   // BASIC — 0–3.9 months
   return{
     all:false,
-    rated:['safety','basic',...accountSecs],
+    rated:[...coreSecs,...accountSecs],
     checklist,
     level:'basic',
-    message:'Required Sections: Core, Basics, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, National & Survey'
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
@@ -5515,7 +5521,7 @@ function hideAssessmentStartModal(){
     });
   }
 })();
-const COMPETENCE_LABELS={safety:'Safety',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey Accounts',national_accounts:'National Accounts'};
+const COMPETENCE_LABELS={safety:'Safety',safety_instruments:'Safety & Instruments',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey Accounts',national_accounts:'National Accounts'};
 function nebbStatusTier(stored){
   if(!stored)return 'training';
   const idx=NEBB_STATUS_OPTIONS.findIndex(o=>o.value===stored);
@@ -5669,7 +5675,7 @@ function renderMetrics(techs){
   const total=techs.reduce((s,t)=>s+t.assessments.length,0);
   const avgs=techs.filter(t=>t.assessments.length).map(t=>{
     const last=t.assessments[t.assessments.length-1];
-    const vals=SKILL_CATS.map(c=>last[c.key]).filter(v=>v!==null);
+    const vals=SKILL_CATS.map(c=>catScore(last,c)).filter(v=>v!==null);
     return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
   const avg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'—';
@@ -5687,7 +5693,10 @@ function countStalled(techs){
   techs.forEach(t=>{
     if(t.assessments.length>=2){
       const last=t.assessments[t.assessments.length-1],prev=t.assessments[t.assessments.length-2];
-      SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])n++;});
+      SKILL_CATS.forEach(c=>{
+        const lv=catScore(last,c),pv=catScore(prev,c);
+        if(lv!==null&&pv!==null&&lv<=2&&lv<=pv)n++;
+      });
     }
   });
   return n;
@@ -5698,7 +5707,10 @@ function renderAlertBox(techs){
   techs.forEach(t=>{
     if(t.assessments.length>=2){
       const last=t.assessments[t.assessments.length-1],prev=t.assessments[t.assessments.length-2];
-      SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])issues.push(`${t.name.split(' ')[0]} — ${c.label}`);});
+      SKILL_CATS.forEach(c=>{
+        const lv=catScore(last,c),pv=catScore(prev,c);
+        if(lv!==null&&pv!==null&&lv<=2&&lv<=pv)issues.push(`${t.name.split(' ')[0]} — ${c.label}`);
+      });
     }
   });
   const box=document.getElementById('pm-alert-box');
@@ -5717,9 +5729,10 @@ function renderTechGrid(techs){
     const prev=t.assessments.length>1?t.assessments[t.assessments.length-2]:null;
     const startD=techStartDate(t);
     const scores=SKILL_CATS.map(c=>{
-      if(!last||last[c.key]===null)return'';
-      const v=last[c.key];
-      const stalled=prev&&prev[c.key]!==null&&v<=2&&v<=prev[c.key];
+      const v=last?catScore(last,c):null;
+      if(v===null)return'';
+      const pv=prev?catScore(prev,c):null;
+      const stalled=pv!==null&&v<=2&&v<=pv;
       return`<span class="sp ${spClass(v)}">${c.emoji} ${v.toFixed(1)}${stalled?' <span class="flag">!</span>':''}</span>`;
     }).join('');
     return`<div class="tcard" onclick="openTech(${idx})">
@@ -5742,8 +5755,12 @@ function renderAlertsView(techs){
     if(t.assessments.length>=2){
       const last=t.assessments[t.assessments.length-1],prev=t.assessments[t.assessments.length-2];
       const stalled=[];
-      SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push(c.label);});
-      if(stalled.length)items.push(`<div class="alert-item"><div class="alert-item-icon">⚠️</div><div><div class="alert-item-name">${t.name}</div><div class="alert-item-detail">${stalled.join(' · ')}</div></div><div class="alert-item-score">${last[SKILL_CATS.find(c=>stalled.includes(c.label)).key].toFixed(1)} =</div></div>`);
+      let firstVal=null;
+      SKILL_CATS.forEach(c=>{
+        const lv=catScore(last,c),pv=catScore(prev,c);
+        if(lv!==null&&pv!==null&&lv<=2&&lv<=pv){stalled.push(c.label);if(firstVal===null)firstVal=lv;}
+      });
+      if(stalled.length)items.push(`<div class="alert-item"><div class="alert-item-icon">⚠️</div><div><div class="alert-item-name">${t.name}</div><div class="alert-item-detail">${stalled.join(' · ')}</div></div><div class="alert-item-score">${Number(firstVal).toFixed(1)} =</div></div>`);
     }
   });
   document.getElementById('alerts-list').innerHTML=items.length?items.join(''):'<div class="loading" style="color:#5DCB9A">✅ No stalled skills right now!</div>';
@@ -5752,12 +5769,15 @@ function renderAlertsView(techs){
 function renderCompareView(techs){
   const thead=document.querySelector('#compare-table thead');
   const tbody=document.querySelector('#compare-table tbody');
-  const visCats=SKILL_CATS.filter(c=>techs.some(t=>t.assessments.length&&t.assessments[t.assessments.length-1][c.key]!==null));
+  const visCats=SKILL_CATS.filter(c=>techs.some(t=>{
+    const last=t.assessments&&t.assessments.length?t.assessments[t.assessments.length-1]:null;
+    return last&&catScore(last,c)!==null;
+  }));
   thead.innerHTML=`<tr><th>Technician</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}</tr>`;
   tbody.innerHTML=techs.map(t=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     const cells=visCats.map(c=>{
-      const v=last?last[c.key]:null;
+      const v=last?catScore(last,c):null;
       return v!==null?`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span></td>`:`<td style="color:rgba(255,255,255,0.2)">—</td>`;
     }).join('');
     return`<tr><td><div class="ct-name">${t.name}</div><div class="ct-sub">${techStatusSummaryText(t)}</div></td>${cells}</tr>`;
@@ -5928,7 +5948,7 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   return QUESTIONNAIRE.map(sec=>{
     const secKey=sec.key;
     const modId=idPrefix+secKey;
-    const catKey=SKILL_CATS.find(c=>c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))||null;
+    const catKey=SKILL_CATS.find(c=>c.skey===secKey||(c.key&&(c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(rawScores,sec);
     const pct=sectionProficiencyPct(avg,sec);
     const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.55)';
@@ -6132,7 +6152,7 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
   const prevRaw=prevAssessment?(rawOf(prevAssessment)||{}):{};
 
   QUESTIONNAIRE.forEach(sec=>{
-    const catKey=SKILL_CATS.find(c=>c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))||null;
+    const catKey=SKILL_CATS.find(c=>c.skey===sec.key||(c.key&&(c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(raw,sec);
     const pct=sectionProficiencyPct(avg,sec);
     const skills=sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
@@ -6365,8 +6385,9 @@ async function renderDetailView(t){
   t.checklist_completed=completed;
 
   const compRows=SKILL_CATS.map(c=>{
-    if(!last||last[c.key]===null)return'';
-    const lv=last[c.key],pv=prev?prev[c.key]:null;
+    const lv=last?catScore(last,c):null;
+    if(lv===null)return'';
+    const pv=prev?catScore(prev,c):null;
     const lPct=skillRatingPct(lv);
     const pPct=pv!==null?skillRatingPct(pv):0;
     const diff=pv!==null?(lv-pv):null;
@@ -6385,12 +6406,12 @@ async function renderDetailView(t){
 
   const moduleHTML=buildAssessmentModulesHtml(last,prev,{idPrefix:'',startOpen:false,showTrend:!!prev});
 
-  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>a[c.key]!==null));
+  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>catScore(a,c)!==null));
   const histRows=[...assessments].reverse().map((a,ri,arr)=>{
     const prevA=arr[ri+1];
     const cells=visCats.map(c=>{
-      const v=a[c.key];if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
-      const pv=prevA?prevA[c.key]:null;
+      const v=catScore(a,c);if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
+      const pv=prevA?catScore(prevA,c):null;
       const tr=pv!==null?(v>pv?`<span class="trend-up" style="font-size:10px"> ↑</span>`:v<pv?`<span class="trend-dn" style="font-size:10px"> ↓</span>`:`<span class="trend-eq" style="font-size:10px"> =</span>`):'';
       return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span>${tr}</td>`;
     }).join('');
@@ -6481,9 +6502,10 @@ function renderTechHome(t,opts){
   const first=assessments.length?assessments[0]:null;
 
   const myBars=SKILL_CATS.map(c=>{
-    if(!last||last[c.key]===null)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
+    const v=last?(c.key!=null&&last[c.key]!==undefined&&last[c.key]!==null?last[c.key]:sectionScore(last,c)):null;
+    if(v===null||v===undefined)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
     const max=sectionScaleMax(c.skey);
-    const v=last[c.key],pct=ratingPct(v,max),col=scoreColor(v);
+    const pct=ratingPct(v,max),col=scoreColor(v);
     const shown=Math.min(Number(v),max);
     return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${shown.toFixed(1)} / ${max}</span></div>`;
   }).join('');
@@ -6499,16 +6521,19 @@ function renderTechHome(t,opts){
         if(v!==null&&v<=2&&(pv===null||v<=pv))stalled.push({label:sk.name,section:sec.section,val:v});
       });});
     } else {
-      SKILL_CATS.forEach(c=>{if(last[c.key]!==null&&prev[c.key]!==null&&last[c.key]<=2&&last[c.key]<=prev[c.key])stalled.push({label:c.label,val:last[c.key]});});
+      SKILL_CATS.forEach(c=>{
+        const lv=catScore(last,c),pv=catScore(prev,c);
+        if(lv!==null&&pv!==null&&lv<=2&&lv<=pv)stalled.push({label:c.label,val:lv});
+      });
     }
   }
 
-  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>a[c.key]!==null));
+  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>catScore(a,c)!==null));
   const histRows=[...assessments].reverse().map((a,ri,arr)=>{
     const prevA=arr[ri+1];
     const cells=visCats.map(c=>{
-      const v=a[c.key];if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
-      const pv=prevA?prevA[c.key]:null;
+      const v=catScore(a,c);if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
+      const pv=prevA?catScore(prevA,c):null;
       const tr=pv!==null?(v>pv?`<span class="trend-up" style="font-size:10px"> ↑</span>`:v<pv?`<span class="trend-dn" style="font-size:10px"> ↓</span>`:''):'';
       return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span>${tr}</td>`;
     }).join('');

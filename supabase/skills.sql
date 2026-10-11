@@ -58,25 +58,27 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
   ('orientation',  'Orientation',  '📋', '#6B8CAE', NULL,           1, 'checklist', 'checkbox'),
   ('pre_bootcamp', 'Pre-Bootcamp', '🎒', '#8B7355', NULL,           2, 'checklist', 'rated'),
   ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated', NULL),
-  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        4, 'rated', NULL),
-  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 5, 'rated', NULL),
-  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     6, 'rated', NULL),
-  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',       7, 'rated', NULL),
-  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 8, 'rated', NULL)
+  ('safety_instruments', 'Safety and Instruments',     '🧰', '#0F6E56', NULL,                4, 'rated', NULL),
+  ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        5, 'rated', NULL),
+  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 6, 'rated', NULL),
+  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     7, 'rated', NULL),
+  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',       8, 'rated', NULL),
+  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 9, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
       checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
-      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp')
+      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments')
                           THEN EXCLUDED.sort_order
                           ELSE public.skill_sections.sort_order END;
 
 -- Ensure scored sections sit below the checklist sections on existing databases.
 UPDATE public.skill_sections SET sort_order = 3, section_type = 'rated' WHERE skey = 'safety';
-UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated' WHERE skey = 'basic';
-UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'intermediate';
-UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'advanced';
-UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
-UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated' WHERE skey = 'national_accounts';
+UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated', label = 'Safety and Instruments', emoji = '🧰', color = '#0F6E56' WHERE skey = 'safety_instruments';
+UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'basic';
+UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'intermediate';
+UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated' WHERE skey = 'advanced';
+UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
+UPDATE public.skill_sections SET sort_order = 9, section_type = 'rated' WHERE skey = 'national_accounts';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)
