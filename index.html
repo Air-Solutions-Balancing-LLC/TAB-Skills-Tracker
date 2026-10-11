@@ -1535,11 +1535,17 @@ const JOB_ACCOUNTS_RATING_OPTIONS=[
 ];
 function jobAccountsLabel(v){const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function isJobAccountsSection(sec){return sec&&(sec.key==='national_accounts'||sec.key==='survey');}
-function skillRatingPct(v){
-  const n=Number(v);
-  if(!(n>=1))return 0;
-  return Math.round((Math.min(n,SKILL_RATING_MAX)/SKILL_RATING_MAX)*100);
+function sectionScaleMax(secOrKey){
+  const key=typeof secOrKey==='string'?secOrKey:(secOrKey&&(secOrKey.key||secOrKey.skey));
+  return (key==='survey'||key==='national_accounts')?5:SKILL_RATING_MAX;
 }
+function ratingPct(v,max){
+  const n=Number(v);
+  const m=Number(max)||SKILL_RATING_MAX;
+  if(!(n>=1)||!(m>=1))return 0;
+  return Math.round((Math.min(n,m)/m)*100);
+}
+function skillRatingPct(v){return ratingPct(v,SKILL_RATING_MAX);}
 function clampSkillRating(v){
   const n=Math.round(Number(v));
   if(!(n>=1))return null;
@@ -1791,8 +1797,9 @@ function sectionScore(a,cat){
   const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null);
   return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
 }
-function sectionProficiencyPct(avg){
-  return avg!==null&&avg!==undefined?skillRatingPct(avg):null;
+function sectionProficiencyPct(avg,secOrKey){
+  if(avg===null||avg===undefined)return null;
+  return ratingPct(avg,sectionScaleMax(secOrKey));
 }
 function sectionRawAvg(rawScores,sec){
   const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
@@ -2021,9 +2028,10 @@ function techSidebarSectionPct(sec){
   }
   const raw=lastAssessmentRawScores();
   let sum=0,n=0;
+  const max=sectionScaleMax(sec);
   sec.skills.forEach(sk=>{
     const v=Number(raw[sk.id]);
-    if(v>=1&&v<=5){sum+=skillRatingPct(v);n++;}
+    if(v>=1&&v<=5){sum+=ratingPct(v,max);n++;}
   });
   return n?Math.round(sum/n):0;
 }
@@ -5922,9 +5930,9 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     const modId=idPrefix+secKey;
     const catKey=SKILL_CATS.find(c=>c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(rawScores,sec);
-    const pct=sectionProficiencyPct(avg);
+    const pct=sectionProficiencyPct(avg,sec);
     const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.55)';
-    const avgLabel=avg!==null?`avg ${avg.toFixed(1)}`:'not yet rated';
+    const avgLabel=avg!==null?`avg ${avg.toFixed(1)} / ${sectionScaleMax(sec)}`:'not yet rated';
     const warn=avg!==null&&avg<=2?' ⚠️':'';
     let skills=sec.skills;
     if(ratingFilter){
@@ -6126,12 +6134,12 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
   QUESTIONNAIRE.forEach(sec=>{
     const catKey=SKILL_CATS.find(c=>c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(raw,sec);
-    const pct=sectionProficiencyPct(avg);
+    const pct=sectionProficiencyPct(avg,sec);
     const skills=sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
     if(!skills.length)return;
 
     let head=pdfSafeText(sec.section);
-    if(avg!==null)head+='  avg '+avg.toFixed(1)+(pct!=null?' ('+pct+'%)':'');
+    if(avg!==null)head+='  avg '+avg.toFixed(1)+' / '+sectionScaleMax(sec)+(pct!=null?' ('+pct+'%)':'');
     needPage(28);
     doc.setFillColor(27,58,107);
     doc.rect(margin,y-10,contentW,22,'F');
@@ -6474,8 +6482,10 @@ function renderTechHome(t,opts){
 
   const myBars=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
-    const v=last[c.key],pct=skillRatingPct(v),col=scoreColor(v);
-    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
+    const max=sectionScaleMax(c.skey);
+    const v=last[c.key],pct=ratingPct(v,max),col=scoreColor(v);
+    const shown=Math.min(Number(v),max);
+    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${shown.toFixed(1)} / ${max}</span></div>`;
   }).join('');
 
   const stalled=[];
