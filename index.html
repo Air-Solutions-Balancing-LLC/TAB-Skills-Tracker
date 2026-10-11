@@ -738,11 +738,19 @@ body.mobile-nav-open{overflow:hidden}
         </div>
       </div>
       <div class="login-sub" style="color:#666">Add or remove Admins, PMs/APMs, and Technicians</div>
-      <button type="button" class="btn btn-full" style="background:#0F6E56;margin-bottom:4px" onclick="openSkills()">🧩 Manage Skills &amp; Categories</button>
       <div class="err" id="admin-err"></div>
 
+      <div class="admin-sec">
+        <button type="button" class="admin-sec-h admin-sec-toggle" aria-expanded="false" onclick="openSkills()">
+          <span class="admin-sec-chevron">▼</span> Manage Skills &amp; Categories
+        </button>
+      </div>
+
       <div class="admin-sec" id="admin-reports-sec">
-        <div class="admin-sec-h">Reports</div>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-reports" aria-expanded="false" onclick="toggleAdminSection('reports')">
+          <span class="admin-sec-chevron">▼</span> Reports
+        </button>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-reports">
         <div class="report-list">
           <div class="report-item" id="report-activity">
             <div class="report-head">
@@ -910,6 +918,7 @@ body.mobile-nav-open{overflow:hidden}
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -2404,7 +2413,7 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
-const adminSecOpen={ata:false,admins:false,pms:false,techs:false,deleted:false};
+const adminSecOpen={reports:false,ata:false,admins:false,pms:false,techs:false,deleted:false};
 const reportTableOpen={activity:false,preboot:false,nebb:false};
 
 function toggleReportTable(key){
