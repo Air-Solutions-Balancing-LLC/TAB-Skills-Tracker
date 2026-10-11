@@ -3,7 +3,7 @@
 -- Safe to re-run. Adds section_type, checklist sections, and checklist RPCs.
 -- (skills.sql also includes these migrations for fresh installs.)
 
--- ── Section type: rated (1–5 skills) vs checklist (complete / incomplete) ─────
+-- ── Section type: rated (1–4 skills) vs checklist (complete / incomplete) ─────
 ALTER TABLE public.skill_sections
   ADD COLUMN IF NOT EXISTS section_type text NOT NULL DEFAULT 'rated';
 

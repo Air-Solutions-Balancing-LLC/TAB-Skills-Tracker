@@ -450,7 +450,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .rating-btn.selected-1{background:#FFF5F5;border-color:#e74c3c;color:#c0392b;font-weight:800}
 .rating-btn.selected-2{background:#FFF8F0;border-color:#e67e22;color:#d35400;font-weight:800}
 .rating-btn.selected-3{background:#EEF4FF;border-color:#4A90D9;color:#1B3A6B;font-weight:800}
-.rating-btn.selected-4{background:#F3E8FF;border-color:#7C3AED;color:#6D28D9;font-weight:800}
+.rating-btn.selected-4{background:#E1F5EE;border-color:#085041;color:#085041;font-weight:800}
 .rating-btn.selected-5{background:#E1F5EE;border-color:#085041;color:#085041;font-weight:800}
 .rating-label{font-size:10px;margin-top:3px;opacity:.7}
 .na-rating-row .rating-btn{min-width:0;padding:8px 2px}
@@ -495,8 +495,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-filter-btn[data-rating="1"].active{border-color:#888;background:#888}
 .tech-res-filter-btn[data-rating="2"].active{border-color:#4A90D9;background:#4A90D9}
 .tech-res-filter-btn[data-rating="3"].active{border-color:#7aaedd;background:#7aaedd}
-.tech-res-filter-btn[data-rating="4"].active{border-color:#7C3AED;background:#7C3AED}
-.tech-res-filter-btn[data-rating="5"].active{border-color:#1D9E75;background:#1D9E75}
+.tech-res-filter-btn[data-rating="4"].active{border-color:#1D9E75;background:#1D9E75}
+.tech-res-filter-btn[data-rating="5"].active{border-color:#085041;background:#085041}
 .tech-res-empty{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;font-size:13px;color:#888;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-results-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
 .tech-results-footer{flex-shrink:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e8e8}
@@ -1522,7 +1522,10 @@ let QUESTIONNAIRE=[
   {section:'National Accounts',emoji:'🏢',key:'national_accounts',color:'#5B7C99',avg_field:'national_accounts_avg',skills:[]}
 ];
 
+const SKILL_RATING_MAX=4;
+// Index 5 kept for historical assessments that used the old 1–5 scale.
 const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+const SKILL_RATING_VALUES=[1,2,3,4];
 const JOB_ACCOUNTS_RATING_OPTIONS=[
   {v:1,label:'No experience',btn:'No Exp'},
   {v:2,label:'One to two jobs',btn:'1–2'},
@@ -1532,6 +1535,16 @@ const JOB_ACCOUNTS_RATING_OPTIONS=[
 ];
 function jobAccountsLabel(v){const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function isJobAccountsSection(sec){return sec&&(sec.key==='national_accounts'||sec.key==='survey');}
+function skillRatingPct(v){
+  const n=Number(v);
+  if(!(n>=1))return 0;
+  return Math.round((Math.min(n,SKILL_RATING_MAX)/SKILL_RATING_MAX)*100);
+}
+function clampSkillRating(v){
+  const n=Math.round(Number(v));
+  if(!(n>=1))return null;
+  return Math.min(n,SKILL_RATING_MAX);
+}
 function jobAccountsSectionIntro(sec){
   if(sec&&sec.key==='survey')return'For each survey job below, rate how many times you have completed it:';
   return'For each job type below, rate how many projects you have completed:';
@@ -1571,12 +1584,11 @@ const RATING_SCALE_DEFS=[
   {n:1,label:'Beginner',text:'Not Seen/Not enough experience.'},
   {n:2,label:'Developing',text:'Has completed the skill a few times but still needs guidance and is not yet able to perform it independently.'},
   {n:3,label:'Experienced',text:'Has completed the skill multiple times and can perform it with minimal guidance, though may still need occasional support or a refresher.'},
-  {n:4,label:'Proficient',text:'Confident performing the skill independently.'},
-  {n:5,label:'Exceptional',text:'Demonstrates full mastery. Can teach or mentor others and is recognized as a subject matter expert. Please note: This means that you would feel comfortable explaining the method, theory, and calculations during a job meeting or to a commissioning authority or engineer.'}
+  {n:4,label:'Proficient',text:'Confident performing the skill independently.'}
 ];
 function ratingScaleLegendHtml(){
   return`<div class="q-legend">
-    <div class="q-legend-intro">Please rate each one from 1 (Beginner) to 5 (Exceptional).</div>
+    <div class="q-legend-intro">Please rate each one from 1 (Beginner) to 4 (Proficient).</div>
     <ul class="q-legend-list">
       ${RATING_SCALE_DEFS.map(d=>`<li><strong>${d.n} = ${d.label}</strong> — ${d.text}</li>`).join('')}
     </ul>
@@ -1780,7 +1792,7 @@ function sectionScore(a,cat){
   return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
 }
 function sectionProficiencyPct(avg){
-  return avg!==null&&avg!==undefined?Math.round((avg/5)*100):null;
+  return avg!==null&&avg!==undefined?skillRatingPct(avg):null;
 }
 function sectionRawAvg(rawScores,sec){
   const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
@@ -2011,7 +2023,7 @@ function techSidebarSectionPct(sec){
   let sum=0,n=0;
   sec.skills.forEach(sk=>{
     const v=Number(raw[sk.id]);
-    if(v>=1&&v<=5){sum+=Math.round((v/5)*100);n++;}
+    if(v>=1&&v<=5){sum+=skillRatingPct(v);n++;}
   });
   return n?Math.round(sum/n):0;
 }
@@ -5320,26 +5332,24 @@ async function deleteSkill(id){
 
 function scoreColor(v){
   if(v===null)return'rgba(255,255,255,0.2)';
-  if(v>=5)return'#1D9E75';
-  if(v>=4)return'#7C3AED';
-  if(v>=3)return'#4A90D9';
-  if(v>=2)return'#9090c0';
+  // 4 is the new top (Proficient); 5 kept green for historical Exceptional ratings.
+  if(v>=4)return'#1D9E75';
+  if(v>=3)return'#7C3AED';
+  if(v>=2)return'#4A90D9';
   return'#6060a0';
 }
 function scoreBg(v){
   if(v===null)return'rgba(255,255,255,0.05)';
-  if(v>=5)return'rgba(29,158,117,0.3)';
-  if(v>=4)return'rgba(124,58,237,0.28)';
-  if(v>=3)return'rgba(27,58,107,0.4)';
-  if(v>=2)return'rgba(80,80,110,0.4)';
+  if(v>=4)return'rgba(29,158,117,0.3)';
+  if(v>=3)return'rgba(124,58,237,0.28)';
+  if(v>=2)return'rgba(27,58,107,0.4)';
   return'rgba(55,55,80,0.5)';
 }
 function spClass(v){
   if(v===null)return'sp4';
-  if(v>=5)return'sp1';
-  if(v>=4)return'sp5';
-  if(v>=3)return'sp2';
-  if(v>=2)return'sp3';
+  if(v>=4)return'sp1';
+  if(v>=3)return'sp5';
+  if(v>=2)return'sp2';
   return'sp4';
 }
 function initials(name){return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
@@ -5447,12 +5457,17 @@ function visibleQuestionnaireSections(t){
 }
 function filterAnswersToVisibleSections(raw,t){
   const filled={};
-  const ids=new Set();
-  visibleQuestionnaireSections(t).forEach(sec=>sec.skills.forEach(sk=>ids.add(sk.id)));
+  const byId={};
+  visibleQuestionnaireSections(t).forEach(sec=>{
+    (sec.skills||[]).forEach(sk=>{byId[sk.id]=sec;});
+  });
   Object.keys(raw||{}).forEach(id=>{
-    if(!ids.has(id))return;
+    const sec=byId[id];
+    if(!sec)return;
     const n=Math.round(Number(raw[id]));
-    if(n>=1&&n<=5)filled[id]=n;
+    if(!(n>=1&&n<=5))return;
+    // Skills are 1–4 going forward; clamp legacy 5s when pre-filling. Job accounts stay 1–5.
+    filled[id]=isJobAccountsSection(sec)?n:clampSkillRating(n);
   });
   return filled;
 }
@@ -6344,8 +6359,8 @@ async function renderDetailView(t){
   const compRows=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return'';
     const lv=last[c.key],pv=prev?prev[c.key]:null;
-    const lPct=Math.round((lv/5)*100);
-    const pPct=pv!==null?Math.round((pv/5)*100):0;
+    const lPct=skillRatingPct(lv);
+    const pPct=pv!==null?skillRatingPct(pv):0;
     const diff=pv!==null?(lv-pv):null;
     const trendHtml=diff===null?'<span style="color:rgba(255,255,255,0.2)">N/A</span>':diff>0?`<span class="comp-trend trend-up">+${diff.toFixed(1)} ↑</span>`:diff<0?`<span class="comp-trend trend-dn">${diff.toFixed(1)} ↓</span>`:`<span class="comp-trend trend-eq">= </span>`;
     return`<div class="comp-row">
@@ -6459,7 +6474,7 @@ function renderTechHome(t,opts){
 
   const myBars=SKILL_CATS.map(c=>{
     if(!last||last[c.key]===null)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
-    const v=last[c.key],pct=Math.round((v/5)*100),col=scoreColor(v);
+    const v=last[c.key],pct=skillRatingPct(v),col=scoreColor(v);
     return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${v.toFixed(1)} / 5</span></div>`;
   }).join('');
 
@@ -6695,7 +6710,7 @@ function renderQuestionnaire(){
   const sections=visible.map(sec=>{
     const secSub=isJobAccountsSection(sec)
       ?jobAccountsSectionSub(sec)
-      :'Rate each skill from 1 (Beginner) to 5 (Exceptional).';
+      :'Rate each skill from 1 (Beginner) to 4 (Proficient).';
     const skillHtml=isJobAccountsSection(sec)
       ?jobAccountsScaleLegendHtml(sec)+sec.skills.map(sk=>jobAccountsRatingRow(sk)).join('')
       :sec.skills.map(sk=>`
@@ -6703,7 +6718,7 @@ function renderQuestionnaire(){
           <div class="q-skill-cat">${sk.cat}</div>
           <div class="q-skill-name">${sk.name}</div>
           <div class="rating-row">
-            ${[1,2,3,4,5].map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
+            ${SKILL_RATING_VALUES.map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
           </div>
         </div>`).join('');
     return`

@@ -4,7 +4,7 @@
 --
 -- Model:
 --   skill_sections  = the experience-level groups shown in the questionnaire.
---                     section_type is 'rated' (1–5 scoring) or 'checklist'
+--                     section_type is 'rated' (1–4 scoring) or 'checklist'
 --                     (complete/incomplete, not scored). Checklist sections
 --                     appear before Safety (Orientation, Pre-Bootcamp).
 --                     The original 5 carry an avg_field that maps to the legacy
