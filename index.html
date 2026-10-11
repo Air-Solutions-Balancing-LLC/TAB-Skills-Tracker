@@ -1535,8 +1535,30 @@ const JOB_ACCOUNTS_RATING_OPTIONS=[
   {v:4,label:'Six to nine jobs',btn:'6–9'},
   {v:5,label:'Ten plus jobs',btn:'10+'}
 ];
+const TOOLS_RATING_OPTIONS=[
+  {v:1,label:'84% or Less',btn:'≤84%'},
+  {v:2,label:'85 to 95%',btn:'85–95%'},
+  {v:3,label:'95% to 99%',btn:'95–99%'},
+  {v:4,label:'100% Tooled Up',btn:'100%'}
+];
 function jobAccountsLabel(v){const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
+function toolsRatingLabel(v){const o=TOOLS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function isJobAccountsSection(sec){return sec&&(sec.key==='national_accounts'||sec.key==='survey');}
+function isToolsSkill(sk){return !!sk&&(sk.id==='s13'||String(sk.cat||'').toUpperCase()==='TOOLS');}
+function skillRatingDisplayLabel(sk,sec,v){
+  if(isJobAccountsSection(sec))return jobAccountsLabel(v);
+  if(isToolsSkill(sk))return toolsRatingLabel(v);
+  return RATING_LABELS[Number(v)]||'';
+}
+function toolsRatingRow(sk){
+  return`<div class="q-skill">
+    <div class="q-skill-cat">${sk.cat||'TOOLS'}</div>
+    <div class="q-skill-name">${sk.name}</div>
+    <div class="rating-row na-rating-row">
+      ${TOOLS_RATING_OPTIONS.map(o=>`<button type="button" class="rating-btn ${Number(qAnswers[sk.id])===o.v?'selected-'+o.v:''}" onclick="setRating('${sk.id}',${o.v})"><div>${o.v}</div><div class="rating-label">${o.btn}</div></button>`).join('')}
+    </div>
+  </div>`;
+}
 function sectionScaleMax(secOrKey){
   const key=typeof secOrKey==='string'?secOrKey:(secOrKey&&(secOrKey.key||secOrKey.skey));
   return (key==='survey'||key==='national_accounts')?5:SKILL_RATING_MAX;
@@ -5925,8 +5947,8 @@ function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
   const pv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
   if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
   const trend=showTrend&&pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
-  const prevLabel=showTrend&&pv!==null?(isJobAccountsSection(sec)?`was ${jobAccountsLabel(pv)||pv}`:`was ${pv}`):'';
-  const ratingLabel=isJobAccountsSection(sec)?jobAccountsLabel(v):RATING_LABELS[v];
+  const ratingLabel=skillRatingDisplayLabel(sk,sec,v);
+  const prevLabel=showTrend&&pv!==null?`was ${skillRatingDisplayLabel(sk,sec,pv)||pv}`:'';
   const labelHtml=ratingLabel?`<span class="skill-rating-label">${ratingLabel}</span>`:'';
   return`<div class="skill-row"><span class="skill-name">${sk.name}</span>${labelHtml}<div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
 }
@@ -6063,10 +6085,10 @@ function pdfSafeText(s){
     .trim();
 }
 
-function pdfSkillRatingLabel(sec,v){
+function pdfSkillRatingLabel(sec,v,sk){
   const n=Number(v);
   if(!(n>=1&&n<=5))return'N/R';
-  return isJobAccountsSection(sec)?(jobAccountsLabel(n)||String(n)):(RATING_LABELS[n]||String(n));
+  return skillRatingDisplayLabel(sk,sec,n)||String(n);
 }
 
 function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
@@ -6185,10 +6207,10 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
 
     skills.forEach(sk=>{
       const v=Number(raw[sk.id]);
-      const currLabel=pdfSkillRatingLabel(sec,v);
+      const currLabel=pdfSkillRatingLabel(sec,v,sk);
       const currText=currLabel+' ('+v+')';
       const pv=prevRaw[sk.id]!==undefined?Number(prevRaw[sk.id]):null;
-      const prevText=pv!==null?(pdfSkillRatingLabel(sec,pv)+' ('+pv+')'):'—';
+      const prevText=pv!==null?(pdfSkillRatingLabel(sec,pv,sk)+' ('+pv+')'):'—';
 
       doc.setFontSize(9);
       doc.setFont('helvetica','normal');
@@ -6743,19 +6765,24 @@ function renderQuestionnaire(){
     return` Showing only your required sections for this stage (${req.message.replace(/^Required Sections:\s*/,'')}).`;
   })();
   const sections=visible.map(sec=>{
+    const hasToolsSkill=sec.skills.some(isToolsSkill);
     const secSub=isJobAccountsSection(sec)
       ?jobAccountsSectionSub(sec)
-      :'Rate each skill from 1 (Beginner) to 4 (Proficient).';
+      :(hasToolsSkill
+        ?'Rate each skill from 1 (Beginner) to 4 (Proficient). For Tools, rate tooled-up %.'
+        :'Rate each skill from 1 (Beginner) to 4 (Proficient).');
     const skillHtml=isJobAccountsSection(sec)
       ?jobAccountsScaleLegendHtml(sec)+sec.skills.map(sk=>jobAccountsRatingRow(sk)).join('')
-      :sec.skills.map(sk=>`
-        <div class="q-skill">
+      :sec.skills.map(sk=>{
+        if(isToolsSkill(sk))return toolsRatingRow(sk);
+        return`<div class="q-skill">
           <div class="q-skill-cat">${sk.cat}</div>
           <div class="q-skill-name">${sk.name}</div>
           <div class="rating-row">
             ${SKILL_RATING_VALUES.map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     return`
     <div class="q-section" id="q-sec-${sec.key}">
       <div class="q-section-title">${sec.emoji} ${sec.section}</div>
