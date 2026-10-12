@@ -345,6 +345,18 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .skill-name{font-size:12px;color:#333;flex:1;line-height:1.5;font-weight:500}
 .skill-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
 .skill-rating-label{font-size:11px;font-weight:700;color:#555;min-width:76px;text-align:right;flex-shrink:0;line-height:1.25}
+.q-project{border:1px solid #E6EEF8;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fafbfd}
+.q-project-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.q-project-meta{flex:1;min-width:0}
+.q-project .q-skill-cat{margin-bottom:2px}
+.q-project-job-label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:4px}
+.q-project-job{width:100%;box-sizing:border-box;border:1.5px solid #d8e0ec;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#1a1a2e;background:#fff}
+.q-project-job:focus{outline:none;border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,.15)}
+.q-project-complete{flex-shrink:0;min-width:110px;padding:10px 14px;border:2px solid #0F6E56;border-radius:10px;background:#fff;color:#0F6E56;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.2px}
+.q-project-complete:hover{background:#E8F5F0}
+.q-project-complete.done{background:#0F6E56;color:#fff}
+.q-project-score{font-size:13px;font-weight:800;color:#0F6E56;margin:4px 0 12px}
+.skill-job-name{font-size:11px;color:#666;font-weight:500;display:block;margin-top:2px}
 .skill-prev{font-size:10px;color:#bbb;min-width:36px;text-align:center}
 .skill-trend-icon{font-size:12px;min-width:16px;text-align:center;font-weight:700}
 
@@ -1386,13 +1398,16 @@ body.mobile-nav-open{overflow:hidden}
 // Both are rebuilt from the database by buildSkillModel(); the values below are
 // the fallback used if the skills service can't be reached.
 let SKILL_CATS=[
-  {key:'safety_avg',skey:'safety',label:'Safety / Core Values',emoji:'🛡️',codes:[]},
-  {key:null,skey:'safety_instruments',label:'Safety and Instruments',emoji:'🧰',codes:[]},
-  {key:'basic_avg',skey:'basic',label:'Basic',emoji:'🟩',codes:[]},
-  {key:'intermediate_avg',skey:'intermediate',label:'Intermediate',emoji:'🟦',codes:[]},
-  {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[]},
-  {key:'survey_avg',skey:'survey',label:'Survey Accounts',emoji:'🟪',codes:[]},
-  {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:[]}
+  {key:'safety_avg',skey:'safety',label:'Safety / Core Values',emoji:'🛡️',codes:[],section_type:'rated'},
+  {key:null,skey:'safety_instruments',label:'Safety and Instruments',emoji:'🧰',codes:[],section_type:'rated'},
+  {key:'basic_avg',skey:'basic',label:'Basic',emoji:'🟩',codes:[],section_type:'rated'},
+  {key:null,skey:'basic_solo_projects',label:'TAB Basics Solo Projects',emoji:'🏗️',codes:['bsp1','bsp2','bsp3','bsp4'],section_type:'projects'},
+  {key:null,skey:'basic_survey_projects',label:'TAB Basics Survey Projects',emoji:'📐',codes:['bsvp1','bsvp2','bsvp3','bsvp4'],section_type:'projects'},
+  {key:'intermediate_avg',skey:'intermediate',label:'Intermediate (4–6 mo)',emoji:'🟦',codes:[],section_type:'rated'},
+  {key:null,skey:'intermediate_7_12',label:'Intermediate (7–12 mo)',emoji:'🔷',codes:[],section_type:'rated'},
+  {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[],section_type:'rated'},
+  {key:'survey_avg',skey:'survey',label:'Survey Accounts',emoji:'🟪',codes:[],section_type:'rated'},
+  {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:[],section_type:'rated'}
 ];
 let TECH_CATS=SKILL_CATS.slice();
 
@@ -1453,33 +1468,42 @@ let QUESTIONNAIRE=[
     {id:'b37',cat:'AIR BALANCING',name:'Trial and Error Balancing'},
     {id:'b38',cat:'AIR BALANCING',name:'KES Survey Projects'}
   ]},
-  {section:'Intermediate Skills (4–12 months)',emoji:'🟦',key:'intermediate',color:'#7aaedd',skills:[
-    {id:'i1',cat:'AIR BASICS',name:'Economizers — Setting Unit Total Flow'},
-    {id:'i2',cat:'AIR BASICS',name:'Building Static Pressure'},
-    {id:'i3',cat:'AIR BASICS',name:'Balance Sidewall Grilles'},
+  {section:'TAB Basics Solo Projects',emoji:'🏗️',key:'basic_solo_projects',color:'#0F6E56',section_type:'projects',avg_field:null,skills:[
+    {id:'bsp1',cat:'PROJECT',name:'Project 1'},
+    {id:'bsp2',cat:'PROJECT',name:'Project 2'},
+    {id:'bsp3',cat:'PROJECT',name:'Project 3'},
+    {id:'bsp4',cat:'PROJECT',name:'Project 4'}
+  ]},
+  {section:'TAB Basics Survey Projects',emoji:'📐',key:'basic_survey_projects',color:'#1B3A6B',section_type:'projects',avg_field:null,skills:[
+    {id:'bsvp1',cat:'PROJECT',name:'Project 1'},
+    {id:'bsvp2',cat:'PROJECT',name:'Project 2'},
+    {id:'bsvp3',cat:'PROJECT',name:'Project 3'},
+    {id:'bsvp4',cat:'PROJECT',name:'Project 4'}
+  ]},
+  {section:'Intermediate Skills (4 to 6 Months)',emoji:'🟦',key:'intermediate',color:'#7aaedd',skills:[
     {id:'i4',cat:'TROUBLESHOOTING',name:'Troubleshooting Low Airflow'},
-    {id:'i5',cat:'UNIT TESTING',name:'Air Handling Unit Component Identification'},
     {id:'i6',cat:'JOB MANAGEMENT',name:'Job Readiness Report'},
-    {id:'i7',cat:'JOB MANAGEMENT',name:'Balance Basic Job Solo'},
+    {id:'i15',cat:'JOB MANAGEMENT',name:'Can Project Manage Their Jobs'},
+    {id:'i14',cat:'JOB MANAGEMENT',name:'Mechanical Submittals Familiarity'},
+    {id:'i16',cat:'JOB MANAGEMENT',name:'Deadline Management'},
+    {id:'i18',cat:'JOB MANAGEMENT',name:'Customer Service / Punch List Protocol'},
+    {id:'i17',cat:'JOB MANAGEMENT',name:'Shows Flexibility with Project Demands'},
+    {id:'i26',cat:'TROUBLESHOOTING',name:'Troubleshooting VAVs'},
     {id:'i8',cat:'TAB REPORTS',name:'Writing Remarks'},
-    {id:'i9',cat:'TAB REPORTS',name:'USABalancer Proficiency'},
+    {id:'i23',cat:'TAB REPORTS',name:'Report Review Analysis'},
+    {id:'i24',cat:'TERMINAL UNITS',name:'VAVs'},
+    {id:'i25',cat:'TERMINAL UNITS',name:'Parallel Fan Powered Boxes'}
+  ]},
+  {section:'Intermediate Skills (7 to 12 Months)',emoji:'🔷',key:'intermediate_7_12',color:'#5B8FD9',avg_field:null,skills:[
     {id:'i10',cat:'UNIT TESTING',name:'Variable Frequency Drive'},
     {id:'i11',cat:'UNIT TESTING',name:'Static Pressure Profile (Coil & Filter)'},
     {id:'i12',cat:'UNIT TESTING',name:'DSS / Cabinet Unit Heater Balancing'},
-    {id:'i13',cat:'JOB MANAGEMENT',name:'Blueprint Reading / Mechanical Schedules'},
-    {id:'i14',cat:'JOB MANAGEMENT',name:'Mechanical Submittals Familiarity'},
-    {id:'i15',cat:'JOB MANAGEMENT',name:'Can Project Manage Their Jobs'},
-    {id:'i16',cat:'JOB MANAGEMENT',name:'Deadline Management'},
-    {id:'i17',cat:'JOB MANAGEMENT',name:'Shows Flexibility with Project Demands'},
-    {id:'i18',cat:'JOB MANAGEMENT',name:'Customer Service / Punch List Protocol'},
     {id:'i19',cat:'UNIT TESTING',name:'Energy Recovery Units'},
     {id:'i20',cat:'UNIT TESTING',name:'Motor Sheave Calculations'},
     {id:'i21',cat:'UNIT TESTING',name:'Establishing Final SP Setpoint'},
     {id:'i22',cat:'UNIT TESTING',name:'Total Unit CFM — VAV Systems'},
-    {id:'i23',cat:'TAB REPORTS',name:'Report Review Analysis'},
-    {id:'i24',cat:'TERMINAL UNITS',name:'VAVs'},
-    {id:'i25',cat:'TERMINAL UNITS',name:'Parallel Fan Powered Boxes'},
-    {id:'i26',cat:'TROUBLESHOOTING',name:'Troubleshooting VAVs'},
+    {id:'i34',cat:'JOB MANAGEMENT',name:'Specifications'},
+    {id:'i35',cat:'JOB MANAGEMENT',name:'Customer Service Skills'},
     {id:'i27',cat:'TERMINAL UNITS',name:'Series Fan Powered Boxes'},
     {id:'i28',cat:'TERMINAL UNITS',name:'Thermal Diffuser'},
     {id:'i29',cat:'UNIT TESTING',name:'Airflow Monitor Calibration'},
@@ -1487,16 +1511,10 @@ let QUESTIONNAIRE=[
     {id:'i31',cat:'TROUBLESHOOTING',name:'Fans and System Effect'},
     {id:'i32',cat:'TROUBLESHOOTING',name:'Submittals'},
     {id:'i33',cat:'TROUBLESHOOTING',name:'Occupant Comfort Issues'},
-    {id:'i34',cat:'JOB MANAGEMENT',name:'Specifications'},
-    {id:'i35',cat:'JOB MANAGEMENT',name:'Customer Service Skills'},
     {id:'i36',cat:'SPECIALTY TESTING',name:'Air Changes per Hour'},
     {id:'i37',cat:'SPECIALTY TESTING',name:'Fume Hoods'},
     {id:'i38',cat:'HYDRONICS',name:'Balance Valves'},
     {id:'i39',cat:'HYDRONICS',name:'Understands Hydronic Precautions'},
-    {id:'i40',cat:'TERMINAL UNITS',name:'HVAC Controls — Part 1'},
-    {id:'i41',cat:'TERMINAL UNITS',name:'Electronic Controls — Resource Access'},
-    {id:'i42',cat:'TERMINAL UNITS',name:'Pneumatic Controls — Resource Access'},
-    {id:'i43',cat:'TERMINAL UNITS',name:'HVAC Controls — Part 2'},
     {id:'i44',cat:'SPECIALTY TESTING',name:'Setting O/A Temperature Method'}
   ]},
   {section:'Advanced Skills (13+ months)',emoji:'🟨',key:'advanced',color:'#9898c0',skills:[
@@ -1553,8 +1571,12 @@ const TOOLS_RATING_OPTIONS=[
 function jobAccountsLabel(v){const o=JOB_ACCOUNTS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function toolsRatingLabel(v){const o=TOOLS_RATING_OPTIONS.find(x=>x.v===Number(v));return o?o.label:'';}
 function isJobAccountsSection(sec){return sec&&(sec.key==='national_accounts'||sec.key==='survey');}
+function isProjectsSection(sec){return !!sec&&(sec.section_type==='projects'||sec.key==='basic_solo_projects'||sec.key==='basic_survey_projects');}
+function isProjectsCat(cat){return !!cat&&(cat.section_type==='projects'||cat.skey==='basic_solo_projects'||cat.skey==='basic_survey_projects');}
 function isToolsSkill(sk){return !!sk&&(sk.id==='s13'||String(sk.cat||'').toUpperCase()==='TOOLS');}
+function projectJobKey(id){return id+'__job';}
 function skillRatingDisplayLabel(sk,sec,v){
+  if(isProjectsSection(sec))return Number(v)===1?'Complete':'Not complete';
   if(isJobAccountsSection(sec))return jobAccountsLabel(v);
   if(isToolsSkill(sk))return toolsRatingLabel(v);
   return RATING_LABELS[Number(v)]||'';
@@ -1570,7 +1592,12 @@ function toolsRatingRow(sk){
 }
 function sectionScaleMax(secOrKey){
   const key=typeof secOrKey==='string'?secOrKey:(secOrKey&&(secOrKey.key||secOrKey.skey));
-  return (key==='survey'||key==='national_accounts')?5:SKILL_RATING_MAX;
+  if(key==='survey'||key==='national_accounts')return 5;
+  if(key==='basic_solo_projects'||key==='basic_survey_projects'){
+    const sec=QUESTIONNAIRE.find(s=>s.key===key);
+    return (sec&&sec.skills&&sec.skills.length)?sec.skills.length:4;
+  }
+  return SKILL_RATING_MAX;
 }
 function ratingPct(v,max){
   const n=Number(v);
@@ -1650,7 +1677,7 @@ function buildSkillModel(sections){
   const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',checklist_mode:s.checklist_mode||null,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
   CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist');
   QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist');
-  const toCat=s=>({key:s.avg_field||null,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id)});
+  const toCat=s=>({key:s.avg_field||null,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id),section_type:s.section_type||'rated'});
   TECH_CATS=QUESTIONNAIRE.map(toCat);
   // Include scored sections even without a legacy avg column (scores come from raw_scores).
   SKILL_CATS=QUESTIONNAIRE.filter(s=>(s.section_type||'rated')!=='checklist').map(toCat);
@@ -1824,13 +1851,28 @@ function assessmentHasRawScores(a){
 }
 // Score for a section on one assessment: legacy avg column if present, else
 // computed from the per-skill raw_scores snapshot (works for new sections).
+function projectDoneCount(raw,codes){
+  if(!raw||!codes||!codes.length)return 0;
+  return codes.filter(c=>Number(raw[c])===1||raw[c]===true).length;
+}
+function projectSectionTouched(raw,codes){
+  if(!raw||!codes||!codes.length)return false;
+  return codes.some(c=>raw[c]!=null||(raw[projectJobKey(c)]!=null&&String(raw[projectJobKey(c)]).trim()));
+}
 function sectionScore(a,cat){
   if(!a||!cat)return null;
+  if(isProjectsCat(cat)){
+    const raw=rawOf(a);
+    if(!raw||!cat.codes||!cat.codes.length)return null;
+    const done=projectDoneCount(raw,cat.codes);
+    if(!projectSectionTouched(raw,cat.codes)&&done===0)return null;
+    return done;
+  }
   if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null)return a[cat.key];
   const raw=rawOf(a);
   if(!raw||!cat.codes||!cat.codes.length)return null;
-  const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null);
-  return vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null;
+  const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object');
+  return vals.length?vals.reduce((x,y)=>x+Number(y),0)/vals.length:null;
 }
 function catScore(a,cat){return sectionScore(a,cat);}
 function sectionProficiencyPct(avg,secOrKey){
@@ -1838,8 +1880,13 @@ function sectionProficiencyPct(avg,secOrKey){
   return ratingPct(avg,sectionScaleMax(secOrKey));
 }
 function sectionRawAvg(rawScores,sec){
-  const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
-  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+  if(isProjectsSection(sec)){
+    const codes=(sec.skills||[]).map(sk=>sk.id);
+    if(!projectSectionTouched(rawScores,codes)&&projectDoneCount(rawScores,codes)===0)return null;
+    return projectDoneCount(rawScores,codes);
+  }
+  const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object');
+  return vals.length?vals.reduce((a,b)=>a+Number(b),0)/vals.length:null;
 }
 function techAlreadySubmittedThisMonth(assessments){
   const last=assessments&&assessments.length?assessments[assessments.length-1]:null;
@@ -2058,6 +2105,11 @@ function techSidebarSectionPct(sec){
   const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
   const total=sec.skills.length;
   if(!total)return 0;
+  if(isProjectsSection(sec)){
+    if(inQ)return Math.round((projectSectionScoreLive(sec)/total)*100);
+    const raw=lastAssessmentRawScores();
+    return Math.round((projectDoneCount(raw,sec.skills.map(sk=>sk.id))/total)*100);
+  }
   if(inQ){
     const rated=sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length;
     return Math.round((rated/total)*100);
@@ -2138,7 +2190,7 @@ async function saveNotesToTech(){
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
-let regionTechs=[],qAnswers={},qNebbStatus='',azureEmailAddr=null;
+let regionTechs=[],qAnswers={},qProjectJobs={},qNebbStatus='',azureEmailAddr=null;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
 
@@ -5237,12 +5289,14 @@ function renderSkillsBoard(){
   const board=document.getElementById('skills-board');
   board.innerHTML=adminSkills.map(sec=>{
     const isChecklist=(sec.section_type==='checklist');
+    const isProjects=(sec.section_type==='projects');
     const open=skSectionOpen(sec.id);
-    const tag=`<span class="sk-sec-tag ${isChecklist?'checklist':'rated'}">${isChecklist?'Checklist':'Scored'}</span>`;
+    const typeLabel=isChecklist?'Checklist':(isProjects?'Projects':'Scored');
+    const tag=`<span class="sk-sec-tag ${isChecklist?'checklist':'rated'}">${typeLabel}</span>`;
     const items=(sec.skills&&sec.skills.length)
       ? sec.skills.map(skItemHtml).join('')
-      : `<div class="sk-empty">No ${isChecklist?'tasks':'skills'} — drag one here or add below.</div>`;
-    return `<div class="sk-sec" data-section-type="${isChecklist?'checklist':'rated'}">
+      : `<div class="sk-empty">No ${isChecklist?'tasks':(isProjects?'projects':'skills')} — drag one here or add below.</div>`;
+    return `<div class="sk-sec" data-section-type="${sec.section_type||'rated'}">
       <div class="sk-sec-h sk-sec-toggle" id="sk-sec-h-${sec.id}" role="button" tabindex="0" aria-expanded="${open?'true':'false'}" onclick="toggleSkSection(${sec.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSkSection(${sec.id});}">
         <span class="admin-sec-chevron">▼</span>
         <span class="sk-sec-emoji">${adminEsc(sec.emoji||'')}</span>
@@ -5256,7 +5310,7 @@ function renderSkillsBoard(){
         </div>
         <div class="sk-add">
           <input id="sk-add-cat-${sec.id}" placeholder="Category (optional)">
-          <input id="sk-add-name-${sec.id}" placeholder="${isChecklist?'New task name':'New skill name'}">
+          <input id="sk-add-name-${sec.id}" placeholder="${isChecklist?'New task name':(isProjects?'New project name':'New skill name')}">
           <button type="button" class="btn" style="padding:8px 14px" onclick="addSkill(${sec.id})">Add</button>
         </div>
       </div>
@@ -5304,7 +5358,7 @@ async function skDrop(e,sectionId,list){
   const dragSkillId=Number(dragging.dataset.id);
   const sourceSec=adminSkills.find(s=>(s.skills||[]).some(sk=>sk.id===dragSkillId));
   if(targetSec&&sourceSec&&targetSec.section_type!==sourceSec.section_type){
-    skErr('Checklist tasks cannot be moved into scored skill categories (or vice versa).');
+    skErr('Items can only move within the same category type (Checklist, Projects, or Scored).');
     await loadSkillsAdmin();
     return;
   }
@@ -5457,10 +5511,10 @@ function requiredAssessmentSections(t){
   const months=employmentTenureMonths(t);
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
-  const coreSecs=['safety','safety_instruments','basic'];
+  const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   if(months===null)return{
     all:true,
-    rated:[...coreSecs,'intermediate','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced',...accountSecs],
     checklist:[],
     level:null,
     message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
@@ -5471,18 +5525,26 @@ function requiredAssessmentSections(t){
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,
-    rated:[...coreSecs,'intermediate','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced',...accountSecs],
     checklist,
     level:'advanced',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Intermediate, Advanced, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), Advanced, National & Survey'
   };
-  // INTERMEDIATE — 4.0–12.9 months
+  // INTERMEDIATE — 7.0–12.9 months (both intermediate bands)
+  if(months>=7)return{
+    all:false,
+    rated:[...coreSecs,'intermediate','intermediate_7_12',...accountSecs],
+    checklist,
+    level:'intermediate',
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), National & Survey'
+  };
+  // INTERMEDIATE — 4.0–6.9 months (early intermediate only)
   if(months>=4)return{
     all:false,
     rated:[...coreSecs,'intermediate',...accountSecs],
     checklist,
     level:'intermediate',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Intermediate, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6), National & Survey'
   };
   // BASIC — 0–3.9 months
   return{
@@ -5490,7 +5552,7 @@ function requiredAssessmentSections(t){
     rated:[...coreSecs,...accountSecs],
     checklist,
     level:'basic',
-    message:'Required Sections: Core, Safety & Instruments, Basics, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, National & Survey'
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
@@ -5507,14 +5569,35 @@ function filterAnswersToVisibleSections(raw,t){
     (sec.skills||[]).forEach(sk=>{byId[sk.id]=sec;});
   });
   Object.keys(raw||{}).forEach(id=>{
+    if(String(id).endsWith('__job'))return;
     const sec=byId[id];
     if(!sec)return;
+    if(isProjectsSection(sec)){
+      if(Number(raw[id])===1||raw[id]===true)filled[id]=1;
+      return;
+    }
     const n=Math.round(Number(raw[id]));
     if(!(n>=1&&n<=5))return;
     // Skills are 1–4 going forward; clamp legacy 5s when pre-filling. Job accounts stay 1–5.
     filled[id]=isJobAccountsSection(sec)?n:clampSkillRating(n);
   });
   return filled;
+}
+function filterProjectJobsFromRaw(raw,t){
+  const jobs={};
+  const byId={};
+  visibleQuestionnaireSections(t).forEach(sec=>{
+    if(!isProjectsSection(sec))return;
+    (sec.skills||[]).forEach(sk=>{byId[sk.id]=sec;});
+  });
+  Object.keys(raw||{}).forEach(k=>{
+    if(!String(k).endsWith('__job'))return;
+    const id=k.slice(0,-5);
+    if(!byId[id])return;
+    const val=String(raw[k]||'').trim();
+    if(val)jobs[id]=val;
+  });
+  return jobs;
 }
 let assessStartContinue=null;
 function showAssessmentStartModal(message,onContinue){
@@ -5552,7 +5635,7 @@ function hideAssessmentStartModal(){
     });
   }
 })();
-const COMPETENCE_LABELS={safety:'Safety',safety_instruments:'Safety & Instruments',basic:'Basics',intermediate:'Intermediate',advanced:'Advanced',survey:'Survey Accounts',national_accounts:'National Accounts'};
+const COMPETENCE_LABELS={safety:'Safety',safety_instruments:'Safety & Instruments',basic:'Basics',basic_solo_projects:'Solo Projects',basic_survey_projects:'Survey Projects',intermediate:'Intermediate 4–6',intermediate_7_12:'Intermediate 7–12',advanced:'Advanced',survey:'Survey Accounts',national_accounts:'National Accounts'};
 function nebbStatusTier(stored){
   if(!stored)return 'training';
   const idx=NEBB_STATUS_OPTIONS.findIndex(o=>o.value===stored);
@@ -5594,6 +5677,11 @@ function competentCategoryLabels(rawScores){
   SKILL_CATS.forEach(cat=>{
     const sec=QUESTIONNAIRE.find(s=>s.key===cat.skey);
     if(!sec||!sec.skills.length)return;
+    if(isProjectsSection(sec)){
+      const codes=sec.skills.map(sk=>sk.id);
+      if(projectDoneCount(rawScores,codes)===codes.length)out.push(COMPETENCE_LABELS[cat.skey]||cat.label);
+      return;
+    }
     const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null);
     if(vals.length!==sec.skills.length)return;
     if(vals.every(v=>Number(v)>=4))out.push(COMPETENCE_LABELS[cat.skey]||cat.label);
@@ -5764,7 +5852,8 @@ function renderTechGrid(techs){
       if(v===null)return'';
       const pv=prev?catScore(prev,c):null;
       const stalled=pv!==null&&v<=2&&v<=pv;
-      return`<span class="sp ${spClass(v)}">${c.emoji} ${v.toFixed(1)}${stalled?' <span class="flag">!</span>':''}</span>`;
+      const scoreTxt=isProjectsCat(c)?String(Math.round(v)):v.toFixed(1);
+      return`<span class="sp ${spClass(v)}">${c.emoji} ${scoreTxt}${stalled?' <span class="flag">!</span>':''}</span>`;
     }).join('');
     return`<div class="tcard" onclick="openTech(${idx})">
       <div class="tcard-top">
@@ -5952,6 +6041,15 @@ function exitTechView(){
 }
 
 function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
+  if(isProjectsSection(sec)){
+    const done=Number(rawScores[sk.id])===1||rawScores[sk.id]===true;
+    const job=String(rawScores[projectJobKey(sk.id)]||'').trim();
+    const prevDone=prevRawScores?(Number(prevRawScores[sk.id])===1||prevRawScores[sk.id]===true):false;
+    const trend=showTrend?(done&&!prevDone?'<span class="skill-trend-icon trend-up">↑</span>':(!done&&prevDone?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>')):'';
+    const label=done?'Complete':'Not complete';
+    const jobHtml=job?`<span class="skill-job-name">${adminEsc(job)}</span>`:'';
+    return`<div class="skill-row"><span class="skill-name">${sk.name}${jobHtml}</span><span class="skill-rating-label">${label}</span><div class="skill-dot" style="background:${done?scoreBg(4):'#f0f0f0'};color:${done?scoreColor(4):'#999'}">${done?'✓':'—'}</div><span class="skill-prev"></span>${trend}</div>`;
+  }
   const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
   const pv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
   if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
@@ -5983,7 +6081,8 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(rawScores,sec);
     const pct=sectionProficiencyPct(avg,sec);
     const avgColor=avg!==null?scoreColor(avg):'rgba(255,255,255,0.55)';
-    const avgLabel=avg!==null?`avg ${avg.toFixed(1)} / ${sectionScaleMax(sec)}`:'not yet rated';
+    const maxScale=sectionScaleMax(sec);
+    const avgLabel=avg===null?'not yet rated':(isProjectsSection(sec)?`${Math.round(avg)} of ${maxScale} complete`:`avg ${Number(avg).toFixed(1)} / ${maxScale}`);
     const warn=avg!==null&&avg<=2?' ⚠️':'';
     let skills=sec.skills;
     if(ratingFilter){
@@ -6186,11 +6285,17 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     const catKey=SKILL_CATS.find(c=>c.skey===sec.key||(c.key&&(c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(raw,sec);
     const pct=sectionProficiencyPct(avg,sec);
-    const skills=sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
+    const skills=isProjectsSection(sec)
+      ?sec.skills.slice().filter(sk=>raw[sk.id]!==undefined||(raw[projectJobKey(sk.id)]!=null&&String(raw[projectJobKey(sk.id)]).trim()))
+      :sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
     if(!skills.length)return;
 
     let head=pdfSafeText(sec.section);
-    if(avg!==null)head+='  avg '+avg.toFixed(1)+' / '+sectionScaleMax(sec)+(pct!=null?' ('+pct+'%)':'');
+    if(avg!==null){
+      head+=isProjectsSection(sec)
+        ?('  '+Math.round(avg)+' of '+sectionScaleMax(sec)+' complete')
+        :('  avg '+Number(avg).toFixed(1)+' / '+sectionScaleMax(sec)+(pct!=null?' ('+pct+'%)':''));
+    }
     needPage(28);
     doc.setFillColor(27,58,107);
     doc.rect(margin,y-10,contentW,22,'F');
@@ -6215,16 +6320,26 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     y+=14;
 
     skills.forEach(sk=>{
-      const v=Number(raw[sk.id]);
-      const currLabel=pdfSkillRatingLabel(sec,v,sk);
-      const currText=currLabel+' ('+v+')';
-      const pv=prevRaw[sk.id]!==undefined?Number(prevRaw[sk.id]):null;
-      const prevText=pv!==null?(pdfSkillRatingLabel(sec,pv,sk)+' ('+pv+')'):'—';
+      let currText,prevText,nameBase=sk.name;
+      if(isProjectsSection(sec)){
+        const done=Number(raw[sk.id])===1||raw[sk.id]===true;
+        const job=String(raw[projectJobKey(sk.id)]||'').trim();
+        if(job)nameBase=sk.name+' — '+job;
+        currText=done?'Complete':'Not complete';
+        const prevDone=prevRaw[sk.id]!==undefined?(Number(prevRaw[sk.id])===1||prevRaw[sk.id]===true):null;
+        prevText=prevDone===null?'—':(prevDone?'Complete':'Not complete');
+      }else{
+        const v=Number(raw[sk.id]);
+        const currLabel=pdfSkillRatingLabel(sec,v,sk);
+        currText=currLabel+' ('+v+')';
+        const pv=prevRaw[sk.id]!==undefined?Number(prevRaw[sk.id]):null;
+        prevText=pv!==null?(pdfSkillRatingLabel(sec,pv,sk)+' ('+pv+')'):'—';
+      }
 
       doc.setFontSize(9);
       doc.setFont('helvetica','normal');
       doc.setTextColor(40,40,40);
-      const nameLines=doc.splitTextToSize(pdfSafeText(sk.name),nameColW);
+      const nameLines=doc.splitTextToSize(pdfSafeText(nameBase),nameColW);
       const prevLines=doc.splitTextToSize(pdfSafeText(prevText),prevColW);
       const currLines=doc.splitTextToSize(pdfSafeText(currText),currColW);
       const rowH=Math.max(nameLines.length,prevLines.length,currLines.length,1)*12;
@@ -6536,9 +6651,10 @@ function renderTechHome(t,opts){
     const v=last?(c.key!=null&&last[c.key]!==undefined&&last[c.key]!==null?last[c.key]:sectionScore(last,c)):null;
     if(v===null||v===undefined)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
     const max=sectionScaleMax(c.skey);
-    const pct=ratingPct(v,max),col=scoreColor(v);
+    const pct=ratingPct(v,max),col=scoreColor(isProjectsCat(c)?Math.max(1,Number(v)):v);
     const shown=Math.min(Number(v),max);
-    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${shown.toFixed(1)} / ${max}</span></div>`;
+    const valTxt=isProjectsCat(c)?`${Math.round(shown)} of ${max}`:`${shown.toFixed(1)} / ${max}`;
+    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${valTxt}</span></div>`;
   }).join('');
 
   const stalled=[];
@@ -6575,7 +6691,7 @@ function renderTechHome(t,opts){
   const tenure=yearsEmployedText(t);
   const reqInfo=requiredAssessmentSections(t);
   const levelLabel=reqInfo.level==='basic'?'BASIC (0–3.9 months)'
-    :reqInfo.level==='intermediate'?'INTERMEDIATE (4.0–12.9 months)'
+    :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
   const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
@@ -6680,11 +6796,82 @@ function sectionAvgPayload(){
 function submitRawScoresPayload(){
   const merged={...lastAssessmentRawScores()};
   const visibleIds=new Set();
-  visibleQuestionnaireSections(currentTechData).forEach(sec=>sec.skills.forEach(sk=>visibleIds.add(sk.id)));
+  const projectIds=new Set();
+  visibleQuestionnaireSections(currentTechData).forEach(sec=>{
+    (sec.skills||[]).forEach(sk=>{
+      visibleIds.add(sk.id);
+      if(isProjectsSection(sec))projectIds.add(sk.id);
+    });
+  });
   Object.keys(qAnswers).forEach(id=>{
     if(visibleIds.has(id))merged[id]=qAnswers[id];
   });
+  // Project completions can be unmarked — clear those keys in the snapshot.
+  projectIds.forEach(id=>{
+    if(qAnswers[id]===undefined)delete merged[id];
+  });
+  projectIds.forEach(id=>{
+    const j=String(qProjectJobs[id]||'').trim();
+    if(j)merged[projectJobKey(id)]=j;
+    else delete merged[projectJobKey(id)];
+  });
   return merged;
+}
+function projectSectionScoreLive(sec){
+  if(!sec)return 0;
+  return sec.skills.filter(sk=>Number(qAnswers[sk.id])===1).length;
+}
+function projectsSectionHtml(sec){
+  const total=sec.skills.length||4;
+  const done=projectSectionScoreLive(sec);
+  const rows=sec.skills.map(sk=>{
+    const complete=Number(qAnswers[sk.id])===1;
+    const job=qProjectJobs[sk.id]||'';
+    return`<div class="q-project" id="q-project-${sk.id}">
+      <div class="q-project-top">
+        <div class="q-project-meta">
+          <div class="q-skill-cat">${adminEsc(sk.cat||'PROJECT')}</div>
+          <div class="q-skill-name">${adminEsc(sk.name)}</div>
+        </div>
+        <button type="button" class="q-project-complete${complete?' done':''}" onclick="toggleProjectComplete('${sk.id}')">${complete?'✓ Complete':'Complete'}</button>
+      </div>
+      <label class="q-project-job-label" for="q-job-${sk.id}">Job Name</label>
+      <input id="q-job-${sk.id}" class="q-project-job" type="text" placeholder="Enter job name" value="${adminEsc(job)}" oninput="setProjectJob('${sk.id}',this.value)">
+    </div>`;
+  }).join('');
+  return`<div class="q-project-score" id="q-project-score-${sec.key}">Score: ${done} of ${total}</div>${rows}`;
+}
+function setProjectJob(id,val){
+  const v=String(val||'');
+  if(v.trim())qProjectJobs[id]=v;
+  else delete qProjectJobs[id];
+}
+function toggleProjectComplete(id){
+  if(Number(qAnswers[id])===1){
+    delete qAnswers[id];
+  }else{
+    const job=String(qProjectJobs[id]||'').trim();
+    if(!job){
+      alert('Enter the Job Name before marking Complete.');
+      const el=document.getElementById('q-job-'+id);
+      if(el)el.focus();
+      return;
+    }
+    qAnswers[id]=1;
+  }
+  const btn=document.querySelector(`#q-project-${id} .q-project-complete`);
+  if(btn){
+    const on=Number(qAnswers[id])===1;
+    btn.classList.toggle('done',on);
+    btn.textContent=on?'✓ Complete':'Complete';
+  }
+  const sec=QUESTIONNAIRE.find(s=>(s.skills||[]).some(sk=>sk.id===id));
+  if(sec){
+    const scoreEl=document.getElementById('q-project-score-'+sec.key);
+    if(scoreEl)scoreEl.textContent=`Score: ${projectSectionScoreLive(sec)} of ${sec.skills.length||4}`;
+  }
+  updateProgress();
+  renderTechSidebarNav();
 }
 
 async function startQuestionnaire(opts){
@@ -6709,14 +6896,20 @@ async function startQuestionnaire(opts){
   const draft=!!opts.resume&&getAssessmentDraft(currentTechData);
   let draftComment='';
   if(draft){
+    const draftRaw=draft.raw_scores&&typeof draft.raw_scores==='object'?draft.raw_scores:{};
     qAnswers={
       ...prefillQAnswersFromLast(),
-      ...filterAnswersToVisibleSections(draft.raw_scores&&typeof draft.raw_scores==='object'?draft.raw_scores:{},currentTechData)
+      ...filterAnswersToVisibleSections(draftRaw,currentTechData)
+    };
+    qProjectJobs={
+      ...filterProjectJobsFromRaw(lastAssessmentRawScores(),currentTechData),
+      ...filterProjectJobsFromRaw(draftRaw,currentTechData)
     };
     qNebbStatus=draft.nebb_status||'';
     draftComment=draft.comment||'';
   }else{
     qAnswers=prefillQAnswersFromLast();
+    qProjectJobs=filterProjectJobsFromRaw(lastAssessmentRawScores(),currentTechData);
     qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
   }
   const openQuestionnaire=()=>{
@@ -6735,9 +6928,14 @@ async function startQuestionnaire(opts){
 function continueQuestionnaire(){startQuestionnaire({resume:true});}
 async function saveAssessmentDraft(){
   const comment=document.getElementById('q-comment')?.value?.trim()||'';
+  const draftScores={...qAnswers};
+  Object.keys(qProjectJobs).forEach(id=>{
+    const j=String(qProjectJobs[id]||'').trim();
+    if(j)draftScores[projectJobKey(id)]=j;
+  });
   const draft={
     month:currentAssessmentMonth(),
-    raw_scores:qAnswers,
+    raw_scores:draftScores,
     nebb_status:qNebbStatus||null,
     comment:comment,
     saved_at:new Date().toISOString()
@@ -6775,14 +6973,18 @@ function renderQuestionnaire(){
   })();
   const sections=visible.map(sec=>{
     const hasToolsSkill=sec.skills.some(isToolsSkill);
-    const secSub=isJobAccountsSection(sec)
-      ?jobAccountsSectionSub(sec)
-      :(hasToolsSkill
+    let secSub,skillHtml;
+    if(isProjectsSection(sec)){
+      secSub='Mark each project Complete when finished. Enter the job name for every completed project. Category score = completed projects out of '+sec.skills.length+'.';
+      skillHtml=projectsSectionHtml(sec);
+    }else if(isJobAccountsSection(sec)){
+      secSub=jobAccountsSectionSub(sec);
+      skillHtml=jobAccountsScaleLegendHtml(sec)+sec.skills.map(sk=>jobAccountsRatingRow(sk)).join('');
+    }else{
+      secSub=hasToolsSkill
         ?'Rate each skill from 1 (Beginner) to 4 (Proficient). For Tools, rate tooled-up %.'
-        :'Rate each skill from 1 (Beginner) to 4 (Proficient).');
-    const skillHtml=isJobAccountsSection(sec)
-      ?jobAccountsScaleLegendHtml(sec)+sec.skills.map(sk=>jobAccountsRatingRow(sk)).join('')
-      :sec.skills.map(sk=>{
+        :'Rate each skill from 1 (Beginner) to 4 (Proficient).';
+      skillHtml=sec.skills.map(sk=>{
         if(isToolsSkill(sk))return toolsRatingRow(sk);
         return`<div class="q-skill">
           <div class="q-skill-cat">${sk.cat}</div>
@@ -6792,6 +6994,7 @@ function renderQuestionnaire(){
           </div>
         </div>`;
       }).join('');
+    }
     return`
     <div class="q-section" id="q-sec-${sec.key}">
       <div class="q-section-title">${sec.emoji} ${sec.section}</div>
@@ -6864,6 +7067,7 @@ async function submitAssessment(){
   try{
     await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
     qAnswers={};
+    qProjectJobs={};
     qNebbStatus='';
     if(currentTechData)currentTechData.assessment_draft=null;
     await loadTechHome();

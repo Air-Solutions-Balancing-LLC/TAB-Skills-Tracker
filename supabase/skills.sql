@@ -60,14 +60,17 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
   ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated', NULL),
   ('safety_instruments', 'Safety and Instruments',     '🧰', '#0F6E56', NULL,                4, 'rated', NULL),
   ('basic',        'Basic Skills (0–3 months)',        '🟩', '#1D9E75', 'basic_avg',        5, 'rated', NULL),
-  ('intermediate', 'Intermediate Skills (4–12 months)','🟦', '#7aaedd', 'intermediate_avg', 6, 'rated', NULL),
-  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',     7, 'rated', NULL),
-  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',       8, 'rated', NULL),
-  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 9, 'rated', NULL)
+  ('basic_solo_projects',   'TAB Basics Solo Projects',   '🏗️', '#0F6E56', NULL, 6, 'projects', NULL),
+  ('basic_survey_projects', 'TAB Basics Survey Projects', '📐', '#1B3A6B', NULL, 7, 'projects', NULL),
+  ('intermediate', 'Intermediate Skills (4 to 6 Months)','🟦', '#7aaedd', 'intermediate_avg', 8, 'rated', NULL),
+  ('intermediate_7_12', 'Intermediate Skills (7 to 12 Months)','🔷', '#5B8FD9', NULL, 9, 'rated', NULL),
+  ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',    10, 'rated', NULL),
+  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',      11, 'rated', NULL),
+  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 12, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
       checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
-      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments')
+      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments','basic_solo_projects','basic_survey_projects','intermediate_7_12')
                           THEN EXCLUDED.sort_order
                           ELSE public.skill_sections.sort_order END;
 
@@ -75,10 +78,13 @@ ON CONFLICT (skey) DO UPDATE
 UPDATE public.skill_sections SET sort_order = 3, section_type = 'rated' WHERE skey = 'safety';
 UPDATE public.skill_sections SET sort_order = 4, section_type = 'rated', label = 'Safety and Instruments', emoji = '🧰', color = '#0F6E56' WHERE skey = 'safety_instruments';
 UPDATE public.skill_sections SET sort_order = 5, section_type = 'rated' WHERE skey = 'basic';
-UPDATE public.skill_sections SET sort_order = 6, section_type = 'rated' WHERE skey = 'intermediate';
-UPDATE public.skill_sections SET sort_order = 7, section_type = 'rated' WHERE skey = 'advanced';
-UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
-UPDATE public.skill_sections SET sort_order = 9, section_type = 'rated' WHERE skey = 'national_accounts';
+UPDATE public.skill_sections SET sort_order = 6, section_type = 'projects', label = 'TAB Basics Solo Projects', emoji = '🏗️', color = '#0F6E56' WHERE skey = 'basic_solo_projects';
+UPDATE public.skill_sections SET sort_order = 7, section_type = 'projects', label = 'TAB Basics Survey Projects', emoji = '📐', color = '#1B3A6B' WHERE skey = 'basic_survey_projects';
+UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated', label = 'Intermediate Skills (4 to 6 Months)' WHERE skey = 'intermediate';
+UPDATE public.skill_sections SET sort_order = 9, section_type = 'rated', label = 'Intermediate Skills (7 to 12 Months)', emoji = '🔷', color = '#5B8FD9' WHERE skey = 'intermediate_7_12';
+UPDATE public.skill_sections SET sort_order = 10, section_type = 'rated' WHERE skey = 'advanced';
+UPDATE public.skill_sections SET sort_order = 11, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
+UPDATE public.skill_sections SET sort_order = 12, section_type = 'rated' WHERE skey = 'national_accounts';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)
@@ -135,50 +141,47 @@ FROM (VALUES
   ('b36','basic','AIR BALANCING','Ratio Balancing',36),
   ('b37','basic','AIR BALANCING','Trial and Error Balancing',37),
   ('b38','basic','AIR BALANCING','KES Survey Projects',38),
-  ('i1','intermediate','AIR BASICS','Economizers — Setting Unit Total Flow',1),
-  ('i2','intermediate','AIR BASICS','Building Static Pressure',2),
-  ('i3','intermediate','AIR BASICS','Balance Sidewall Grilles',3),
-  ('i4','intermediate','TROUBLESHOOTING','Troubleshooting Low Airflow',4),
-  ('i5','intermediate','UNIT TESTING','Air Handling Unit Component Identification',5),
-  ('i6','intermediate','JOB MANAGEMENT','Job Readiness Report',6),
-  ('i7','intermediate','JOB MANAGEMENT','Balance Basic Job Solo',7),
-  ('i8','intermediate','TAB REPORTS','Writing Remarks',8),
-  ('i9','intermediate','TAB REPORTS','USABalancer Proficiency',9),
-  ('i10','intermediate','UNIT TESTING','Variable Frequency Drive',10),
-  ('i11','intermediate','UNIT TESTING','Static Pressure Profile (Coil & Filter)',11),
-  ('i12','intermediate','UNIT TESTING','DSS / Cabinet Unit Heater Balancing',12),
-  ('i13','intermediate','JOB MANAGEMENT','Blueprint Reading / Mechanical Schedules',13),
-  ('i14','intermediate','JOB MANAGEMENT','Mechanical Submittals Familiarity',14),
-  ('i15','intermediate','JOB MANAGEMENT','Can Project Manage Their Jobs',15),
-  ('i16','intermediate','JOB MANAGEMENT','Deadline Management',16),
-  ('i17','intermediate','JOB MANAGEMENT','Shows Flexibility with Project Demands',17),
-  ('i18','intermediate','JOB MANAGEMENT','Customer Service / Punch List Protocol',18),
-  ('i19','intermediate','UNIT TESTING','Energy Recovery Units',19),
-  ('i20','intermediate','UNIT TESTING','Motor Sheave Calculations',20),
-  ('i21','intermediate','UNIT TESTING','Establishing Final SP Setpoint',21),
-  ('i22','intermediate','UNIT TESTING','Total Unit CFM — VAV Systems',22),
-  ('i23','intermediate','TAB REPORTS','Report Review Analysis',23),
-  ('i24','intermediate','TERMINAL UNITS','VAVs',24),
-  ('i25','intermediate','TERMINAL UNITS','Parallel Fan Powered Boxes',25),
-  ('i26','intermediate','TROUBLESHOOTING','Troubleshooting VAVs',26),
-  ('i27','intermediate','TERMINAL UNITS','Series Fan Powered Boxes',27),
-  ('i28','intermediate','TERMINAL UNITS','Thermal Diffuser',28),
-  ('i29','intermediate','UNIT TESTING','Airflow Monitor Calibration',29),
-  ('i30','intermediate','UNIT TESTING','Fan Performance Curve Analysis',30),
-  ('i31','intermediate','TROUBLESHOOTING','Fans and System Effect',31),
-  ('i32','intermediate','TROUBLESHOOTING','Submittals',32),
-  ('i33','intermediate','TROUBLESHOOTING','Occupant Comfort Issues',33),
-  ('i34','intermediate','JOB MANAGEMENT','Specifications',34),
-  ('i35','intermediate','JOB MANAGEMENT','Customer Service Skills',35),
-  ('i36','intermediate','SPECIALTY TESTING','Air Changes per Hour',36),
-  ('i37','intermediate','SPECIALTY TESTING','Fume Hoods',37),
-  ('i38','intermediate','HYDRONICS','Balance Valves',38),
-  ('i39','intermediate','HYDRONICS','Understands Hydronic Precautions',39),
-  ('i40','intermediate','TERMINAL UNITS','HVAC Controls — Part 1',40),
-  ('i41','intermediate','TERMINAL UNITS','Electronic Controls — Resource Access',41),
-  ('i42','intermediate','TERMINAL UNITS','Pneumatic Controls — Resource Access',42),
-  ('i43','intermediate','TERMINAL UNITS','HVAC Controls — Part 2',43),
-  ('i44','intermediate','SPECIALTY TESTING','Setting O/A Temperature Method',44),
+  ('bsp1','basic_solo_projects','PROJECT','Project 1',1),
+  ('bsp2','basic_solo_projects','PROJECT','Project 2',2),
+  ('bsp3','basic_solo_projects','PROJECT','Project 3',3),
+  ('bsp4','basic_solo_projects','PROJECT','Project 4',4),
+  ('bsvp1','basic_survey_projects','PROJECT','Project 1',1),
+  ('bsvp2','basic_survey_projects','PROJECT','Project 2',2),
+  ('bsvp3','basic_survey_projects','PROJECT','Project 3',3),
+  ('bsvp4','basic_survey_projects','PROJECT','Project 4',4),
+  ('i4','intermediate','TROUBLESHOOTING','Troubleshooting Low Airflow',1),
+  ('i6','intermediate','JOB MANAGEMENT','Job Readiness Report',2),
+  ('i15','intermediate','JOB MANAGEMENT','Can Project Manage Their Jobs',3),
+  ('i14','intermediate','JOB MANAGEMENT','Mechanical Submittals Familiarity',4),
+  ('i16','intermediate','JOB MANAGEMENT','Deadline Management',5),
+  ('i18','intermediate','JOB MANAGEMENT','Customer Service / Punch List Protocol',6),
+  ('i17','intermediate','JOB MANAGEMENT','Shows Flexibility with Project Demands',7),
+  ('i26','intermediate','TROUBLESHOOTING','Troubleshooting VAVs',8),
+  ('i8','intermediate','TAB REPORTS','Writing Remarks',9),
+  ('i23','intermediate','TAB REPORTS','Report Review Analysis',10),
+  ('i24','intermediate','TERMINAL UNITS','VAVs',11),
+  ('i25','intermediate','TERMINAL UNITS','Parallel Fan Powered Boxes',12),
+  ('i10','intermediate_7_12','UNIT TESTING','Variable Frequency Drive',1),
+  ('i11','intermediate_7_12','UNIT TESTING','Static Pressure Profile (Coil & Filter)',2),
+  ('i12','intermediate_7_12','UNIT TESTING','DSS / Cabinet Unit Heater Balancing',3),
+  ('i19','intermediate_7_12','UNIT TESTING','Energy Recovery Units',4),
+  ('i20','intermediate_7_12','UNIT TESTING','Motor Sheave Calculations',5),
+  ('i21','intermediate_7_12','UNIT TESTING','Establishing Final SP Setpoint',6),
+  ('i22','intermediate_7_12','UNIT TESTING','Total Unit CFM — VAV Systems',7),
+  ('i34','intermediate_7_12','JOB MANAGEMENT','Specifications',8),
+  ('i35','intermediate_7_12','JOB MANAGEMENT','Customer Service Skills',9),
+  ('i27','intermediate_7_12','TERMINAL UNITS','Series Fan Powered Boxes',10),
+  ('i28','intermediate_7_12','TERMINAL UNITS','Thermal Diffuser',11),
+  ('i29','intermediate_7_12','UNIT TESTING','Airflow Monitor Calibration',12),
+  ('i30','intermediate_7_12','UNIT TESTING','Fan Performance Curve Analysis',13),
+  ('i31','intermediate_7_12','TROUBLESHOOTING','Fans and System Effect',14),
+  ('i32','intermediate_7_12','TROUBLESHOOTING','Submittals',15),
+  ('i33','intermediate_7_12','TROUBLESHOOTING','Occupant Comfort Issues',16),
+  ('i36','intermediate_7_12','SPECIALTY TESTING','Air Changes per Hour',17),
+  ('i37','intermediate_7_12','SPECIALTY TESTING','Fume Hoods',18),
+  ('i38','intermediate_7_12','HYDRONICS','Balance Valves',19),
+  ('i39','intermediate_7_12','HYDRONICS','Understands Hydronic Precautions',20),
+  ('i44','intermediate_7_12','SPECIALTY TESTING','Setting O/A Temperature Method',21),
   ('a1','advanced','HYDRONICS','Explain Hydronic Components',1),
   ('a2','advanced','HYDRONICS','Balance Chillers',2),
   ('a3','advanced','HYDRONICS','Balance Cooling Towers',3),
