@@ -1249,7 +1249,7 @@ body.mobile-nav-open{overflow:hidden}
         </div>
         <div class="sb-nav active" id="sb-nav-home" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
         <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
-        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()">📚 ATA Tracking</button>
+        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">📚 ATA Tracking</button>
         <button type="button" class="sb-section-toggle" id="sb-skill-toggle" onclick="toggleSbSkillSections()" aria-expanded="true">
           <span class="sb-section">Skill sections</span>
           <span class="sb-section-chevron" id="sb-skill-chevron">▼</span>
@@ -3320,6 +3320,32 @@ function ataProgramStatus(tech,program,today){
 }
 
 function ataIsArchived(tech){return !!(tech&&(tech.ata_archived===true||tech.ata_archived_at));}
+// Tech view ATA tab: only people currently taking digital ATA (Teachable), not
+// veterans, former techs, or people who already finished every started module.
+function ataIsActiveLearner(tech){
+  if(!tech||ataIsArchived(tech))return false;
+  const starts=tech.starts||{};
+  if(!ATA_PROGRAMS.some(p=>!!starts[p]))return false;
+  if(!ataCurriculum||!ataCurriculum.length)return true;
+  const s=ataTechSummary(tech);
+  return s.status==='on_track'||s.status==='behind';
+}
+function updateTechAtaAccess(tech){
+  const show=ataIsActiveLearner(tech);
+  const nav=document.getElementById('sb-nav-ata');
+  if(nav){
+    nav.style.display=show?'':'none';
+    if(!show)nav.classList.remove('active');
+  }
+  const host=document.getElementById('tech-ata-home-card');
+  if(host&&!show)host.innerHTML='';
+  const ataView=document.getElementById('tech-view-ata');
+  if(!show&&ataView&&ataView.classList.contains('active')){
+    setTechMainView('tech-view-home');
+    const homeNav=document.getElementById('sb-nav-home');
+    if(homeNav)homeNav.classList.add('active');
+  }
+}
 
 function ataTechResetCounts(tech){
   let month=0,total=0,atLimit=0;
@@ -4328,6 +4354,12 @@ function renderPmAta(){
 let ataTechSelfData=null;
 async function showTechAta(){
   closeTechResultsView({keepView:true});
+  const tech=await ataResolveSelfRecord();
+  updateTechAtaAccess(tech);
+  if(!ataIsActiveLearner(tech)){
+    showTechHome();
+    return;
+  }
   setTechMainView('tech-view-ata');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
   const nav=document.getElementById('sb-nav-ata');if(nav)nav.classList.add('active');
@@ -4347,24 +4379,38 @@ async function ataFindTechRecord(techId){
   }
   return null;
 }
+async function ataResolveSelfRecord(){
+  await ensureAtaCurriculum();
+  const tid=currentTechId||(currentTechData&&currentTechData.id);
+  if(ataTechSelfData&&(!tid||String(ataTechSelfData.id)===String(tid)))return ataTechSelfData;
+  let tech=null;
+  if(currentToken){
+    try{tech=await rpc('app_ata_tech_data',{p_token:currentToken});}catch(_){}
+  }
+  if(!tech)tech=await ataFindTechRecord(tid);
+  if(!tech&&userIsAdmin&&tid){
+    try{
+      ataAdminData=await rpc('app_ata_admin_data',{})||ataAdminData;
+      tech=await ataFindTechRecord(tid);
+    }catch(_){}
+  }
+  if(tech)ataTechSelfData=tech;
+  return tech;
+}
 async function loadTechAta(){
   const body=document.getElementById('tech-ata-body');
   if(body)body.innerHTML='<div class="loading">Loading your ATA schedule…</div>';
   let tech=null,errMsg='';
   try{
-    await ensureAtaCurriculum();
-    if(currentToken){
-      try{tech=await rpc('app_ata_tech_data',{p_token:currentToken});}catch(e){errMsg=e.message||'';}
-    }
-    if(!tech)tech=await ataFindTechRecord();
-    if(!tech&&userIsAdmin&&(currentTechId||(currentTechData&&currentTechData.id))){
-      try{
-        ataAdminData=await rpc('app_ata_admin_data',{})||ataAdminData;
-        tech=await ataFindTechRecord();
-      }catch(_){}
-    }
+    tech=await ataResolveSelfRecord();
   }catch(e){
     errMsg=e.message||errMsg;
+  }
+  updateTechAtaAccess(tech);
+  if(!ataIsActiveLearner(tech)){
+    if(body)body.innerHTML='';
+    showTechHome();
+    return;
   }
   if(!tech){
     if(body)body.innerHTML='<div class="err" style="display:block">Could not load your ATA schedule. '+(errMsg&&String(errMsg).includes('app_ata_tech_data')?'Ask an admin to run supabase/ata-tracking.sql.':adminEsc(errMsg||'No ATA record found for this account yet.'))+'</div>';
@@ -4376,7 +4422,7 @@ async function loadTechAta(){
 }
 async function ataDownloadSelfPdf(){
   const tech=ataTechSelfData||await ataFindTechRecord();
-  if(!tech){alert('Load your ATA schedule first.');return;}
+  if(!ataIsActiveLearner(tech)){alert('ATA Tracking is only for technicians currently in Teachable.');return;}
   try{
     await ensureJsPdf();
     const doc=buildAtaTechDoc(tech,{});
@@ -4386,10 +4432,12 @@ async function ataDownloadSelfPdf(){
 function renderTechAtaHomeCard(tech){
   const host=document.getElementById('tech-ata-home-card');
   if(!host)return;
-  if(!tech){
-    host.innerHTML=`<div class="my-scores" style="margin-top:14px"><div class="detail-name">📚 ATA Tracking</div><div class="detail-sub" style="margin:6px 0 10px">Open your weekly quiz schedule, scores, and resets from the left menu.</div><button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px" onclick="showTechAta()">Open ATA Tracking</button></div>`;
+  if(!ataIsActiveLearner(tech)){
+    host.innerHTML='';
+    updateTechAtaAccess(tech);
     return;
   }
+  updateTechAtaAccess(tech);
   const s=ataTechSummary(tech);
   const bits=s.progs.filter(p=>p.start||p.completed).map(p=>`${ATA_PROGRAM_LABEL[p.program]} ${p.completed}/${p.total}`).join(' · ')||'Not started yet';
   host.innerHTML=`<div class="my-scores" style="margin-top:14px;cursor:pointer" onclick="showTechAta()">
@@ -5746,6 +5794,7 @@ function showPage(id){
   if(id==='pg-tech'&&currentTechData){
     updateTechAssessNav(currentTechData,techViewMode==='readonly');
     renderTechSidebarNav();
+    updateTechAtaAccess(ataTechSelfData);
   }
 }
 
@@ -5963,6 +6012,7 @@ async function viewTechFromAdmin(techId,region,name){
 
 async function openTechReadOnly(t){
   techViewMode='readonly';
+  ataTechSelfData=null;
   showPage('pg-tech');
   setTechMainView('tech-view-home');
   await ensureSkills();
@@ -6630,14 +6680,12 @@ async function loadTechHome(){
 }
 async function prefetchTechAtaHomeCard(){
   try{
-    await ensureAtaCurriculum();
-    let tech=ataTechSelfData;
-    if(currentToken){
-      try{const row=await rpc('app_ata_tech_data',{p_token:currentToken});if(row)tech=row;}catch(_){}
-    }
-    if(!tech)tech=await ataFindTechRecord();
-    if(tech){ataTechSelfData=tech;renderTechAtaHomeCard(tech);}
-  }catch(_){}
+    const tech=await ataResolveSelfRecord();
+    updateTechAtaAccess(tech);
+    if(ataIsActiveLearner(tech))renderTechAtaHomeCard(tech);
+  }catch(_){
+    updateTechAtaAccess(null);
+  }
 }
 
 function renderTechHome(t,opts){
@@ -6743,8 +6791,8 @@ function renderTechHome(t,opts){
   updateTechAssessNav(t,readOnly);
   renderTechSidebarNav();
   updateTechViewAdminChrome();
-  if(ataTechSelfData)renderTechAtaHomeCard(ataTechSelfData);
-  else renderTechAtaHomeCard(null);
+  updateTechAtaAccess(ataTechSelfData);
+  if(ataIsActiveLearner(ataTechSelfData))renderTechAtaHomeCard(ataTechSelfData);
   prefetchTechAtaHomeCard();
 }
 
