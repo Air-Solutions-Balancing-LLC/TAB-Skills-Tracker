@@ -245,7 +245,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .sb-pct-low{color:rgba(255,255,255,0.4)}
 .sb-collapse-tab{display:none;position:absolute;top:50%;right:-14px;transform:translateY(-50%);width:28px;height:56px;border:none;border-radius:0 10px 10px 0;background:#1a1a2e;color:#fff;font-size:20px;cursor:pointer;box-shadow:2px 0 8px rgba(0,0,0,0.25);padding:0;line-height:1;z-index:12}
 .mobile-menu-btn.is-open{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
-.my-brow,.q-section{scroll-margin-top:76px}
+.my-cat-block,.q-section{scroll-margin-top:76px}
 .main-content{margin-left:220px;flex:1;min-width:0;background:#f0f2f5}
 #pg-tech .main-content{padding:12px 20px 24px;box-sizing:border-box}
 #pg-tech .topbar{border-radius:12px;margin-bottom:4px}
@@ -396,12 +396,16 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 
 /* TECH OWN VIEW */
 .my-scores{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #1B3A6B}
-.my-bars{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-.my-brow{display:flex;align-items:center;gap:12px}
-.my-label{font-size:12px;color:#555;width:150px;flex-shrink:0;font-weight:600}
-.my-track{flex:1;height:10px;background:#f0f0ee;border-radius:5px;overflow:hidden}
-.my-fill{height:100%;border-radius:5px}
-.my-val{font-size:13px;font-weight:800;min-width:46px;text-align:right}
+.my-overall{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#EEF4FF;border-radius:12px;padding:14px 16px;margin:4px 0 14px;border-left:5px solid #1B3A6B}
+.my-overall-label{font-size:12px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px}
+.my-overall-sub{font-size:11px;color:#6b87b0;margin-top:3px;font-weight:500;text-transform:none;letter-spacing:0}
+.my-overall-pct{font-size:32px;font-weight:800;color:#1B3A6B;letter-spacing:-.5px;line-height:1}
+.my-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px;margin-top:4px}
+.my-cat-block{background:#f8faff;border:1.5px solid #E6EEF8;border-radius:14px;padding:16px 12px;text-align:center;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;scroll-margin-top:76px}
+.my-cat-emoji{font-size:22px;line-height:1}
+.my-cat-name{font-size:12px;font-weight:700;color:#1B3A6B;line-height:1.35}
+.my-cat-pct{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.my-cat-pct.empty{color:#c5c9d4;font-size:22px}
 .stalled-box{background:#EEF4FF;border-left:5px solid #4A90D9;border-radius:12px;padding:14px 16px;margin-bottom:14px}
 .stalled-title{font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
 .skill-alert-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #dde8f8;font-size:13px;color:#333;font-weight:500}
@@ -604,9 +608,10 @@ body.mobile-nav-open{overflow:hidden}
   .mod-head{flex-wrap:wrap;padding:12px 14px;gap:8px}
   .mod-name{flex:1 1 100%;font-size:12px;line-height:1.35}
   .mod-stats{margin-left:0;width:100%;justify-content:flex-end}
-  .my-brow{flex-wrap:wrap;gap:8px}
-  .my-label{width:100%}
-  .my-val{min-width:0;text-align:left}
+  .my-cat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .my-cat-block{min-height:108px;padding:14px 10px}
+  .my-cat-pct{font-size:24px}
+  .my-overall-pct{font-size:26px}
   .skill-row{align-items:flex-start}
   .skill-name{font-size:11px}
   .skill-rating-label{min-width:64px;font-size:10px}
@@ -1412,6 +1417,7 @@ let SKILL_CATS=[
   {key:'intermediate_avg',skey:'intermediate',label:'Intermediate (4–6 mo)',emoji:'🟦',codes:[],section_type:'rated'},
   {key:null,skey:'intermediate_7_12',label:'Intermediate (7–12 mo)',emoji:'🔷',codes:[],section_type:'rated'},
   {key:'advanced_avg',skey:'advanced',label:'Advanced',emoji:'🟨',codes:[],section_type:'rated'},
+  {key:null,skey:'special_testing_complex',label:'Special Testing / Complex Projects',emoji:'🧪',codes:[],section_type:'rated'},
   {key:'survey_avg',skey:'survey',label:'Survey Accounts',emoji:'🟪',codes:[],section_type:'rated'},
   {key:'national_accounts_avg',skey:'national_accounts',label:'National Accounts',emoji:'🏢',codes:[],section_type:'rated'}
 ];
@@ -1541,17 +1547,21 @@ let QUESTIONNAIRE=[
     {id:'a15',cat:'HYDRONICS',name:'Ultrasonic Flow Meter'},
     {id:'a16',cat:'TROUBLESHOOTING',name:'Troubleshooting Hydronics'},
     {id:'a17',cat:'COMMISSIONING',name:'Sequence of Operations Familiarization'},
-    {id:'a18',cat:'COMMISSIONING',name:'Commissioning Basics'},
     {id:'a19',cat:'SPECIALTY TESTING',name:'Chilled Beams'},
+    {id:'a24',cat:'SPECIALTY TESTING',name:'Stairwell Pressurization Testing'},
+    {id:'a26',cat:'SPECIALTY TESTING',name:'Coil Water Carry Over'},
+    {id:'a27',cat:'TROUBLESHOOTING',name:'Makeup Water / PRVs'},
+    {id:'a28',cat:'TROUBLESHOOTING',name:'Piping Systems Comprehension'}
+  ]},
+  {section:'Special Testing / Complex Projects',emoji:'🧪',key:'special_testing_complex',color:'#6B5B95',avg_field:null,skills:[
     {id:'a20',cat:'SPECIALTY TESTING',name:'Duct Air Leakage Testing'},
     {id:'a21',cat:'SPECIALTY TESTING',name:'Sound Testing'},
     {id:'a22',cat:'SPECIALTY TESTING',name:'Vibration Testing'},
     {id:'a23',cat:'SPECIALTY TESTING',name:'Off-Season Testing'},
-    {id:'a24',cat:'SPECIALTY TESTING',name:'Stairwell Pressurization Testing'},
     {id:'a25',cat:'SPECIALTY TESTING',name:'Temperature Differential Analysis / BTU Calculations'},
-    {id:'a26',cat:'SPECIALTY TESTING',name:'Coil Water Carry Over'},
-    {id:'a27',cat:'TROUBLESHOOTING',name:'Makeup Water / PRVs'},
-    {id:'a28',cat:'TROUBLESHOOTING',name:'Piping Systems Comprehension'}
+    {id:'a18',cat:'COMMISSIONING',name:'Understands Commissioning Basics / Sequence of Operations'},
+    {id:'sk264',cat:'COMPLEX PROJECTS',name:'Handles all types of Complex Projects - Prisons, Hospitals, Labs, Military'},
+    {id:'sk265',cat:'LARGE PROJECT MANAGEMENT',name:'Manage Large Projects, extending over several weeks to months.'}
   ]},
   {section:'Survey Accounts',emoji:'🟪',key:'survey',color:'#AFA9EC',avg_field:'survey_avg',skills:[]},
   {section:'National Accounts',emoji:'🏢',key:'national_accounts',color:'#5B7C99',avg_field:'national_accounts_avg',skills:[]}
@@ -1884,6 +1894,47 @@ function catScore(a,cat){return sectionScore(a,cat);}
 function sectionProficiencyPct(avg,secOrKey){
   if(avg===null||avg===undefined)return null;
   return ratingPct(avg,sectionScaleMax(secOrKey));
+}
+function pctDisplayColor(pct){
+  if(pct===null||pct===undefined)return'#c5c9d4';
+  if(pct>=90)return'#1D9E75';
+  if(pct>=75)return'#7C3AED';
+  if(pct>=50)return'#4A90D9';
+  return'#888';
+}
+/** Per-skill percentages in a category (4/4 = 100%). Combined average = category %. */
+function categoryItemPcts(assessment,cat){
+  if(!assessment||!cat)return null;
+  const raw=rawOf(assessment)||{};
+  const sec=QUESTIONNAIRE.find(s=>s.key===cat.skey);
+  const max=sectionScaleMax(cat.skey);
+  if(isProjectsCat(cat)||(sec&&isProjectsSection(sec))){
+    const codes=(cat.codes&&cat.codes.length)?cat.codes:(sec?sec.skills.map(sk=>sk.id):[]);
+    if(!codes.length)return null;
+    if(!projectSectionTouched(raw,codes)&&projectDoneCount(raw,codes)===0){
+      const v=sectionScore(assessment,cat);
+      if(v===null||v===undefined)return null;
+      return [ratingPct(v,max)];
+    }
+    return codes.map(id=>(Number(raw[id])===1||raw[id]===true)?100:0);
+  }
+  if(sec&&sec.skills.length){
+    const pcts=[];
+    sec.skills.forEach(sk=>{
+      const v=raw[sk.id];
+      if(v===undefined||v===null||typeof v==='object')return;
+      pcts.push(ratingPct(Number(v),max));
+    });
+    if(pcts.length)return pcts;
+  }
+  const v=sectionScore(assessment,cat);
+  if(v===null||v===undefined)return null;
+  return [ratingPct(Number(v),max)];
+}
+function categoryCombinedPct(assessment,cat){
+  const pcts=categoryItemPcts(assessment,cat);
+  if(!pcts||!pcts.length)return null;
+  return Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
 }
 function sectionRawAvg(rawScores,sec){
   if(isProjectsSection(sec)){
@@ -5568,7 +5619,7 @@ function requiredAssessmentSections(t){
   const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   if(months===null)return{
     all:true,
-    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs],
     checklist:[],
     level:null,
     message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
@@ -5579,10 +5630,10 @@ function requiredAssessmentSections(t){
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,
-    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs],
     checklist,
     level:'advanced',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), Advanced, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), Advanced, Special Testing / Complex Projects, National & Survey'
   };
   // INTERMEDIATE — 7.0–12.9 months (both intermediate bands)
   if(months>=7)return{
@@ -5689,7 +5740,7 @@ function hideAssessmentStartModal(){
     });
   }
 })();
-const COMPETENCE_LABELS={safety:'Safety',safety_instruments:'Safety & Instruments',basic:'Basics',basic_solo_projects:'Solo Projects',basic_survey_projects:'Survey Projects',intermediate:'Intermediate 4–6',intermediate_7_12:'Intermediate 7–12',advanced:'Advanced',survey:'Survey Accounts',national_accounts:'National Accounts'};
+const COMPETENCE_LABELS={safety:'Safety',safety_instruments:'Safety & Instruments',basic:'Basics',basic_solo_projects:'Solo Projects',basic_survey_projects:'Survey Projects',intermediate:'Intermediate 4–6',intermediate_7_12:'Intermediate 7–12',advanced:'Advanced',special_testing_complex:'Special Testing / Complex',survey:'Survey Accounts',national_accounts:'National Accounts'};
 function nebbStatusTier(stored){
   if(!stored)return 'training';
   const idx=NEBB_STATUS_OPTIONS.findIndex(o=>o.value===stored);
@@ -6701,14 +6752,18 @@ function renderTechHome(t,opts){
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
 
-  const myBars=SKILL_CATS.map(c=>{
-    const v=last?(c.key!=null&&last[c.key]!==undefined&&last[c.key]!==null?last[c.key]:sectionScore(last,c)):null;
-    if(v===null||v===undefined)return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"></div><span class="my-val" style="color:#999">—</span></div>`;
-    const max=sectionScaleMax(c.skey);
-    const pct=ratingPct(v,max),col=scoreColor(isProjectsCat(c)?Math.max(1,Number(v)):v);
-    const shown=Math.min(Number(v),max);
-    const valTxt=isProjectsCat(c)?`${Math.round(shown)} of ${max}`:`${shown.toFixed(1)} / ${max}`;
-    return`<div class="my-brow" id="home-sec-${c.skey}"><span class="my-label">${c.emoji} ${c.label}</span><div class="my-track"><div class="my-fill" style="width:${pct}%;background:${col}"></div></div><span class="my-val" style="color:${col}">${valTxt}</span></div>`;
+  const catPcts=SKILL_CATS.map(c=>({cat:c,pct:last?categoryCombinedPct(last,c):null}));
+  const scoredPcts=catPcts.map(x=>x.pct).filter(p=>p!==null&&p!==undefined);
+  const overallPct=scoredPcts.length?Math.round(scoredPcts.reduce((a,b)=>a+b,0)/scoredPcts.length):null;
+  const overallHtml=overallPct===null
+    ?`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div><div class="my-overall-sub">Complete an assessment to see your combined percentage</div></div><div class="my-overall-pct" style="color:#c5c9d4">—</div></div>`
+    :`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div><div class="my-overall-sub">Average of all scored categories (each skill at 4 = 100%)</div></div><div class="my-overall-pct" style="color:${pctDisplayColor(overallPct)}">${overallPct}%</div></div>`;
+  const myBlocks=catPcts.map(({cat:c,pct})=>{
+    if(pct===null||pct===undefined){
+      return`<div class="my-cat-block" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct empty">—</div></div>`;
+    }
+    const col=pctDisplayColor(pct);
+    return`<div class="my-cat-block" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct" style="color:${col}">${pct}%</div></div>`;
   }).join('');
 
   const stalled=[];
@@ -6782,7 +6837,8 @@ function renderTechHome(t,opts){
       ${tenureHtml}
       ${requiredHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
-      <div class="my-bars">${myBars||'<div style="font-size:13px;color:#999">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
+      ${overallHtml}
+      <div class="my-cat-grid">${myBlocks||'<div style="font-size:13px;color:#999;grid-column:1/-1">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
     </div>
     <div id="tech-ata-home-card"></div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}

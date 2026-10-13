@@ -65,12 +65,13 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
   ('intermediate', 'Intermediate Skills (4 to 6 Months)','🟦', '#7aaedd', 'intermediate_avg', 8, 'rated', NULL),
   ('intermediate_7_12', 'Intermediate Skills (7 to 12 Months)','🔷', '#5B8FD9', NULL, 9, 'rated', NULL),
   ('advanced',     'Advanced Skills (13+ months)',     '🟨', '#9898c0', 'advanced_avg',    10, 'rated', NULL),
-  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',      11, 'rated', NULL),
-  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 12, 'rated', NULL)
+  ('special_testing_complex', 'Special Testing / Complex Projects', '🧪', '#6B5B95', NULL, 11, 'rated', NULL),
+  ('survey',       'Survey Accounts',                  '🟪', '#AFA9EC', 'survey_avg',      12, 'rated', NULL),
+  ('national_accounts', 'National Accounts',         '🏢', '#5B7C99', 'national_accounts_avg', 13, 'rated', NULL)
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
       checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
-      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments','basic_solo_projects','basic_survey_projects','intermediate_7_12')
+      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments','basic_solo_projects','basic_survey_projects','intermediate_7_12','special_testing_complex')
                           THEN EXCLUDED.sort_order
                           ELSE public.skill_sections.sort_order END;
 
@@ -83,8 +84,9 @@ UPDATE public.skill_sections SET sort_order = 7, section_type = 'projects', labe
 UPDATE public.skill_sections SET sort_order = 8, section_type = 'rated', label = 'Intermediate Skills (4 to 6 Months)' WHERE skey = 'intermediate';
 UPDATE public.skill_sections SET sort_order = 9, section_type = 'rated', label = 'Intermediate Skills (7 to 12 Months)', emoji = '🔷', color = '#5B8FD9' WHERE skey = 'intermediate_7_12';
 UPDATE public.skill_sections SET sort_order = 10, section_type = 'rated' WHERE skey = 'advanced';
-UPDATE public.skill_sections SET sort_order = 11, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
-UPDATE public.skill_sections SET sort_order = 12, section_type = 'rated' WHERE skey = 'national_accounts';
+UPDATE public.skill_sections SET sort_order = 11, section_type = 'rated', label = 'Special Testing / Complex Projects', emoji = '🧪', color = '#6B5B95' WHERE skey = 'special_testing_complex';
+UPDATE public.skill_sections SET sort_order = 12, section_type = 'rated', label = 'Survey Accounts' WHERE skey = 'survey';
+UPDATE public.skill_sections SET sort_order = 13, section_type = 'rated' WHERE skey = 'national_accounts';
 
 -- ── Seed skills (skill_code matches historical raw_scores keys) ──────────────
 INSERT INTO public.skills (skill_code, section_id, category, name, sort_order)
@@ -199,17 +201,19 @@ FROM (VALUES
   ('a15','advanced','HYDRONICS','Ultrasonic Flow Meter',15),
   ('a16','advanced','TROUBLESHOOTING','Troubleshooting Hydronics',16),
   ('a17','advanced','COMMISSIONING','Sequence of Operations Familiarization',17),
-  ('a18','advanced','COMMISSIONING','Commissioning Basics',18),
   ('a19','advanced','SPECIALTY TESTING','Chilled Beams',19),
-  ('a20','advanced','SPECIALTY TESTING','Duct Air Leakage Testing',20),
-  ('a21','advanced','SPECIALTY TESTING','Sound Testing',21),
-  ('a22','advanced','SPECIALTY TESTING','Vibration Testing',22),
-  ('a23','advanced','SPECIALTY TESTING','Off-Season Testing',23),
   ('a24','advanced','SPECIALTY TESTING','Stairwell Pressurization Testing',24),
-  ('a25','advanced','SPECIALTY TESTING','Temperature Differential Analysis / BTU Calculations',25),
   ('a26','advanced','SPECIALTY TESTING','Coil Water Carry Over',26),
   ('a27','advanced','TROUBLESHOOTING','Makeup Water / PRVs',27),
-  ('a28','advanced','TROUBLESHOOTING','Piping Systems Comprehension',28)
+  ('a28','advanced','TROUBLESHOOTING','Piping Systems Comprehension',28),
+  ('a20','special_testing_complex','SPECIALTY TESTING','Duct Air Leakage Testing',1),
+  ('a21','special_testing_complex','SPECIALTY TESTING','Sound Testing',2),
+  ('a22','special_testing_complex','SPECIALTY TESTING','Vibration Testing',3),
+  ('a23','special_testing_complex','SPECIALTY TESTING','Off-Season Testing',4),
+  ('a25','special_testing_complex','SPECIALTY TESTING','Temperature Differential Analysis / BTU Calculations',5),
+  ('a18','special_testing_complex','COMMISSIONING','Understands Commissioning Basics / Sequence of Operations',6),
+  ('sk264','special_testing_complex','COMPLEX PROJECTS','Handles all types of Complex Projects - Prisons, Hospitals, Labs, Military',7),
+  ('sk265','special_testing_complex','LARGE PROJECT MANAGEMENT','Manage Large Projects, extending over several weeks to months.',8)
 ) AS v(code, skey, cat, name, ord)
 JOIN public.skill_sections sec ON sec.skey = v.skey
 ON CONFLICT (skill_code) DO NOTHING;
