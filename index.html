@@ -84,8 +84,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:10px}
 .admin-row .who{flex:1;min-width:0}
 .admin-row .nm{font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-row .nm-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0}
+.admin-row .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
+.admin-row .nm-sep{color:#b0b6c0;font-weight:400}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
+.edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
 .admin-del{font-size:12px;color:#c0392b;background:#fff5f5;border:1px solid #f3c0bb;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-del:hover{background:#fdecea}
 .admin-restore{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
@@ -127,7 +131,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .edit-deck-sec-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eef2f8}
 .edit-deck-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
 .edit-deck-grid .span-2{grid-column:1/-1}
-.edit-deck-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid #e8eef6;background:#fafbfd}
+.edit-deck-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid #e8eef6;background:#fafbfd}
 .edit-deck-err{display:none;margin:0 22px 12px;font-size:12px;color:#c0392b;padding:10px 12px;background:#fff5f5;border-radius:8px;border-left:3px solid #e74c3c}
 .training-focus-card{background:linear-gradient(135deg,#f4f8ff 0%,#eef4ff 55%,#f8fafc 100%);border:1px solid #d7e4f7;border-radius:14px;padding:16px 18px;margin:0 0 14px;border-left:5px solid #4A90D9}
 .training-focus-label{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.45px;margin-bottom:8px}
@@ -663,10 +667,9 @@ body.mobile-nav-open{overflow:hidden}
   .q-title{font-size:17px}
   .q-nav{flex-direction:column-reverse;align-items:stretch}
   .q-nav .btn,.q-nav .btn-outline{width:100%;text-align:center;padding:14px}
-  .admin-row{flex-wrap:wrap;align-items:flex-start}
-  .admin-row .who{flex:1 1 100%}
-  .admin-row .rg{margin-bottom:2px}
-  .admin-view,.admin-tech-edit,.admin-edit,.admin-del,.admin-restore,.admin-cancel{min-height:40px;padding:8px 10px;font-size:11px}
+  .admin-row{flex-wrap:wrap;align-items:center}
+  .admin-row .who{flex:1 1 auto;min-width:0}
+  .admin-view,.admin-edit,.admin-del,.admin-restore,.admin-cancel{min-height:40px;padding:8px 10px;font-size:11px}
   .report-head{align-items:flex-start}
   .report-actions{width:100%}
   .report-actions .btn{flex:1}
@@ -1398,8 +1401,11 @@ body.mobile-nav-open{overflow:hidden}
     <div class="edit-deck-body" id="admin-edit-deck-body"></div>
     <div class="edit-deck-err" id="edit-deck-err"></div>
     <div class="edit-deck-foot">
-      <button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button>
-      <button type="button" class="btn" id="edit-deck-save" style="padding:9px 22px">Save changes</button>
+      <button type="button" class="admin-del" id="edit-deck-archive" style="display:none">Archive</button>
+      <div class="edit-deck-foot-right">
+        <button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button>
+        <button type="button" class="btn" id="edit-deck-save" style="padding:9px 22px">Save changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1839,10 +1845,14 @@ function renderChecklistItemHtml(sk,completed,sec,readOnly){
     :`<button type="button" class="cl-check ${done?'done':''}" onclick="event.stopPropagation();toggleChecklistItem('${sk.id}',${done?'false':'true'})" title="${done?'Mark incomplete':'Mark complete'}">${done?'✓':''}</button>`;
   return`<div class="cl-item ${done?'cl-done':''}">${check}<div class="cl-body">${sk.cat?`<div class="cl-cat">${adminEsc(sk.cat)}</div>`:''}<div class="cl-name">${adminEsc(sk.name)}</div></div></div>`;
 }
+function getOpenModKeys(){
+  return [...document.querySelectorAll('.mod-skills.open')].map(el=>(el.id||'').replace(/^mod-/,'')).filter(Boolean);
+}
 function renderChecklistHtml(completed,opts){
   opts=opts||{};
   const readOnly=!!opts.readOnly;
   const bootcampStartDate=opts.bootcampStartDate||null;
+  const openKeys=new Set(opts.openKeys||[]);
   if(!CHECKLIST_SECTIONS.length)return'';
   const visible=visibleChecklistSections(completed);
   if(!visible.length)return'';
@@ -1851,6 +1861,7 @@ function renderChecklistHtml(completed,opts){
   const showPb=visible.some(isRatedChecklistSection);
   const sections=visible.map(sec=>{
     const secKey=sec.key;
+    const isOpen=openKeys.has(secKey);
     const rated=isRatedChecklistSection(sec);
     const total=sec.skills.length;
     let avgLabel,avgColor;
@@ -1865,13 +1876,13 @@ function renderChecklistHtml(completed,opts){
     }
     const items=sec.skills.map(sk=>renderChecklistItemHtml(sk,completed,sec,readOnly)).join('');
     return`<div class="mod-section">
-      <div class="mod-head" onclick="toggleMod('${secKey}')">
+      <div class="mod-head${isOpen?' open':''}" onclick="toggleMod('${secKey}')">
         <span class="mod-emoji">${sec.emoji}</span>
         <span class="mod-name">${adminEsc(sec.section)}</span>
         <span class="mod-avg" style="color:${avgColor}">${avgLabel}</span>
-        <span class="mod-tog" id="tog-${secKey}">▶</span>
+        <span class="mod-tog" id="tog-${secKey}">${isOpen?'▼':'▶'}</span>
       </div>
-      <div class="mod-skills" id="mod-${secKey}"><div class="cl-list">${items||'<div class="cl-empty">No tasks yet.</div>'}</div></div>
+      <div class="mod-skills${isOpen?' open':''}" id="mod-${secKey}"><div class="cl-list">${items||'<div class="cl-empty">No tasks yet.</div>'}</div></div>
     </div>`;
   }).join('');
   let progNote='';
@@ -1887,6 +1898,8 @@ function renderChecklistHtml(completed,opts){
 function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
 async function setChecklistRating(code,level){
   try{
+    const openKeys=getOpenModKeys();
+    const scrollY=window.scrollY;
     currentChecklist=parseChecklistCompleted(await rpc('app_checklist_rate',{p_token:currentToken,p_skill_code:code,p_level:level}));
     if(currentTechData){
       currentTechData.checklist_completed=currentChecklist;
@@ -1894,17 +1907,21 @@ async function setChecklistRating(code,level){
         renderPreBootcampAssessment();
         updateTechAssessNav(currentTechData,techViewMode==='readonly');
       }else{
-        renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
+        renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit',openModKeys:openKeys});
       }
+      requestAnimationFrame(()=>window.scrollTo(0,scrollY));
     }
   }catch(e){alert('Could not save rating. Please try again.');console.error(e);}
 }
 async function toggleChecklistItem(code,done){
   try{
+    const openKeys=getOpenModKeys();
+    const scrollY=window.scrollY;
     currentChecklist=parseChecklistCompleted(await rpc('app_checklist_toggle',{p_token:currentToken,p_skill_code:code,p_done:done}));
     if(currentTechData){
       currentTechData.checklist_completed=currentChecklist;
-      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit'});
+      renderTechHome(currentTechData,{readOnly:techViewMode==='readonly',adminEdit:techViewMode==='edit',openModKeys:openKeys});
+      requestAnimationFrame(()=>window.scrollTo(0,scrollY));
     }
   }catch(e){alert('Could not update task. Please try again.');console.error(e);}
 }
@@ -5355,18 +5372,33 @@ function editDeckBodyHtml(p){
   return profile+cert+employment+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
 }
 
+function adminPeopleNameLine(p,opts){
+  const name=adminEsc(p.full_name||p.email||'');
+  const bits=[];
+  if(opts&&opts.showRegion){
+    const nebb=nebbStatusLabel(p.nebb_status);
+    if(nebb){
+      if(/^NEBB\s+/i.test(nebb)){
+        bits.push('NEBB');
+        bits.push(nebb.replace(/^NEBB\s+/i,'').trim());
+      }else bits.push(nebb);
+    }
+    if(p.region)bits.push(String(p.region));
+  }
+  if(!bits.length)return`<div class="nm">${name}</div>`;
+  const meta=bits.map(b=>`<span class="nm-meta">${adminEsc(b)}</span>`).join('<span class="nm-sep">·</span>');
+  return`<div class="nm-line"><span class="nm">${name}</span><span class="nm-sep">·</span>${meta}</div>`;
+}
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
   el.innerHTML=rows.map(p=>{
-    const name=adminEsc(p.full_name||p.email);
-    const region=opts.showRegion&&p.region?`<span class="rg">${adminEsc(p.region)}</span>`:'';
     const viewBtn=opts.canView&&p.tech_id&&p.region
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
     const actions=opts.action==='restore'
       ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
-      :`${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button><button type="button" class="admin-del" onclick="deletePerson(${p.id},'${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">Archive</button>`;
-    return `<div class="admin-row"><div class="who"><div class="nm">${name}</div>${opts.showRegion?`<div class="admin-nebb">${techStatusBarsHtml(p)}</div>`:''}<div class="em">${adminEsc(p.email)}</div></div>${region}${actions}</div>`;
+      :`${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button>`;
+    return `<div class="admin-row"><div class="who">${adminPeopleNameLine(p,opts)}</div>${actions}</div>`;
   }).join('');
 }
 
@@ -5385,10 +5417,19 @@ function editPerson(id){
   err.style.display='none';err.textContent='';
   const saveBtn=document.getElementById('edit-deck-save');
   saveBtn.onclick=()=>saveEdit(p.id,p.role);
+  const archBtn=document.getElementById('edit-deck-archive');
+  if(archBtn){
+    archBtn.style.display='inline-flex';
+    archBtn.textContent=p.role==='technician'?'Archive':'Remove';
+    archBtn.onclick=()=>archiveFromEdit(p.id,p.full_name||p.email||'');
+  }
   overlay.classList.add('visible');
   document.body.style.overflow='hidden';
   const first=body.querySelector('input,select,textarea');
   if(first)setTimeout(()=>first.focus(),40);
+}
+async function archiveFromEdit(id,name){
+  if(await deletePerson(id,name))cancelEdit();
 }
 function cancelEdit(){
   adminEditId=null;
@@ -5397,6 +5438,8 @@ function cancelEdit(){
   document.body.style.overflow='';
   const err=document.getElementById('edit-deck-err');
   if(err){err.style.display='none';err.textContent='';}
+  const archBtn=document.getElementById('edit-deck-archive');
+  if(archBtn){archBtn.style.display='none';archBtn.onclick=null;}
 }
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
@@ -5467,13 +5510,17 @@ async function addPerson(role){
 }
 
 async function deletePerson(id,name){
-  if(!confirm('Archive '+(name||'this person')+'? Technicians move to Archived and can be restored; admins and PMs are removed.'))return;
-  const err=document.getElementById('admin-err');
-  err.style.display='none';
+  if(!confirm('Archive '+(name||'this person')+'? Technicians move to Archived and can be restored; admins and PMs are removed.'))return false;
+  const err=document.getElementById('edit-deck-err')||document.getElementById('admin-err');
+  if(err){err.style.display='none';err.textContent='';}
   try{
     await rpc('app_admin_delete_person',{p_id:id});
     await loadAdminLists();
-  }catch(e){err.textContent='Could not archive: '+(e.message||'try again');err.style.display='block';}
+    return true;
+  }catch(e){
+    if(err){err.textContent='Could not archive: '+(e.message||'try again');err.style.display='block';}
+    return false;
+  }
 }
 
 async function restoreTech(id){
@@ -6991,6 +7038,7 @@ function renderTechHome(t,opts){
   opts=opts||{};
   const readOnly=opts.readOnly!==undefined?!!opts.readOnly:techViewMode==='readonly';
   const adminEdit=opts.adminEdit!==undefined?!!opts.adminEdit:techViewMode==='edit';
+  const openModKeys=opts.openModKeys||getOpenModKeys();
   const container=document.getElementById('tech-home-body');
   const assessments=t.assessments||[];
   document.getElementById('tech-name-label').textContent=t.name;
@@ -7086,7 +7134,7 @@ function renderTechHome(t,opts){
   const banner=adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
     :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'';
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date}):"";
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys}):"";
 
   container.innerHTML=banner+`
     ${checklistHtml}
