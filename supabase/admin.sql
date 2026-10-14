@@ -98,7 +98,7 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_list_people();
 
 CREATE OR REPLACE FUNCTION public.app_admin_list_people()
-RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, cert_expires_on date, cecs_complete boolean, nebb_site_updated boolean, start_date date, bootcamp_start_date date, latest_raw_scores jsonb)
+RETURNS TABLE (id bigint, email text, full_name text, role text, region text, deleted boolean, tech_id bigint, nebb_status text, cert_expires_on date, cecs_complete boolean, nebb_site_updated boolean, start_date date, bootcamp_start_date date, latest_raw_scores jsonb, required_categories jsonb, training_focus text, training_goal_start date, training_goal_end date)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -133,7 +133,11 @@ BEGIN
                AND a.raw_scores::jsonb <> '{}'::jsonb
              ORDER BY a.date DESC
              LIMIT 1
-           ) AS latest_raw_scores
+           ) AS latest_raw_scores,
+           t.required_categories,
+           t.training_focus,
+           t.training_goal_start,
+           t.training_goal_end
     FROM public.app_people p
     LEFT JOIN public.technicians t ON t.id = p.tech_id
     ORDER BY
@@ -296,6 +300,8 @@ $$;
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text);
 DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean, boolean);
+DROP FUNCTION IF EXISTS public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean, boolean, jsonb);
 
 CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_id         bigint,
@@ -308,7 +314,11 @@ CREATE OR REPLACE FUNCTION public.app_admin_update_person(
   p_nebb_status text DEFAULT NULL,
   p_cert_expires_on text DEFAULT NULL,
   p_cecs_complete boolean DEFAULT NULL,
-  p_nebb_site_updated boolean DEFAULT NULL
+  p_nebb_site_updated boolean DEFAULT NULL,
+  p_required_categories jsonb DEFAULT NULL,
+  p_training_focus text DEFAULT NULL,
+  p_training_goal_start text DEFAULT NULL,
+  p_training_goal_end text DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -417,7 +427,26 @@ BEGIN
           ELSE p_cert_expires_on::date
         END,
         cecs_complete = COALESCE(p_cecs_complete, cecs_complete),
-        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated)
+        nebb_site_updated = COALESCE(p_nebb_site_updated, nebb_site_updated),
+        required_categories = CASE
+          WHEN p_required_categories IS NULL THEN required_categories
+          WHEN jsonb_typeof(p_required_categories) = 'array' THEN p_required_categories
+          ELSE required_categories
+        END,
+        training_focus = CASE
+          WHEN p_training_focus IS NULL THEN training_focus
+          ELSE NULLIF(trim(p_training_focus), '')
+        END,
+        training_goal_start = CASE
+          WHEN p_training_goal_start IS NULL THEN training_goal_start
+          WHEN trim(p_training_goal_start) = '' THEN NULL
+          ELSE p_training_goal_start::date
+        END,
+        training_goal_end = CASE
+          WHEN p_training_goal_end IS NULL THEN training_goal_end
+          WHEN trim(p_training_goal_end) = '' THEN NULL
+          ELSE p_training_goal_end::date
+        END
     WHERE id = v_tech_id AND deleted_at IS NULL;
   END IF;
 END;
@@ -510,6 +539,6 @@ GRANT EXECUTE ON FUNCTION public.app_admin_list_people()                   TO au
 GRANT EXECUTE ON FUNCTION public.app_admin_add_person(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_delete_person(bigint)           TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_restore_tech(bigint)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.app_admin_update_person(bigint, text, text, text, text, text, text, text, text, boolean, boolean, jsonb, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_save_cert_pdf(bigint, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_admin_get_cert_pdf(bigint) TO authenticated;

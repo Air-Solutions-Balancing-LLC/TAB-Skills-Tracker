@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <script src="config.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -97,11 +98,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-tech-edit:hover{background:#e0ebff}
 .admin-cancel{font-size:12px;color:#666;background:#f1f1f1;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-cancel:hover{background:#e7e7e7}
-.admin-row-edit{flex-wrap:wrap}
-.admin-edit-field{flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fff;outline:none}
+.admin-req-cats{margin-top:4px;padding:12px 14px;background:#f8faff;border:1px solid #E6EEF8;border-radius:12px}
+.admin-req-cats-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.admin-req-cats-hint{font-size:11px;color:#888;margin-bottom:10px;line-height:1.4}
+.admin-req-cats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 12px}
+.admin-req-cat{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#333;font-weight:600;line-height:1.35;cursor:pointer}
+.admin-req-cat input{margin-top:2px;flex-shrink:0}
+.my-cat-block.required-cat{border-color:#1B3A6B;box-shadow:inset 0 0 0 1px rgba(27,58,107,.12)}
+.admin-edit-field{width:100%;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fff;outline:none;font-family:inherit}
 .admin-edit-field:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
-.admin-start-wrap{display:flex;flex-direction:column;gap:3px;flex:0 0 auto}
-.admin-start-lbl{font-size:10px;font-weight:700;color:#888;letter-spacing:.02em}
+.admin-edit-field.textarea{min-height:88px;resize:vertical;line-height:1.45}
+.admin-start-wrap{display:flex;flex-direction:column;gap:4px}
+.admin-start-lbl{font-size:10px;font-weight:700;color:#6b7c93;letter-spacing:.04em;text-transform:uppercase}
+.edit-deck-overlay{display:none;position:fixed;inset:0;z-index:220;align-items:center;justify-content:center;padding:18px;background:rgba(12,24,48,.52);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.edit-deck-overlay.visible{display:flex;animation:editDeckFade .18s ease}
+@keyframes editDeckFade{from{opacity:0}to{opacity:1}}
+.edit-deck{width:100%;max-width:680px;max-height:min(92vh,860px);display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 28px 80px rgba(12,24,48,.35),0 0 0 1px rgba(255,255,255,.08);animation:editDeckUp .22s ease}
+@keyframes editDeckUp{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.edit-deck-head{background:linear-gradient(135deg,#16325f 0%,#1B3A6B 45%,#2a5088 100%);color:#fff;padding:18px 22px 16px;position:relative}
+.edit-deck-head::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)}
+.edit-deck-kicker{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.72;margin-bottom:4px}
+.edit-deck-title{font-size:20px;font-weight:800;letter-spacing:-.3px;line-height:1.2}
+.edit-deck-sub{font-size:12px;opacity:.78;margin-top:4px}
+.edit-deck-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border:none;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-size:18px;cursor:pointer;line-height:1}
+.edit-deck-close:hover{background:rgba(255,255,255,.22)}
+.edit-deck-body{padding:18px 22px;overflow-y:auto;flex:1;background:linear-gradient(180deg,#f7f9fc 0%,#fff 120px)}
+.edit-deck-sec{margin-bottom:16px;background:#fff;border:1px solid #e8eef6;border-radius:14px;padding:14px 16px;box-shadow:0 1px 2px rgba(27,58,107,.04)}
+.edit-deck-sec-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eef2f8}
+.edit-deck-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.edit-deck-grid .span-2{grid-column:1/-1}
+.edit-deck-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid #e8eef6;background:#fafbfd}
+.edit-deck-err{display:none;margin:0 22px 12px;font-size:12px;color:#c0392b;padding:10px 12px;background:#fff5f5;border-radius:8px;border-left:3px solid #e74c3c}
+.training-focus-card{background:linear-gradient(135deg,#f4f8ff 0%,#eef4ff 55%,#f8fafc 100%);border:1px solid #d7e4f7;border-radius:14px;padding:16px 18px;margin:0 0 14px;border-left:5px solid #4A90D9}
+.training-focus-label{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.45px;margin-bottom:8px}
+.training-focus-goal{font-size:15px;font-weight:600;color:#1a1a2e;line-height:1.45;white-space:pre-wrap}
+.training-focus-goal.empty{color:#9aa8bc;font-weight:500;font-style:italic}
+.training-focus-dates{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:12px;font-size:12px;color:#4a5d78}
+.training-focus-dates strong{color:#1B3A6B;font-weight:700}
+@media(max-width:560px){
+  .edit-deck-grid{grid-template-columns:1fr}
+  .edit-deck{max-height:96vh;border-radius:14px}
+  .edit-deck-body,.edit-deck-head,.edit-deck-foot{padding-left:14px;padding-right:14px}
+}
 .admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee}
 .admin-add input,.admin-add select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fafafa;outline:none}
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
@@ -398,14 +436,15 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .my-scores{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #1B3A6B}
 .my-overall{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#EEF4FF;border-radius:12px;padding:14px 16px;margin:4px 0 14px;border-left:5px solid #1B3A6B}
 .my-overall-label{font-size:12px;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px}
-.my-overall-sub{font-size:11px;color:#6b87b0;margin-top:3px;font-weight:500;text-transform:none;letter-spacing:0}
 .my-overall-pct{font-size:32px;font-weight:800;color:#1B3A6B;letter-spacing:-.5px;line-height:1}
 .my-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px;margin-top:4px}
 .my-cat-block{background:#f8faff;border:1.5px solid #E6EEF8;border-radius:14px;padding:16px 12px;text-align:center;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;scroll-margin-top:76px}
 .my-cat-emoji{font-size:22px;line-height:1}
+.my-cat-logo{width:52px;height:38px;object-fit:contain;display:block}
 .my-cat-name{font-size:12px;font-weight:700;color:#1B3A6B;line-height:1.35}
 .my-cat-pct{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1}
 .my-cat-pct.empty{color:#c5c9d4;font-size:22px}
+.my-cat-nebb-sub{font-size:10px;font-weight:600;color:#6b7c93;letter-spacing:.02em;margin-top:-2px}
 .stalled-box{background:#EEF4FF;border-left:5px solid #4A90D9;border-radius:12px;padding:14px 16px;margin-bottom:14px}
 .stalled-title{font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
 .skill-alert-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #dde8f8;font-size:13px;color:#333;font-weight:500}
@@ -1344,6 +1383,23 @@ body.mobile-nav-open{overflow:hidden}
     <div class="assess-modal-msg" id="assess-start-msg"></div>
     <div class="assess-modal-actions">
       <button type="button" class="btn" id="assess-start-continue">Continue to assessment</button>
+    </div>
+  </div>
+</div>
+
+<div class="edit-deck-overlay" id="admin-edit-deck" role="dialog" aria-modal="true" aria-labelledby="edit-deck-title" onclick="if(event.target===this)cancelEdit()">
+  <div class="edit-deck" id="admin-edit-deck-card">
+    <div class="edit-deck-head">
+      <button type="button" class="edit-deck-close" onclick="cancelEdit()" aria-label="Close">×</button>
+      <div class="edit-deck-kicker" id="edit-deck-kicker">Edit profile</div>
+      <div class="edit-deck-title" id="edit-deck-title">Technician</div>
+      <div class="edit-deck-sub" id="edit-deck-sub"></div>
+    </div>
+    <div class="edit-deck-body" id="admin-edit-deck-body"></div>
+    <div class="edit-deck-err" id="edit-deck-err"></div>
+    <div class="edit-deck-foot">
+      <button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button>
+      <button type="button" class="btn" id="edit-deck-save" style="padding:9px 22px">Save changes</button>
     </div>
   </div>
 </div>
@@ -5114,7 +5170,7 @@ async function previewAdminNebbReportPdf(){
 
 function openAdmin(){
   currentRole='admin';
-  adminEditId=null;
+  cancelEdit();
   const searchEl=document.getElementById('admin-tech-search');
   if(searchEl)searchEl.value='';
   updateAdminTechSearchHint('',0,0);
@@ -5238,26 +5294,70 @@ function nebbOptionsHtml(sel){
 
 function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.length>=10?s.slice(0,10):'';}
 
-function editRowHtml(p){
+function requiredCategoriesEditorHtml(p){
+  if(p.role!=='technician')return'';
+  const saved=parseRequiredCategories(p.required_categories);
+  const checked=new Set(saved||techRequiredCategoryKeys(p));
+  const boxes=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
+    const id=`edit-req-${p.id}-${o.key}`;
+    const on=checked.has(o.key);
+    return`<label class="admin-req-cat" for="${id}"><input type="checkbox" id="${id}" class="edit-req-cat" data-key="${o.key}" ${on?'checked':''}><span>${o.emoji} ${adminEsc(o.label)}</span></label>`;
+  }).join('');
+  return`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">Required categories · Overall Proficiency</div>
+    <div class="admin-req-cats">
+      <div class="admin-req-cats-hint">Checked categories are required and are the only ones averaged into Overall Proficiency on My Progress.${saved?'':' Showing tenure defaults until you save.'}</div>
+      <div class="admin-req-cats-grid">${boxes}</div>
+    </div>
+  </div>`;
+}
+function trainingFocusEditorHtml(p){
+  if(p.role!=='technician')return'';
+  return`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">Training Focus</div>
+    <div class="edit-deck-grid">
+      <label class="admin-start-wrap span-2"><span class="admin-start-lbl">Training goal</span><textarea id="edit-training-focus-${p.id}" class="admin-edit-field textarea" placeholder="What should this technician focus on right now?" maxlength="2000">${adminEsc(p.training_focus||'')}</textarea></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Goal start date</span><input type="date" id="edit-training-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_start)}"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Goal end date</span><input type="date" id="edit-training-end-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_end)}"></label>
+    </div>
+  </div>`;
+}
+function editDeckBodyHtml(p){
   const name=adminEsc(p.full_name||'');
-  const mid=(p.role==='technician'
-    ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label>`
-    :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`)
-    +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>`
-    +`<label class="admin-start-wrap"><span class="admin-start-lbl">Cert expiration</span><input type="date" id="edit-cert-exp-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.cert_expires_on)}"></label>`
-    +`<label class="admin-start-wrap"><span class="admin-start-lbl">CECs complete</span><select id="edit-cecs-${p.id}" class="admin-edit-field"><option value="false"${p.cecs_complete?'':' selected'}>No</option><option value="true"${p.cecs_complete?' selected':''}>Yes</option></select></label>`
-    +`<label class="admin-start-wrap"><span class="admin-start-lbl">NEBB Site Updated</span><select id="edit-siteupd-${p.id}" class="admin-edit-field"><option value="false"${p.nebb_site_updated?'':' selected'}>No</option><option value="true"${p.nebb_site_updated?' selected':''}>Yes</option></select></label>`
-    +(p.role==='technician'
-      ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label><label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>`
-      :'');
   const email=adminEsc(p.email||'');
-  return `<div class="admin-row admin-row-edit"><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com">${mid}<button type="button" class="btn" style="padding:7px 14px" onclick="saveEdit(${p.id},'${p.role}')">Save</button><button type="button" class="admin-cancel" onclick="cancelEdit()">Cancel</button></div>`;
+  const isTech=p.role==='technician';
+  const profile=`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">Profile</div>
+    <div class="edit-deck-grid">
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Full name</span><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Email</span><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com"></label>
+      ${isTech
+        ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label>`
+        :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`}
+    </div>
+  </div>`;
+  const cert=`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">NEBB & certification</div>
+    <div class="edit-deck-grid">
+      <label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Cert expiration</span><input type="date" id="edit-cert-exp-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.cert_expires_on)}"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">CECs complete</span><select id="edit-cecs-${p.id}" class="admin-edit-field"><option value="false"${p.cecs_complete?'':' selected'}>No</option><option value="true"${p.cecs_complete?' selected':''}>Yes</option></select></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">NEBB Site Updated</span><select id="edit-siteupd-${p.id}" class="admin-edit-field"><option value="false"${p.nebb_site_updated?'':' selected'}>No</option><option value="true"${p.nebb_site_updated?' selected':''}>Yes</option></select></label>
+    </div>
+  </div>`;
+  const employment=isTech?`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">Employment</div>
+    <div class="edit-deck-grid">
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>
+    </div>
+  </div>`:'';
+  return profile+cert+employment+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
 }
 
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
   el.innerHTML=rows.map(p=>{
-    if(opts.action!=='restore'&&p.id===adminEditId)return editRowHtml(p);
     const name=adminEsc(p.full_name||p.email);
     const region=opts.showRegion&&p.region?`<span class="rg">${adminEsc(p.region)}</span>`:'';
     const viewBtn=opts.canView&&p.tech_id&&p.region
@@ -5273,15 +5373,46 @@ function renderPeople(el,rows,opts){
   }).join('');
 }
 
-function editPerson(id){adminEditId=id;renderAdminLists();}
-function cancelEdit(){adminEditId=null;renderAdminLists();}
+function editPerson(id){
+  const p=(adminPeople||[]).find(x=>x.id===id);
+  if(!p)return;
+  adminEditId=id;
+  const overlay=document.getElementById('admin-edit-deck');
+  const body=document.getElementById('admin-edit-deck-body');
+  const err=document.getElementById('edit-deck-err');
+  const roleLabel=p.role==='technician'?'Technician':(p.role==='pm'?'PM / APM':'Admin');
+  document.getElementById('edit-deck-kicker').textContent='Edit '+roleLabel.toLowerCase();
+  document.getElementById('edit-deck-title').textContent=p.full_name||p.email||'Profile';
+  document.getElementById('edit-deck-sub').textContent=p.email||'';
+  body.innerHTML=editDeckBodyHtml(p);
+  err.style.display='none';err.textContent='';
+  const saveBtn=document.getElementById('edit-deck-save');
+  saveBtn.onclick=()=>saveEdit(p.id,p.role);
+  overlay.classList.add('visible');
+  document.body.style.overflow='hidden';
+  const first=body.querySelector('input,select,textarea');
+  if(first)setTimeout(()=>first.focus(),40);
+}
+function cancelEdit(){
+  adminEditId=null;
+  const overlay=document.getElementById('admin-edit-deck');
+  if(overlay)overlay.classList.remove('visible');
+  document.body.style.overflow='';
+  const err=document.getElementById('edit-deck-err');
+  if(err){err.style.display='none';err.textContent='';}
+}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const overlay=document.getElementById('admin-edit-deck');
+  if(overlay&&overlay.classList.contains('visible'))cancelEdit();
+});
 
 async function saveEdit(id,role){
-  const err=document.getElementById('admin-err');
-  err.style.display='none';
+  const err=document.getElementById('edit-deck-err')||document.getElementById('admin-err');
+  if(err){err.style.display='none';err.textContent='';}
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null};
   const nebb=document.getElementById('edit-nebb-'+id);
   const certExp=document.getElementById('edit-cert-exp-'+id);
   const cecs=document.getElementById('edit-cecs-'+id);
@@ -5297,6 +5428,14 @@ async function saveEdit(id,role){
     args.p_start_date=sd?sd.value:null;
     const bsd=document.getElementById('edit-bootcamp-start-'+id);
     args.p_bootcamp_start_date=bsd?bsd.value:null;
+    const boxes=[...document.querySelectorAll('#admin-edit-deck-body .edit-req-cat')];
+    args.p_required_categories=boxes.filter(el=>el.checked).map(el=>el.getAttribute('data-key')).filter(Boolean);
+    const tf=document.getElementById('edit-training-focus-'+id);
+    const ts=document.getElementById('edit-training-start-'+id);
+    const te=document.getElementById('edit-training-end-'+id);
+    args.p_training_focus=tf?tf.value:'';
+    args.p_training_goal_start=ts?ts.value:'';
+    args.p_training_goal_end=te?te.value:'';
   }else{
     const r=document.getElementById('edit-role-'+id);
     const rr=document.getElementById('edit-region-'+id);
@@ -5305,9 +5444,11 @@ async function saveEdit(id,role){
   }
   try{
     await rpc('app_admin_update_person',args);
-    adminEditId=null;
+    cancelEdit();
     await loadAdminLists();
-  }catch(e){err.textContent='Could not save: '+(e.message||'try again');err.style.display='block';}
+  }catch(e){
+    if(err){err.textContent='Could not save: '+(e.message||'try again');err.style.display='block';}
+  }
 }
 
 async function addPerson(role){
@@ -5612,7 +5753,91 @@ function employmentTenureMonths(t){
   if(days===null)return null;
   return days/30.44;
 }
+const PROFICIENCY_CATEGORY_OPTIONS=[
+  {key:'pre_bootcamp',label:'Pre-Bootcamp',emoji:'🎒'},
+  {key:'safety',label:'Core Values + Math Skills',emoji:'🛡️'},
+  {key:'safety_instruments',label:'Safety and Instruments',emoji:'🧰'},
+  {key:'basic',label:'Basic TAB Skills (0–3 months)',emoji:'🟩'},
+  {key:'basic_solo_projects',label:'TAB Basics Solo Projects',emoji:'🏗️'},
+  {key:'basic_survey_projects',label:'Survey Solo Projects',emoji:'📐'},
+  {key:'intermediate',label:'Intermediate TAB Skills (4 to 6 Months)',emoji:'🟦'},
+  {key:'intermediate_7_12',label:'Intermediate TAB Skills (7 to 12 Months)',emoji:'🔷'},
+  {key:'advanced',label:'Advanced TAB Skills (13+ months)',emoji:'🟨'},
+  {key:'special_testing_complex',label:'Special Testing / Complex Projects',emoji:'🧪'},
+  {key:'survey',label:'Survey Accounts',emoji:'🟪'},
+  {key:'national_accounts',label:'National Accounts',emoji:'🏢'}
+];
+function parseRequiredCategories(raw){
+  if(raw==null)return null;
+  let arr=raw;
+  if(typeof raw==='string'){
+    if(!raw.trim())return null;
+    try{arr=JSON.parse(raw);}catch(e){return null;}
+  }
+  if(!Array.isArray(arr))return null;
+  const allowed=new Set(PROFICIENCY_CATEGORY_OPTIONS.map(o=>o.key));
+  return arr.map(String).filter(k=>allowed.has(k));
+}
+function proficiencyCategoryLabel(key){
+  const o=PROFICIENCY_CATEGORY_OPTIONS.find(x=>x.key===key);
+  return o?o.label:key;
+}
+function tenureRequiredCategoryKeys(t){
+  const months=employmentTenureMonths(t);
+  const days=employmentTenureDays(t);
+  const accountSecs=['survey','national_accounts'];
+  const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
+  const keys=[];
+  if(days!==null&&days<10)keys.push('orientation');
+  else if(hasNotStartedBootcamp(t))keys.push('pre_bootcamp');
+  if(months===null){
+    return [...keys,...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs];
+  }
+  keys.push(...coreSecs);
+  if(months>=4)keys.push('intermediate');
+  if(months>=7)keys.push('intermediate_7_12');
+  if(months>=13)keys.push('advanced','special_testing_complex');
+  keys.push(...accountSecs);
+  return keys;
+}
+function techRequiredCategoryKeys(t){
+  const saved=parseRequiredCategories(t&&t.required_categories);
+  if(saved!==null)return saved;
+  return tenureRequiredCategoryKeys(t).filter(k=>k!=='orientation');
+}
+function checklistCategoryPct(t,key){
+  const sec=(CHECKLIST_SECTIONS||[]).find(s=>s.key===key);
+  if(!sec||!sec.skills.length)return null;
+  const completed=parseChecklistCompleted(t&&t.checklist_completed);
+  const any=sec.skills.some(sk=>getChecklistRating(completed,sk.id)>0);
+  if(!any)return null;
+  return sectionRatingPct(completed,sec);
+}
+function categoryPctForOverall(t,assessment,key){
+  if(key==='pre_bootcamp'||key==='orientation')return checklistCategoryPct(t,key);
+  const cat=SKILL_CATS.find(c=>c.skey===key);
+  if(!cat||!assessment)return null;
+  return categoryCombinedPct(assessment,cat);
+}
+function overallProficiencyPct(t,assessment){
+  const keys=techRequiredCategoryKeys(t);
+  const pcts=keys.map(k=>categoryPctForOverall(t,assessment,k)).filter(p=>p!==null&&p!==undefined);
+  if(!pcts.length)return null;
+  return Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+}
 function requiredAssessmentSections(t){
+  const custom=parseRequiredCategories(t&&t.required_categories);
+  if(custom!==null){
+    const checklist=custom.filter(k=>k==='pre_bootcamp'||k==='orientation');
+    const rated=custom.filter(k=>k!=='pre_bootcamp'&&k!=='orientation');
+    return{
+      all:false,
+      rated,
+      checklist,
+      level:'custom',
+      message:custom.length?'Required Sections: '+custom.map(proficiencyCategoryLabel).join(', '):'Required Sections: None selected'
+    };
+  }
   const months=employmentTenureMonths(t);
   const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
@@ -5763,6 +5988,32 @@ function nebbBadge(s){
   if(tier==='cp')return'<span class="nebb-badge nebb-cp">NEBB CP</span>';
   if(tier==='ct')return'<span class="nebb-badge nebb-ct">NEBB CT</span>';
   return'<span class="nebb-badge nebb-tr">In Training</span>';
+}
+function isNebbCtCertified(t){
+  const tier=nebbStatusTier(t&&t.nebb_status);
+  return tier==='ct'||tier==='cp';
+}
+function certDaysUntilExpire(t){
+  if(!isNebbCtCertified(t))return null;
+  const exp=parseDateOnly(t&&t.cert_expires_on);
+  if(!exp)return null;
+  exp.setHours(0,0,0,0);
+  return Math.floor((exp-todayDateOnly())/86400000);
+}
+function certDaysDisplayColor(days){
+  const n=days===null||days===undefined?null:Number(days);
+  if(n===null||Number.isNaN(n))return '#c5c9d4';
+  if(n<=60)return '#c0392b';
+  if(n<=120)return '#c9a000';
+  return '#0F6E56';
+}
+function nebbCtCertBlockHtml(t){
+  const days=certDaysUntilExpire(t);
+  const certified=isNebbCtCertified(t);
+  const valueHtml=certified&&days!==null
+    ?`<div class="my-cat-pct" style="color:${certDaysDisplayColor(days)}">${days}</div><div class="my-cat-nebb-sub">days until expire</div>`
+    :`<div class="my-cat-pct empty">—</div>`;
+  return`<div class="my-cat-block" id="home-sec-nebb-ct"><img class="my-cat-logo" src="assets/nebb-logo.png" alt="NEBB"><div class="my-cat-name">NEBB CT Certified</div>${valueHtml}</div>`;
 }
 function latestRawScores(entity){
   if(entity&&entity.latest_raw_scores!=null){
@@ -6752,19 +7003,20 @@ function renderTechHome(t,opts){
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
 
+  const requiredKeys=new Set(techRequiredCategoryKeys(t));
   const catPcts=SKILL_CATS.map(c=>({cat:c,pct:last?categoryCombinedPct(last,c):null}));
-  const scoredPcts=catPcts.map(x=>x.pct).filter(p=>p!==null&&p!==undefined);
-  const overallPct=scoredPcts.length?Math.round(scoredPcts.reduce((a,b)=>a+b,0)/scoredPcts.length):null;
+  const overallPct=overallProficiencyPct(t,last);
   const overallHtml=overallPct===null
-    ?`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div><div class="my-overall-sub">Complete an assessment to see your combined percentage</div></div><div class="my-overall-pct" style="color:#c5c9d4">—</div></div>`
-    :`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div><div class="my-overall-sub">Average of all scored categories (each skill at 4 = 100%)</div></div><div class="my-overall-pct" style="color:${pctDisplayColor(overallPct)}">${overallPct}%</div></div>`;
+    ?`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div></div><div class="my-overall-pct" style="color:#c5c9d4">—</div></div>`
+    :`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div></div><div class="my-overall-pct" style="color:${pctDisplayColor(overallPct)}">${overallPct}%</div></div>`;
   const myBlocks=catPcts.map(({cat:c,pct})=>{
+    const reqCls=requiredKeys.has(c.skey)?' required-cat':'';
     if(pct===null||pct===undefined){
-      return`<div class="my-cat-block" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct empty">—</div></div>`;
+      return`<div class="my-cat-block${reqCls}" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct empty">—</div></div>`;
     }
     const col=pctDisplayColor(pct);
-    return`<div class="my-cat-block" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct" style="color:${col}">${pct}%</div></div>`;
-  }).join('');
+    return`<div class="my-cat-block${reqCls}" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct" style="color:${col}">${pct}%</div></div>`;
+  }).join('')+nebbCtCertBlockHtml(t);
 
   const stalled=[];
   if(last&&prev){
@@ -6799,7 +7051,8 @@ function renderTechHome(t,opts){
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
   const reqInfo=requiredAssessmentSections(t);
-  const levelLabel=reqInfo.level==='basic'?'BASIC (0–3.9 months)'
+  const levelLabel=reqInfo.level==='custom'?'CUSTOM REQUIRED CATEGORIES'
+    :reqInfo.level==='basic'?'BASIC (0–3.9 months)'
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
@@ -6821,6 +7074,17 @@ function renderTechHome(t,opts){
     <div class="tech-required-msg">${adminEsc(reqInfo.message)}</div>
     <div class="tech-required-hint">${requiredHint}</div>
   </div>`;
+  const focusText=(t.training_focus||'').trim();
+  const focusStart=fmtDateFull(t.training_goal_start);
+  const focusEnd=fmtDateFull(t.training_goal_end);
+  const trainingFocusHtml=`<div class="training-focus-card">
+    <div class="training-focus-label">Training Focus</div>
+    <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goal set yet.'}</div>
+    <div class="training-focus-dates">
+      <span><strong>Start:</strong> ${focusStart||'—'}</span>
+      <span><strong>End:</strong> ${focusEnd||'—'}</span>
+    </div>
+  </div>`;
 
   const banner=adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
@@ -6835,6 +7099,7 @@ function renderTechHome(t,opts){
         <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
       </div>
       ${tenureHtml}
+      ${trainingFocusHtml}
       ${requiredHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       ${overallHtml}
