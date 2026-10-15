@@ -1005,12 +1005,24 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; if that Thursday is a holiday, the due date moves to the <strong>next Thursday</strong>. You run the PDF on Friday. Technicians open the same schedule at this site: sign in with Microsoft → <strong>ATA Tracking</strong> in the left menu. Admins preview it with <strong>Pick Technician</strong> above. Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; if that Thursday is a holiday, the due date moves to the <strong>next Thursday</strong>. Edit the shared <strong>Master course list</strong> below to add/rename lessons for everyone. Open a tech’s <strong>Report</strong> → <strong>Edit progress</strong> to change scores, pass status, and completed dates (admin edits are locked from Teachable overwrite). Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
             <button type="button" class="btn" id="ata-infer-starts-btn" style="background:#4A90D9" onclick="ataInferStarts()">Fill empty start dates</button>
+            <button type="button" class="btn" id="ata-curriculum-toggle" style="background:#6b4fa0" onclick="ataToggleCurriculumPanel()">📚 Master course list</button>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
+          </div>
+          <div id="ata-curriculum-panel" style="display:none;border:1px solid #ddd6f3;border-radius:12px;padding:12px 14px;margin:0 0 12px;background:#faf8ff">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div style="font-size:13px;font-weight:800;color:#4c1d95">Master ATA course list</div>
+                <div style="font-size:11px;color:#666;margin-top:2px">One shared curriculum for everyone. Renaming a lesson name or code updates all technicians. Week # drives the Thursday due date from each tech’s program start.</div>
+              </div>
+              <button type="button" class="btn" style="padding:6px 12px;background:#6b4fa0;font-size:12px" onclick="ataCurriculumReload()">↻ Reload</button>
+            </div>
+            <div id="ata-curriculum-status" style="font-size:12px;min-height:16px;margin-bottom:6px"></div>
+            <div id="ata-curriculum-body"><div class="admin-empty" style="padding:8px">Open to load curriculum…</div></div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:6px">
             <button type="button" onclick="ataShowWebhookSetup()" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;font-weight:600;color:#6b4fa0">⚡ Zapier setup</button>
@@ -1449,16 +1461,18 @@ body.mobile-nav-open{overflow:hidden}
       <h3 id="ata-report-title" style="margin:0;font-size:17px">ATA Report</h3>
       <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="ataCloseReport()">Close</button>
     </div>
-    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include, preview below, then download.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Admins can <strong>Edit progress</strong> (scores / pass / completed date) or <strong>Manage resets</strong>, then preview and download the PDF.</p>
     <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px">
       <span style="font-weight:700;font-size:12px;color:#1B3A6B">Modules:</span>
-      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="basic" checked onchange="ataReportPreview()"> Basic</label>
-      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="intermediate" checked onchange="ataReportPreview()"> Intermediate</label>
-      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="advanced" checked onchange="ataReportPreview()"> Advanced</label>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="basic" checked onchange="ataOnReportModulesChange()"> Basic</label>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="intermediate" checked onchange="ataOnReportModulesChange()"> Intermediate</label>
+      <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="advanced" checked onchange="ataOnReportModulesChange()"> Advanced</label>
       <div style="flex:1"></div>
+      <button type="button" class="btn" id="ata-rep-edit-toggle" style="background:#0F6E56;font-size:12px;padding:6px 11px;display:none" onclick="ataToggleProgressEditPanel()">Edit progress</button>
       <button type="button" class="btn" id="ata-rep-reset-toggle" style="background:#6b7280;font-size:12px;padding:6px 11px" onclick="ataToggleResetPanel()">Manage resets</button>
       <button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
+    <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe"></div>
     <div style="flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
       <iframe id="ata-report-frame" style="width:100%;height:62vh;border:0;display:block" title="ATA report preview"></iframe>
@@ -3276,6 +3290,158 @@ async function ensureAtaCurriculum(){
   ataCurriculum=await rpc('app_ata_curriculum',{})||[];
   return ataCurriculum;
 }
+function ataInvalidateCurriculum(){ataCurriculum=null;}
+
+// ── Admin: master ATA course list ────────────────────────────────────────────
+let ataCurriculumAdminList=null;
+function ataCurriculumSqlHint(msg){
+  return ((msg||'').includes('app_ata_admin_')||(msg||'').includes('Could not find'))
+    ?'Run supabase/ata-admin-edit.sql in Supabase SQL Editor, then reload.'
+    :(msg||'Try again.');
+}
+function ataToggleCurriculumPanel(){
+  const panel=document.getElementById('ata-curriculum-panel');
+  if(!panel)return;
+  const open=panel.style.display==='none'||!panel.style.display;
+  panel.style.display=open?'block':'none';
+  if(open)ataCurriculumReload();
+}
+async function ataCurriculumReload(){
+  const body=document.getElementById('ata-curriculum-body');
+  const st=document.getElementById('ata-curriculum-status');
+  if(body)body.innerHTML='<div class="loading">Loading curriculum…</div>';
+  if(st)st.textContent='';
+  try{
+    ataCurriculumAdminList=await rpc('app_ata_admin_list_lessons',{})||[];
+    ataInvalidateCurriculum();
+    await ensureAtaCurriculum();
+    ataRenderCurriculumAdmin();
+  }catch(e){
+    if(body)body.innerHTML='<div class="err" style="display:block">'+adminEsc(ataCurriculumSqlHint(e.message))+'</div>';
+  }
+}
+function ataRenderCurriculumAdmin(){
+  const body=document.getElementById('ata-curriculum-body');
+  if(!body)return;
+  const list=ataCurriculumAdminList||[];
+  if(!list.length){
+    body.innerHTML='<div class="admin-empty" style="padding:8px">No lessons yet. Add one below.</div>'+ataCurriculumAddFormHtml();
+    return;
+  }
+  let html='';
+  ATA_PROGRAMS.forEach(pr=>{
+    const rows=list.filter(l=>l.program===pr).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)||(a.id||0)-(b.id||0));
+    html+=`<div style="margin:0 0 14px">
+      <div style="font-size:12px;font-weight:800;color:#1B3A6B;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">${ATA_PROGRAM_LABEL[pr]} · ${rows.length} lessons</div>
+      <div style="overflow-x:auto"><table class="report-table" style="font-size:12px">
+        <thead><tr><th style="width:52px">Week</th><th style="width:120px">Code</th><th>Lesson name</th><th style="width:160px">Actions</th></tr></thead>
+        <tbody>`;
+    rows.forEach(l=>{
+      html+=`<tr data-ata-lesson-id="${l.id}">
+        <td><input type="number" min="1" max="200" class="admin-edit-field ata-cur-week" style="width:56px;padding:4px 6px" value="${Number(l.week_index)||1}"></td>
+        <td><input type="text" class="admin-edit-field ata-cur-code" style="width:110px;padding:4px 6px;font-family:monospace;font-size:11px" value="${adminEsc(l.lesson_code||'')}"></td>
+        <td><input type="text" class="admin-edit-field ata-cur-name" style="width:100%;min-width:180px;padding:4px 6px" value="${adminEsc(l.lesson_name||'')}"></td>
+        <td style="white-space:nowrap">
+          <button type="button" class="btn" style="padding:4px 9px;font-size:11px;background:#0F6E56" onclick="ataCurriculumSave(${l.id},'${pr}')">Save</button>
+          <button type="button" class="btn" style="padding:4px 9px;font-size:11px;background:#C0392B" onclick="ataCurriculumDelete(${l.id},'${adminEsc(l.lesson_code||'')}')">Delete</button>
+        </td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div></div>`;
+  });
+  html+=ataCurriculumAddFormHtml();
+  body.innerHTML=html;
+}
+function ataCurriculumAddFormHtml(){
+  return `<div style="border-top:1px solid #e4dcf5;padding-top:10px;margin-top:4px">
+    <div style="font-size:12px;font-weight:700;color:#4c1d95;margin-bottom:6px">Add lesson</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+      <label style="font-size:11px;color:#555">Program<br>
+        <select id="ata-cur-add-program" class="admin-edit-field" style="padding:6px 8px">
+          <option value="basic">Basic</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </label>
+      <label style="font-size:11px;color:#555">Code<br>
+        <input type="text" id="ata-cur-add-code" class="admin-edit-field" placeholder="TAB-B-113" style="width:120px;padding:6px 8px;font-family:monospace">
+      </label>
+      <label style="font-size:11px;color:#555;flex:1;min-width:180px">Name<br>
+        <input type="text" id="ata-cur-add-name" class="admin-edit-field" placeholder="Lesson title" style="width:100%;padding:6px 8px">
+      </label>
+      <label style="font-size:11px;color:#555">Week #<br>
+        <input type="number" id="ata-cur-add-week" class="admin-edit-field" min="1" max="200" placeholder="auto" style="width:64px;padding:6px 8px">
+      </label>
+      <button type="button" class="btn" style="padding:7px 14px;background:#6b4fa0" onclick="ataCurriculumAdd()">Add to master list</button>
+    </div>
+  </div>`;
+}
+function ataCurriculumRowFields(id){
+  const tr=document.querySelector('tr[data-ata-lesson-id="'+id+'"]');
+  if(!tr)return null;
+  return {
+    code:(tr.querySelector('.ata-cur-code')||{}).value,
+    name:(tr.querySelector('.ata-cur-name')||{}).value,
+    week:(tr.querySelector('.ata-cur-week')||{}).value
+  };
+}
+async function ataCurriculumSave(id,program){
+  const f=ataCurriculumRowFields(id);if(!f)return;
+  const st=document.getElementById('ata-curriculum-status');
+  try{
+    await rpc('app_ata_admin_upsert_lesson',{
+      p_id:id,
+      p_program:program,
+      p_lesson_code:String(f.code||'').trim(),
+      p_lesson_name:String(f.name||'').trim(),
+      p_week_index:f.week?Number(f.week):null,
+      p_sort_order:f.week?Number(f.week):null
+    });
+    if(st){st.style.color='#0F6E56';st.textContent='Saved. Everyone’s schedule now uses this lesson.';}
+    await ataCurriculumReload();
+    try{await ataLoadAdmin();}catch(e){}
+  }catch(e){
+    if(st){st.style.color='#C0392B';st.textContent=ataCurriculumSqlHint(e.message);}
+    else alert(ataCurriculumSqlHint(e.message));
+  }
+}
+async function ataCurriculumAdd(){
+  const program=(document.getElementById('ata-cur-add-program')||{}).value||'basic';
+  const code=String((document.getElementById('ata-cur-add-code')||{}).value||'').trim();
+  const name=String((document.getElementById('ata-cur-add-name')||{}).value||'').trim();
+  const weekRaw=(document.getElementById('ata-cur-add-week')||{}).value;
+  const st=document.getElementById('ata-curriculum-status');
+  if(!code||!name){alert('Enter a lesson code and name.');return;}
+  try{
+    await rpc('app_ata_admin_upsert_lesson',{
+      p_id:null,
+      p_program:program,
+      p_lesson_code:code,
+      p_lesson_name:name,
+      p_week_index:weekRaw?Number(weekRaw):null,
+      p_sort_order:null
+    });
+    if(st){st.style.color='#0F6E56';st.textContent='Added '+code+' to '+ATA_PROGRAM_LABEL[program]+'.';}
+    await ataCurriculumReload();
+    try{await ataLoadAdmin();}catch(e){}
+  }catch(e){
+    if(st){st.style.color='#C0392B';st.textContent=ataCurriculumSqlHint(e.message);}
+    else alert(ataCurriculumSqlHint(e.message));
+  }
+}
+async function ataCurriculumDelete(id,code){
+  if(!confirm('Remove '+code+' from the master course list?\n\nTechnicians will no longer be required to complete it. Past scores for this code are kept in history but drop off the active schedule.'))return;
+  const st=document.getElementById('ata-curriculum-status');
+  try{
+    await rpc('app_ata_admin_delete_lesson',{p_id:id});
+    if(st){st.style.color='#0F6E56';st.textContent='Removed '+code+' from the master list.';}
+    await ataCurriculumReload();
+    try{await ataLoadAdmin();}catch(e){}
+  }catch(e){
+    if(st){st.style.color='#C0392B';st.textContent=ataCurriculumSqlHint(e.message);}
+    else alert(ataCurriculumSqlHint(e.message));
+  }
+}
 
 function ataToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function ataIsSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
@@ -4368,8 +4534,11 @@ function ataOpenReport(techId){
   if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
   document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
   const rt=document.getElementById('ata-rep-reset-toggle');if(rt)rt.style.display=userIsAdmin?'':'none';
+  const et=document.getElementById('ata-rep-edit-toggle');if(et)et.style.display=userIsAdmin?'':'none';
   const rp=document.getElementById('ata-reset-panel');if(rp){rp.style.display='none';rp.innerHTML='';}
+  const ep=document.getElementById('ata-progress-edit-panel');if(ep){ep.style.display='none';ep.innerHTML='';}
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
+  if(userIsAdmin&&ep){ep.style.display='block';ataRenderProgressEditPanel();}
   ataReportPreview();
 }
 function ataCloseReport(){
@@ -4377,6 +4546,13 @@ function ataCloseReport(){
   const frame=document.getElementById('ata-report-frame');if(frame)frame.removeAttribute('src');
   if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
   ataReportTechId=null;
+}
+function ataOnReportModulesChange(){
+  ataReportPreview();
+  const ep=document.getElementById('ata-progress-edit-panel');
+  if(ep&&ep.style.display!=='none')ataRenderProgressEditPanel();
+  const rp=document.getElementById('ata-reset-panel');
+  if(rp&&rp.style.display!=='none')ataRenderResetPanel();
 }
 function ataReportSelectedPrograms(){
   return Array.from(document.querySelectorAll('.ata-rep-mod')).filter(c=>c.checked).map(c=>c.value);
@@ -4395,6 +4571,8 @@ async function ataReportPreview(){
   }catch(e){console.error('ATA preview failed',e);}
   const rp=document.getElementById('ata-reset-panel');
   if(rp&&rp.style.display!=='none')ataRenderResetPanel();
+  const ep=document.getElementById('ata-progress-edit-panel');
+  if(ep&&ep.style.display!=='none')ataRenderProgressEditPanel();
 }
 async function ataReportDownload(){
   const tech=ataFindTech(ataReportTechId);if(!tech)return;
@@ -4407,6 +4585,126 @@ async function ataReportDownload(){
     doc.save('ATA-'+String(tech.name||'tech').replace(/[^a-z0-9]+/gi,'-')+tag+'.pdf');
   }catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
 }
+// Admin-only progress editor inside the report modal.
+function ataToggleProgressEditPanel(){
+  const ep=document.getElementById('ata-progress-edit-panel');if(!ep)return;
+  if(ep.style.display==='none'){ep.style.display='block';ataRenderProgressEditPanel();}
+  else{ep.style.display='none';}
+}
+function ataIsoDateInput(v){
+  if(!v)return'';
+  const s=String(v);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  const d=new Date(s);if(isNaN(d.getTime()))return'';
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function ataRenderProgressEditPanel(){
+  const ep=document.getElementById('ata-progress-edit-panel');if(!ep)return;
+  if(!userIsAdmin){ep.innerHTML='';ep.style.display='none';return;}
+  const tech=ataFindTech(ataReportTechId);if(!tech){ep.innerHTML='';return;}
+  const progs=ataReportSelectedPrograms();
+  if(!progs.length){ep.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to edit progress.</div>';return;}
+  const today=ataToday();
+  const startsHtml=ATA_PROGRAMS.map(pr=>{
+    const val=adminDateInputValue(ataStart(tech,pr));
+    return`<label style="font-size:11px;color:#555;display:inline-flex;flex-direction:column;gap:3px">${ATA_PROGRAM_LABEL[pr]} start
+      <input type="date" class="admin-edit-field" style="padding:5px 8px" value="${val}" onchange="ataSaveStart(${tech.id},'${pr}',this.value);setTimeout(function(){ataRenderProgressEditPanel();ataReportPreview();},400)">
+    </label>`;
+  }).join('');
+  let html=`<div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:6px">Edit progress — scores save as admin overrides (Teachable will not overwrite locked rows). Due dates follow program start + week # on the master list.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px">${startsHtml}</div>
+    <div style="max-height:280px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr>
+      <th style="width:36px">Wk</th><th>Lesson</th><th style="width:72px">Due</th><th style="width:70px">Score %</th><th style="width:64px">Pass</th><th style="width:120px">Completed</th><th style="width:150px">Actions</th>
+    </tr></thead><tbody>`;
+  progs.forEach(pr=>{
+    const ps=ataProgramStatus(tech,pr,today);
+    (ps.lessonRows||[]).forEach(lr=>{
+      const code=lr.lesson.lesson_code;
+      const c=ataCompletionFor(tech,code)||{};
+      const score=c.score!=null?Number(c.score):(lr.best!=null?Number(lr.best):'');
+      const passed=!!(c.passed===true||ataIsDone(tech,code));
+      const locked=!!c.admin_locked;
+      const doneAt=ataIsoDateInput(c.completed_at);
+      const due=lr.deadline?ataFmtDeadline(lr.deadline):'—';
+      const escCode=String(code).replace(/'/g,"\\'");
+      html+=`<tr data-ata-edit-code="${adminEsc(code)}">
+        <td style="color:#888">${lr.globalWeek||lr.weekNum||''}</td>
+        <td><b>${adminEsc(code)}</b> — ${adminEsc(lr.lesson.lesson_name)}${locked?' <span style="font-size:10px;color:#0F6E56;font-weight:700">locked</span>':''}</td>
+        <td style="white-space:nowrap;color:#555">${adminEsc(due)}</td>
+        <td><input type="number" min="0" max="100" step="0.1" class="admin-edit-field ata-ed-score" style="width:64px;padding:4px 6px" value="${score===''?'':score}"></td>
+        <td style="text-align:center"><input type="checkbox" class="ata-ed-pass" ${passed?'checked':''}></td>
+        <td><input type="date" class="admin-edit-field ata-ed-done" style="padding:4px 6px" value="${doneAt}"></td>
+        <td style="white-space:nowrap">
+          <button type="button" class="btn" style="padding:3px 8px;font-size:11px;background:#0F6E56" onclick="ataSaveLessonProgress(${tech.id},'${escCode}',this)">Save</button>
+          <button type="button" class="btn" style="padding:3px 8px;font-size:11px;background:#888" onclick="ataClearLessonProgress(${tech.id},'${escCode}')">Clear</button>
+          ${locked?`<button type="button" class="btn" style="padding:3px 8px;font-size:11px;background:#6b4fa0" title="Allow Teachable to update this lesson again" onclick="ataUnlockLessonProgress(${tech.id},'${escCode}')">Unlock</button>`:''}
+        </td>
+      </tr>`;
+    });
+  });
+  html+='</tbody></table></div>';
+  ep.innerHTML=html;
+}
+async function ataRefreshAfterProgressEdit(){
+  try{await ataLoadAdmin();}catch(e){}
+  ataRenderProgressEditPanel();
+  ataReportPreview();
+  const ataPage=document.getElementById('pg-tech');
+  if(ataPage&&ataPage.classList.contains('active')){
+    try{await loadTechAta();}catch(e){}
+  }
+}
+async function ataSaveLessonProgress(techId,code,btn){
+  const tr=btn?btn.closest('tr'):document.querySelector('tr[data-ata-edit-code="'+CSS.escape(code)+'"]');
+  if(!tr)return;
+  const scoreEl=tr.querySelector('.ata-ed-score');
+  const passEl=tr.querySelector('.ata-ed-pass');
+  const doneEl=tr.querySelector('.ata-ed-done');
+  const scoreRaw=scoreEl&&scoreEl.value!==''?Number(scoreEl.value):null;
+  const passed=!!(passEl&&passEl.checked);
+  const done=doneEl&&doneEl.value?doneEl.value:null;
+  try{
+    await rpc('app_ata_admin_set_completion',{
+      p_tech_id:techId,
+      p_lesson_code:code,
+      p_score_percent:scoreRaw,
+      p_passed:passed,
+      p_completed_at:done?done+'T12:00:00':null,
+      p_clear:false
+    });
+  }catch(e){
+    alert('Could not save progress. '+ataCurriculumSqlHint(e.message));
+    return;
+  }
+  await ataRefreshAfterProgressEdit();
+}
+async function ataClearLessonProgress(techId,code){
+  if(!confirm('Clear score / pass for '+code+' on this technician?'))return;
+  try{
+    await rpc('app_ata_admin_set_completion',{
+      p_tech_id:techId,
+      p_lesson_code:code,
+      p_score_percent:null,
+      p_passed:null,
+      p_completed_at:null,
+      p_clear:true
+    });
+  }catch(e){
+    alert('Could not clear progress. '+ataCurriculumSqlHint(e.message));
+    return;
+  }
+  await ataRefreshAfterProgressEdit();
+}
+async function ataUnlockLessonProgress(techId,code){
+  try{
+    await rpc('app_ata_admin_unlock_completion',{p_tech_id:techId,p_lesson_code:code});
+  }catch(e){
+    alert('Could not unlock. '+ataCurriculumSqlHint(e.message));
+    return;
+  }
+  await ataRefreshAfterProgressEdit();
+}
+
 // Admin-only reset manager inside the report modal.
 function ataToggleResetPanel(){
   const rp=document.getElementById('ata-reset-panel');if(!rp)return;
