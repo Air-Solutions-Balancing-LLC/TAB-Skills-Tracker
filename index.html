@@ -150,8 +150,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
 .admin-empty{font-size:12px;color:#aaa;padding:4px 2px}
 .admin-box-wide{max-width:1000px!important}
-#pg-admin .login-bg{padding:8px 8px!important;align-items:flex-start}
-#pg-admin .admin-box-wide{max-width:min(1480px,100%)!important;padding:1.25rem 1.1rem;border-radius:12px}
+#pg-admin .login-bg{padding:28px 24px 40px!important;align-items:flex-start}
+#pg-admin .admin-box-wide{max-width:min(1480px,100%)!important;width:100%;padding:2rem 2rem 2.25rem;border-radius:16px;margin:0 auto}
+@media(max-width:700px){
+  #pg-admin .login-bg{padding:16px 12px 28px!important}
+  #pg-admin .admin-box-wide{padding:1.35rem 1.15rem 1.5rem;border-radius:14px}
+}
 .report-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:0}
 .report-item{border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafafa}
 .report-table.nebb-cert-table{table-layout:fixed;font-size:11px}
@@ -320,16 +324,26 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .pm-search-wrap input{width:100%;max-width:420px;padding:10px 14px 10px 36px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.006a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 12px center;outline:none}
 .pm-search-wrap input:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .pm-search-hint{font-size:11px;color:#aaa;margin-top:6px}
-.tech-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 24px 24px}
-@media(max-width:900px){.tech-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.tech-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
-.tcard{background:#fff;border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid transparent}
-.tcard:hover{border-color:#1B3A6B;transform:translateY(-2px);box-shadow:0 6px 20px rgba(27,58,107,0.15)}
-.tcard-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.tech-grid{display:flex;flex-direction:column;gap:8px;padding:0 24px 24px}
+@media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.trow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid #e8eef6;border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.trow:hover{border-color:#1B3A6B;background:#f8faff;box-shadow:0 2px 10px rgba(27,58,107,0.1)}
+.trow-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.trow-top{display:flex;align-items:center;gap:10px;min-width:0}
+.trow-meta{min-width:0;flex:1}
 .av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;background:#E6EEF8;color:#1B3A6B}
+.trow-name{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow-sub{font-size:12px;font-weight:500;color:#555;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow-sub .nm-sep{color:#b0b6c0;margin:0 4px}
+.trow-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.trow-chevron{color:#9aa8bc;font-size:18px;font-weight:700;line-height:1}
+.score-row{display:flex;gap:5px;flex-wrap:wrap}
+@media(max-width:700px){
+  .trow{flex-wrap:wrap;align-items:flex-start}
+  .trow-right{width:100%;justify-content:space-between;padding-left:50px}
+}
 .tcard-name{font-size:13px;font-weight:700;color:#1a1a2e}
 .tcard-sub{font-size:11px;color:#999;margin-top:2px}
-.score-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
 .sp{font-size:11px;padding:4px 9px;border-radius:8px;font-weight:700}
 .sp1{background:#E1F5EE;color:#0F6E56}
 .sp5{background:#F3E8FF;color:#6D28D9}
@@ -631,7 +645,6 @@ body.mobile-nav-open{overflow:hidden}
   .topbar-badge{margin-left:auto}
   .detail-topbar{padding:12px 14px;flex-wrap:wrap;gap:10px}
   .detail-topbar .back-btn{padding:8px 12px;font-size:11px}
-  .detail-topbar #detail-view-as{margin-left:0!important;width:100%;text-align:center}
   .detail-name{font-size:15px}
   .detail-body,.alerts-list,.compare-body,.page-body,.q-wrap{padding:12px 14px}
   .metrics{padding:14px 14px 0;gap:8px}
@@ -1209,7 +1222,7 @@ body.mobile-nav-open{overflow:hidden}
         </div>
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
         <div id="pm-alert-box"></div>
-        <div class="section-label">Team members — click to view full profile</div>
+        <div class="section-label">Team members — click a row to view their progress</div>
         <div class="pm-search-wrap">
           <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
           <div class="pm-search-hint" id="pm-search-hint"></div>
@@ -1258,10 +1271,9 @@ body.mobile-nav-open{overflow:hidden}
       <div id="pm-view-tech" class="view">
         <div class="detail-topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
-          <div class="back-btn" onclick="setPMView('dashboard',document.getElementById('nav-dashboard'))">← Back</div>
+          <div class="back-btn" onclick="closePmTechProgress()">← Back</div>
           <div class="detail-av" id="detail-av-initials">--</div>
           <div><div class="detail-name" id="detail-tech-name">--</div><div class="detail-sub" id="detail-tech-sub">--</div></div>
-          <button type="button" class="back-btn" id="detail-view-as" style="margin-left:auto;display:none;background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="viewTechAsAdmin()">👁 View as Technician</button>
         </div>
         <div class="detail-body" id="detail-body"><div class="loading">Loading...</div></div>
       </div>
@@ -1384,6 +1396,11 @@ body.mobile-nav-open{overflow:hidden}
     <h3 id="assess-start-title">Before you begin</h3>
     <p>Your time with the company (from your start date) determines which skill levels to complete. Survey and National Accounts are always required.</p>
     <div class="assess-modal-msg" id="assess-start-msg"></div>
+    <div id="assess-start-skip-note" style="display:none;font-size:13px;color:#555;line-height:1.45;margin:0 0 12px"></div>
+    <label id="assess-start-rerate-wrap" style="display:none;align-items:flex-start;gap:8px;font-size:13px;color:#333;font-weight:600;margin:0 0 14px;cursor:pointer;line-height:1.4">
+      <input type="checkbox" id="assess-start-rerate" style="margin-top:3px;flex-shrink:0">
+      <span>Reset and re-rate sections already at 100%</span>
+    </label>
     <div class="assess-modal-actions">
       <button type="button" class="btn" id="assess-start-continue">Continue to assessment</button>
     </div>
@@ -1821,13 +1838,18 @@ function preBootcampSectionComplete(completed){
   if(!sec||!(sec.skills||[]).length)return true;
   return sectionRatingPct(completed,sec)>=100;
 }
-function visibleChecklistSections(completed){
+function isPreBootcampRequired(t){
+  return techRequiredCategoryKeys(t).includes('pre_bootcamp');
+}
+function visibleChecklistSections(completed,t){
   const oriDone=orientationSectionComplete(completed);
   const pbDone=preBootcampSectionComplete(completed);
-  if(oriDone&&pbDone)return[];
+  const showPb=isPreBootcampRequired(t)&&!pbDone;
+  const showOri=!oriDone;
+  if(!showPb&&!showOri)return[];
   return CHECKLIST_SECTIONS.filter(sec=>{
-    if(isRatedChecklistSection(sec))return !pbDone;
-    return !oriDone;
+    if(isRatedChecklistSection(sec))return showPb;
+    return showOri;
   });
 }
 function renderChecklistItemHtml(sk,completed,sec,readOnly){
@@ -1854,7 +1876,7 @@ function renderChecklistHtml(completed,opts){
   const bootcampStartDate=opts.bootcampStartDate||null;
   const openKeys=new Set(opts.openKeys||[]);
   if(!CHECKLIST_SECTIONS.length)return'';
-  const visible=visibleChecklistSections(completed);
+  const visible=visibleChecklistSections(completed,opts.tech||null);
   if(!visible.length)return'';
   const prog=checklistProgress(completed);
   const showOri=visible.some(s=>!isRatedChecklistSection(s));
@@ -2079,6 +2101,7 @@ function hasNotStartedBootcamp(t){
 }
 function shouldShowPreBootcampCta(t){
   if(!ratedChecklistSectionExists())return false;
+  if(!isPreBootcampRequired(t))return false;
   return hasNotStartedBootcamp(t);
 }
 function updateTechPreBootcampNav(t,readOnly){
@@ -2320,7 +2343,7 @@ async function saveNotesToTech(){
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
-let regionTechs=[],qAnswers={},qProjectJobs={},qNebbStatus='',azureEmailAddr=null;
+let regionTechs=[],qAnswers={},qProjectJobs={},qNebbStatus='',azureEmailAddr=null,qForceRerateComplete=false;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
 
@@ -5930,11 +5953,44 @@ function requiredAssessmentSections(t){
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
-function visibleQuestionnaireSections(t){
+function lastAssessmentWithRawScores(t){
+  const assessments=t&&t.assessments;
+  if(!assessments||!assessments.length)return null;
+  for(let i=assessments.length-1;i>=0;i--){
+    if(assessmentHasRawScores(assessments[i]))return assessments[i];
+  }
+  return null;
+}
+function sectionIsComplete100(assessment,sec){
+  if(!assessment||!sec||!(sec.skills||[]).length)return false;
+  const raw=rawOf(assessment)||{};
+  if(isProjectsSection(sec)){
+    return sec.skills.every(sk=>Number(raw[sk.id])===1||raw[sk.id]===true);
+  }
+  const max=sectionScaleMax(sec);
+  return sec.skills.every(sk=>{
+    const v=raw[sk.id];
+    if(v===undefined||v===null||typeof v==='object')return false;
+    return ratingPct(Number(v),max)>=100;
+  });
+}
+function requiredQuestionnaireSections(t){
   const req=requiredAssessmentSections(t||currentTechData);
   if(req.all||!req.rated)return QUESTIONNAIRE.slice();
   const keys=new Set(req.rated);
   return QUESTIONNAIRE.filter(sec=>keys.has(sec.key));
+}
+function complete100QuestionnaireSections(t){
+  const last=lastAssessmentWithRawScores(t||currentTechData);
+  if(!last)return[];
+  return requiredQuestionnaireSections(t).filter(sec=>sectionIsComplete100(last,sec));
+}
+function visibleQuestionnaireSections(t){
+  const secs=requiredQuestionnaireSections(t);
+  if(qForceRerateComplete)return secs;
+  const last=lastAssessmentWithRawScores(t||currentTechData);
+  if(!last)return secs;
+  return secs.filter(sec=>!sectionIsComplete100(last,sec));
 }
 function filterAnswersToVisibleSections(raw,t){
   const filled={};
@@ -5978,8 +6034,29 @@ function showAssessmentStartModal(message,onContinue){
   const overlay=document.getElementById('assess-start-modal');
   const msgEl=document.getElementById('assess-start-msg');
   const btn=document.getElementById('assess-start-continue');
+  const skipNote=document.getElementById('assess-start-skip-note');
+  const rerateWrap=document.getElementById('assess-start-rerate-wrap');
+  const rerate=document.getElementById('assess-start-rerate');
   if(!overlay||!msgEl||!btn){onContinue();return;}
   msgEl.textContent=message;
+  qForceRerateComplete=false;
+  const doneSecs=complete100QuestionnaireSections(currentTechData);
+  const pending=visibleQuestionnaireSections(currentTechData);
+  if(skipNote){
+    if(doneSecs.length){
+      skipNote.style.display='block';
+      skipNote.innerHTML=pending.length
+        ?`<strong>${doneSecs.length}</strong> section${doneSecs.length===1?'':'s'} already at 100% will be skipped and carried forward: ${doneSecs.map(s=>adminEsc(s.section)).join(', ')}.`
+        :`All required sections are already at 100%. Check the box below if you need to re-rate them.`;
+    }else{
+      skipNote.style.display='none';
+      skipNote.textContent='';
+    }
+  }
+  if(rerateWrap&&rerate){
+    rerate.checked=false;
+    rerateWrap.style.display=doneSecs.length?'flex':'none';
+  }
   assessStartContinue=onContinue;
   overlay.classList.add('visible');
   btn.focus();
@@ -5994,6 +6071,8 @@ function hideAssessmentStartModal(){
   const overlay=document.getElementById('assess-start-modal');
   if(btn){
     btn.addEventListener('click',()=>{
+      const rerate=document.getElementById('assess-start-rerate');
+      qForceRerateComplete=!!(rerate&&rerate.checked);
       const fn=assessStartContinue;
       hideAssessmentStartModal();
       if(fn)fn();
@@ -6238,6 +6317,18 @@ function renderAlertBox(techs){
   box.innerHTML=`<div class="alert-box"><div class="alert-title">⚠️ Skills stalled — score ≤ 2, no improvement in last 2 assessments</div><div class="alert-pills">${issues.map(i=>`<span class="alert-pill">${i}</span>`).join('')}</div></div>`;
 }
 
+function pmTechRowMeta(t){
+  const bits=[];
+  const nebb=nebbStatusLabel(t.nebb_status);
+  if(nebb){
+    if(/^NEBB\s+/i.test(nebb)){
+      bits.push('NEBB');
+      bits.push(nebb.replace(/^NEBB\s+/i,'').trim());
+    }else bits.push(nebb);
+  }
+  if(t.region)bits.push(String(t.region));
+  return bits.map(b=>adminEsc(b)).join('<span class="nm-sep">·</span>');
+}
 function renderTechGrid(techs){
   if(!techs.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians found.</div>';updatePmSearchHint('',0,0);return;}
   const query=document.getElementById('pm-tech-search')?document.getElementById('pm-tech-search').value:'';
@@ -6247,7 +6338,7 @@ function renderTechGrid(techs){
   document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     const prev=t.assessments.length>1?t.assessments[t.assessments.length-2]:null;
-    const startD=techStartDate(t);
+    const meta=pmTechRowMeta(t);
     const scores=SKILL_CATS.map(c=>{
       const v=last?catScore(last,c):null;
       if(v===null)return'';
@@ -6256,15 +6347,20 @@ function renderTechGrid(techs){
       const scoreTxt=isProjectsCat(c)?String(Math.round(v)):v.toFixed(1);
       return`<span class="sp ${spClass(v)}">${c.emoji} ${scoreTxt}${stalled?' <span class="flag">!</span>':''}</span>`;
     }).join('');
-    return`<div class="tcard" onclick="openTech(${idx})">
-      <div class="tcard-top">
-        <div class="av">${initials(t.name)}</div>
-        <div><div class="tcard-name">${t.name}</div><div class="tcard-sub">${techStatusBarsHtml(t)}${t.lead_tech?' · '+t.lead_tech.split(' ')[0]:''}</div></div>
+    return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
+      <div class="trow-main">
+        <div class="trow-top">
+          <div class="av">${initials(t.name)}</div>
+          <div class="trow-meta">
+            <div class="trow-name">${adminEsc(t.name)}</div>
+            <div class="trow-sub">${meta}${t.lead_tech?'<span class="nm-sep">·</span>Lead: '+adminEsc(t.lead_tech.split(' ')[0]):''}</div>
+          </div>
+        </div>
+        <div class="score-row">${scores||'<span style="font-size:11px;color:#bbb">No assessments yet</span>'}</div>
       </div>
-      <div class="score-row">${scores||'<span style="font-size:11px;color:rgba(255,255,255,0.2)">No assessments yet</span>'}</div>
-      <div class="dates-row">
-        ${startD?`<span class="date-chip first">🗓️ Employment Start Date: ${fmtDate(startD)}</span>`:''}
-        ${last?`<span class="date-chip last">✅ Last: ${fmtDate(last.date)}</span>`:''}
+      <div class="trow-right">
+        ${last?`<span class="date-chip last">Last: ${fmtDate(last.date)}</span>`:''}
+        <span class="trow-chevron" aria-hidden="true">›</span>
       </div>
     </div>`;
   }).join('');
@@ -6313,19 +6409,41 @@ function setPMView(v,el){
 
 async function openTech(idx){
   currentDetailIdx=idx;
-  await loadPMDashboard();
   const t=regionTechs[idx];
   if(!t)return;
-  document.getElementById('detail-av-initials').textContent=initials(t.name);
-  document.getElementById('detail-tech-name').textContent=t.name;
-  document.getElementById('detail-tech-sub').textContent=techStatusSummaryText(t)+(t.lead_tech?' · Lead: '+t.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
-  const vb=document.getElementById('detail-view-as');if(vb)vb.style.display=userIsAdmin?'':'none';
-  await renderDetailView(t);
-  setPMView('tech',null);
-  document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));
+  await showPmTechProgress(t);
 }
 
-// Admin/PM: open the selected technician's own "My Progress" view, read-only.
+async function showPmTechProgress(t){
+  const tech=Object.assign({},t);
+  if(!tech.region)tech.region=currentRegion;
+  techViewMode='readonly';
+  techViewBackPage='pg-pm';
+  ataTechSelfData=null;
+  document.getElementById('detail-av-initials').textContent=initials(tech.name);
+  document.getElementById('detail-tech-name').textContent=tech.name;
+  document.getElementById('detail-tech-sub').textContent=techStatusSummaryText(tech)+(tech.lead_tech?' · Lead: '+tech.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
+  const body=document.getElementById('detail-body');
+  if(body)body.innerHTML='<div class="loading">Loading profile...</div>';
+  setPMView('tech',null);
+  document.querySelectorAll('#pm-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
+  await ensureSkills();
+  tech.checklist_completed=await loadChecklistForTech(tech.id);
+  currentTechData=tech;
+  renderTechHome(tech,{readOnly:true,containerId:'detail-body',embedInPm:true});
+  window.scrollTo(0,0);
+}
+
+function closePmTechProgress(){
+  techViewMode=null;
+  currentTechData=null;
+  ataTechSelfData=null;
+  const body=document.getElementById('detail-body');
+  if(body)body.innerHTML='';
+  setPMView('dashboard',document.getElementById('nav-dashboard'));
+}
+
+// Admin/PM: open the selected technician's own "My Progress" view, read-only (full tech page).
 function viewTechAsAdmin(){
   if(currentDetailIdx===null)return;
   const t=Object.assign({},regionTechs[currentDetailIdx]);
@@ -6439,7 +6557,11 @@ function exitTechView(){
     return;
   }
   showPage('pg-pm');
-  setPMView('tech',null);
+  if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]){
+    showPmTechProgress(regionTechs[currentDetailIdx]);
+  }else{
+    closePmTechProgress();
+  }
 }
 
 function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
@@ -6950,7 +7072,7 @@ async function renderDetailView(t){
     </div>`;
   }).join('');
 
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true,bootcampStartDate:t.bootcamp_start_date}):'';
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(completed,{readOnly:true,bootcampStartDate:t.bootcamp_start_date,tech:t}):'';
 
   const moduleHTML=buildAssessmentModulesHtml(last,prev,{idPrefix:'',startOpen:false,showTrend:!!prev});
 
@@ -7038,12 +7160,16 @@ function renderTechHome(t,opts){
   opts=opts||{};
   const readOnly=opts.readOnly!==undefined?!!opts.readOnly:techViewMode==='readonly';
   const adminEdit=opts.adminEdit!==undefined?!!opts.adminEdit:techViewMode==='edit';
+  const embedInPm=!!opts.embedInPm;
   const openModKeys=opts.openModKeys||getOpenModKeys();
-  const container=document.getElementById('tech-home-body');
+  const container=document.getElementById(opts.containerId||'tech-home-body');
+  if(!container)return;
   const assessments=t.assessments||[];
-  document.getElementById('tech-name-label').textContent=t.name;
+  const nameLabel=document.getElementById('tech-name-label');
+  if(nameLabel)nameLabel.textContent=t.name;
   const reg=t.region||'';
-  document.getElementById('tech-region-label').textContent=reg?((REGION_LABELS[reg]||reg)+' · '+reg):'TAB Skills Self-Assessment';
+  const regionLabel=document.getElementById('tech-region-label');
+  if(regionLabel)regionLabel.textContent=reg?((REGION_LABELS[reg]||reg)+' · '+reg):'TAB Skills Self-Assessment';
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
@@ -7131,35 +7257,40 @@ function renderTechHome(t,opts){
     </div>
   </div>`;
 
-  const banner=adminEdit
+  const banner=embedInPm?'':(adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
-    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'';
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys}):"";
+    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'');
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys,tech:t}):"";
+  const emptyScoresMsg=embedInPm
+    ?'No scores yet — this technician has not submitted an assessment.'
+    :'No scores yet — complete your first assessment using the button in the sidebar.';
 
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="detail-av">${initials(t.name)}</div>
-        <div><div class="detail-name">${t.name}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+t.lead_tech:''}</div></div>
+        <div><div class="detail-name">${adminEsc(t.name)}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+adminEsc(t.lead_tech):''}</div></div>
       </div>
       ${tenureHtml}
       ${trainingFocusHtml}
       ${requiredHtml}
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       ${overallHtml}
-      <div class="my-cat-grid">${myBlocks||'<div style="font-size:13px;color:#999;grid-column:1/-1">No scores yet — complete your first assessment using the button in the sidebar.</div>'}</div>
+      <div class="my-cat-grid">${myBlocks||`<div style="font-size:13px;color:#999;grid-column:1/-1">${emptyScoresMsg}</div>`}</div>
     </div>
-    <div id="tech-ata-home-card"></div>
+    ${embedInPm?'':`<div id="tech-ata-home-card"></div>`}
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
     ${notesHtml}
-    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 My assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
-  updateTechAssessNav(t,readOnly);
-  renderTechSidebarNav();
-  updateTechViewAdminChrome();
-  updateTechAtaAccess(ataTechSelfData);
-  if(ataIsActiveLearner(ataTechSelfData))renderTechAtaHomeCard(ataTechSelfData);
-  prefetchTechAtaHomeCard();
+    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
+  if(!embedInPm){
+    updateTechAssessNav(t,readOnly);
+    renderTechSidebarNav();
+    updateTechViewAdminChrome();
+    updateTechAtaAccess(ataTechSelfData);
+    if(ataIsActiveLearner(ataTechSelfData))renderTechAtaHomeCard(ataTechSelfData);
+    prefetchTechAtaHomeCard();
+  }
 }
 
 function showTechHome(){
@@ -7378,12 +7509,13 @@ async function saveAssessmentDraft(){
 
 function renderQuestionnaire(){
   const visible=visibleQuestionnaireSections(currentTechData);
+  const skipped=qForceRerateComplete?[]:complete100QuestionnaireSections(currentTechData);
   const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
-  const prefilled=Object.keys(qAnswers).length;
+  const prefilled=Object.keys(qAnswers).filter(id=>visible.some(sec=>(sec.skills||[]).some(sk=>sk.id===id))).length;
   const hasPriorAssessments=!!(currentTechData&&currentTechData.assessments&&currentTechData.assessments.length);
   const prefilledNote=prefilled
     ?` Your ratings from your last assessment are pre-filled — update only what has changed.`
-    :hasPriorAssessments
+    :hasPriorAssessments&&visible.length
     ?` We don't have your previous skill-by-skill ratings on file yet (only section averages from an older import). Please rate each skill — after you submit once, future assessments will pre-fill automatically.`
     :'';
   const requiredNote=(()=>{
@@ -7391,6 +7523,12 @@ function renderQuestionnaire(){
     if(req.all)return'';
     return` Showing only your required sections for this stage (${req.message.replace(/^Required Sections:\s*/,'')}).`;
   })();
+  const skippedNote=skipped.length
+    ?` Skipping ${skipped.length} section${skipped.length===1?'':'s'} already at 100% (${skipped.map(s=>s.section).join(', ')}) — scores carry forward until reset.`
+    :'';
+  const emptyNote=!visible.length
+    ?`<div class="q-section"><div class="q-section-title">✅ Nothing new to rate</div><div class="q-section-sub">All required sections are already at 100%. Go back and check “Reset and re-rate sections already at 100%” if you need to update them.</div></div>`
+    :'';
   const sections=visible.map(sec=>{
     const hasToolsSkill=sec.skills.some(isToolsSkill);
     let secSub,skillHtml;
@@ -7426,12 +7564,13 @@ function renderQuestionnaire(){
   document.getElementById('q-content').innerHTML=`
     <div class="q-header">
       <div class="q-title">TAB Skills Self-Assessment</div>
-      <div class="q-sub">Your answers help customize your training and track progress over time.${requiredNote}${prefilledNote}</div>
-      ${ratingScaleLegendHtml()}
+      <div class="q-sub">Your answers help customize your training and track progress over time.${requiredNote}${skippedNote}${prefilledNote}</div>
+      ${visible.length?ratingScaleLegendHtml():''}
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
     </div>
     ${nebbQuestionHtml()}
+    ${emptyNote}
     ${sections}
     <div class="q-section">
       <div class="q-section-title">💬 Comments (optional)</div>
@@ -7463,11 +7602,11 @@ function updateProgress(){
   const visible=visibleQuestionnaireSections(currentTechData);
   const total=visible.reduce((s,sec)=>s+sec.skills.length,0);
   const done=visible.reduce((n,sec)=>n+sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length,0);
-  const pct=total?Math.round((done/total)*100):0;
+  const pct=total?Math.round((done/total)*100):100;
   const fill=document.getElementById('q-fill');
   const lbl=document.getElementById('q-label');
   if(fill)fill.style.width=pct+'%';
-  if(lbl)lbl.textContent=`${done} of ${total} skills rated (${pct}%)`;
+  if(lbl)lbl.textContent=total?`${done} of ${total} skills rated (${pct}%)`:'No new skills to rate — completed sections carry forward';
 }
 
 async function submitAssessment(){
@@ -7489,6 +7628,7 @@ async function submitAssessment(){
     qAnswers={};
     qProjectJobs={};
     qNebbStatus='';
+    qForceRerateComplete=false;
     if(currentTechData)currentTechData.assessment_draft=null;
     await loadTechHome();
     showTechHome();
