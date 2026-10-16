@@ -307,6 +307,14 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 #pg-tech .topbar{border-radius:12px;margin-bottom:4px}
 #pg-tech .page-body{padding:16px 8px 8px}
 #pg-tech .q-wrap{padding:16px 8px 20px}
+/* PM viewing a technician: no sidebar — full-width content + Back on My Progress topbar */
+#pg-tech.tech-pm-embed #tech-sidebar,
+#pg-tech.tech-pm-embed .sidebar-overlay{display:none!important}
+#pg-tech.tech-pm-embed .main-content{margin-left:0;width:100%}
+#pg-tech.tech-pm-embed .mobile-menu-btn{display:none!important}
+#pg-tech.tech-pm-embed .mobile-assess-actions{display:none!important}
+#tech-topbar-back-btn{display:none;padding:7px 14px;font-size:12px;white-space:nowrap;flex-shrink:0}
+#pg-tech.tech-pm-embed #tech-topbar-back-btn{display:inline-flex}
 .view{display:none}.view.active{display:block}
 
 /* TOPBAR */
@@ -327,6 +335,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .alert-title{font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}
 .alert-pills{display:flex;flex-wrap:wrap;gap:6px}
 .alert-pill{font-size:11px;background:#fff;border:1.5px solid #b8d0f5;border-radius:20px;padding:4px 12px;color:#1B3A6B;font-weight:500}
+.sp-ata{font-size:11px;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:20px;padding:4px 10px;color:#1B3A6B;font-weight:700;white-space:nowrap}
+.sp-ata-muted{font-size:11px;color:#bbb;font-weight:600}
+.sp-focus{font-size:11px;background:#FFF8E6;border:1px solid #e6c200;border-radius:20px;padding:4px 10px;color:#7a5d00;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-focus-dates{font-size:11px;color:#888;font-weight:600;white-space:nowrap}
 
 /* SECTION */
 .section-label{font-size:11px;font-weight:700;color:#999;padding:20px 24px 10px;text-transform:uppercase;letter-spacing:.6px}
@@ -541,7 +553,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .rating-btn.selected-2{background:#FFF8F0;border-color:#e67e22;color:#d35400;font-weight:800}
 .rating-btn.selected-3{background:#EEF4FF;border-color:#4A90D9;color:#1B3A6B;font-weight:800}
 .rating-btn.selected-4{background:#E1F5EE;border-color:#085041;color:#085041;font-weight:800}
-.rating-btn.selected-5{background:#E1F5EE;border-color:#085041;color:#085041;font-weight:800}
 .rating-label{font-size:10px;margin-top:3px;opacity:.7}
 .na-rating-row .rating-btn{min-width:0;padding:8px 2px}
 .na-rating-row .rating-label{font-size:8px;line-height:1.2;opacity:.85}
@@ -586,7 +597,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-res-filter-btn[data-rating="2"].active{border-color:#4A90D9;background:#4A90D9}
 .tech-res-filter-btn[data-rating="3"].active{border-color:#7aaedd;background:#7aaedd}
 .tech-res-filter-btn[data-rating="4"].active{border-color:#1D9E75;background:#1D9E75}
-.tech-res-filter-btn[data-rating="5"].active{border-color:#085041;background:#085041}
 .tech-res-empty{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;font-size:13px;color:#888;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-results-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
 .tech-results-footer{flex-shrink:0;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #e8e8e8}
@@ -1341,7 +1351,7 @@ body.mobile-nav-open{overflow:hidden}
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div id="tech-admin-switch" class="sb-admin-switch">
-        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">👷 Change technician</button>
+        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change technician</button>
         <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
       </div>
       <div class="sb-assess-wrap">
@@ -1366,6 +1376,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div>
+          <button type="button" class="btn btn-outline" id="tech-topbar-back-btn" onclick="exitTechView()">Back to PM</button>
           <div class="mobile-assess-actions">
             <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">📋 Pre-Bootcamp</button>
             <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
@@ -1378,7 +1389,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
           <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
-          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>
+          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
         </div>
         <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
@@ -1419,7 +1430,6 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="tech-res-filter-btn" data-rating="2" onclick="setTechResultsRatingFilter(2)">2 · Developing</button>
       <button type="button" class="tech-res-filter-btn" data-rating="3" onclick="setTechResultsRatingFilter(3)">3 · Experienced</button>
       <button type="button" class="tech-res-filter-btn" data-rating="4" onclick="setTechResultsRatingFilter(4)">4 · Proficient</button>
-      <button type="button" class="tech-res-filter-btn" data-rating="5" onclick="setTechResultsRatingFilter(5)">5 · Exceptional</button>
     </div>
   </div>
   <div class="tech-results-body" id="tech-results-body"></div>
@@ -1702,8 +1712,7 @@ let QUESTIONNAIRE=[
 ];
 
 const SKILL_RATING_MAX=4;
-// Index 5 kept for historical assessments that used the old 1–5 scale.
-const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient','Exceptional'];
+const RATING_LABELS=['','Beginner','Developing','Experienced','Proficient'];
 const SKILL_RATING_VALUES=[1,2,3,4];
 const JOB_ACCOUNTS_RATING_OPTIONS=[
   {v:1,label:'No experience',btn:'No Exp'},
@@ -1729,7 +1738,14 @@ function skillRatingDisplayLabel(sk,sec,v){
   if(isProjectsSection(sec))return Number(v)===1?'Complete':'Not complete';
   if(isJobAccountsSection(sec))return jobAccountsLabel(v);
   if(isToolsSkill(sk))return toolsRatingLabel(v);
-  return RATING_LABELS[Number(v)]||'';
+  const n=clampSkillRating(v);
+  return n!=null?(RATING_LABELS[n]||''):'';
+}
+/** Normalize a skill proficiency score: legacy Exceptional (5) → Proficient (4). Job-account scales keep 1–5. */
+function normalizeSkillScore(v,sec){
+  if(v===null||v===undefined)return null;
+  if(isProjectsSection(sec)||isJobAccountsSection(sec))return Number(v);
+  return clampSkillRating(v);
 }
 function toolsRatingRow(sk){
   return`<div class="q-skill">
@@ -2036,11 +2052,18 @@ function sectionScore(a,cat){
     if(!projectSectionTouched(raw,cat.codes)&&done===0)return null;
     return done;
   }
-  if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null)return a[cat.key];
+  const jobAcct=cat.skey==='survey'||cat.skey==='national_accounts';
   const raw=rawOf(a);
-  if(!raw||!cat.codes||!cat.codes.length)return null;
-  const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object');
-  return vals.length?vals.reduce((x,y)=>x+Number(y),0)/vals.length:null;
+  if(raw&&cat.codes&&cat.codes.length){
+    const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object')
+      .map(v=>jobAcct?Number(v):clampSkillRating(v)).filter(v=>v!==null);
+    if(vals.length)return vals.reduce((x,y)=>x+Number(y),0)/vals.length;
+  }
+  if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null){
+    const stored=Number(a[cat.key]);
+    return jobAcct?stored:Math.min(stored,SKILL_RATING_MAX);
+  }
+  return null;
 }
 function catScore(a,cat){return sectionScore(a,cat);}
 function sectionProficiencyPct(avg,secOrKey){
@@ -2094,7 +2117,8 @@ function sectionRawAvg(rawScores,sec){
     if(!projectSectionTouched(rawScores,codes)&&projectDoneCount(rawScores,codes)===0)return null;
     return projectDoneCount(rawScores,codes);
   }
-  const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object');
+  const vals=sec.skills.map(sk=>rawScores[sk.id]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object')
+    .map(v=>normalizeSkillScore(v,sec)).filter(v=>v!==null);
   return vals.length?vals.reduce((a,b)=>a+Number(b),0)/vals.length:null;
 }
 function techAlreadySubmittedThisMonth(assessments){
@@ -2434,6 +2458,7 @@ async function saveTrainingFocus(){
       regionTechs[currentDetailIdx].training_goal_start=currentTechData.training_goal_start;
       regionTechs[currentDetailIdx].training_goal_end=currentTechData.training_goal_end;
     }
+    refreshAtaStatusDisplays();
     alert('Training focus saved.');
   }catch(e){
     const msg=e&&e.message||'';
@@ -3767,6 +3792,44 @@ function ataProgramComplete(tech,program){
   if(!lessons.length)return false;
   return lessons.every(l=>ataIsDone(tech,l.lesson_code));
 }
+/** Merge home/admin tech fields needed for Required Categories → ATA program gating. */
+function ataTechWithRequiredContext(tech){
+  if(!tech)return tech;
+  const src=currentTechData&&String(currentTechData.id)===String(tech.id)?currentTechData:null;
+  if(!src)return tech;
+  let out=tech;
+  if(tech.required_categories==null&&src.required_categories!=null)out=Object.assign({},out,{required_categories:src.required_categories});
+  if(tech.start_date==null&&src.start_date!=null)out=Object.assign({},out,{start_date:src.start_date});
+  if(tech.bootcamp_start_date==null&&src.bootcamp_start_date!=null)out=Object.assign({},out,{bootcamp_start_date:src.bootcamp_start_date});
+  return out;
+}
+/** ATA Intermediate required if either Intermediate skill category is required; Advanced if Advanced skills required. Basic always required. */
+function ataProgramRequired(tech,program){
+  if(!program||program==='basic')return true;
+  const keys=techRequiredCategoryKeys(ataTechWithRequiredContext(tech)||{});
+  if(program==='intermediate')return keys.includes('intermediate')||keys.includes('intermediate_7_12');
+  if(program==='advanced')return keys.includes('advanced');
+  return true;
+}
+function ataProgramLockState(tech,program,start,hasWork){
+  if(start||hasWork)return{locked:false,lockMsg:''};
+  if(program==='intermediate'&&!ataProgramComplete(tech,'basic'))
+    return{locked:true,lockMsg:'Unlocks when Basic is complete'};
+  if(program==='advanced'){
+    if(ataProgramRequired(tech,'intermediate')){
+      if(!ataProgramComplete(tech,'intermediate'))return{locked:true,lockMsg:'Unlocks when Intermediate is complete'};
+    }else if(!ataProgramComplete(tech,'basic')){
+      return{locked:true,lockMsg:'Unlocks when Basic is complete'};
+    }
+  }
+  return{locked:false,lockMsg:''};
+}
+function ataPctLineHtml(s){
+  const parts=['Basic '+(s.pcts.basic||0)+'%'];
+  if(ataProgramRequired(s.tech,'intermediate'))parts.push('Int '+(s.pcts.intermediate||0)+'%');
+  if(ataProgramRequired(s.tech,'advanced'))parts.push('Adv '+(s.pcts.advanced||0)+'%');
+  return`<div style="margin-top:4px;font-size:10px;color:#555;font-weight:600">${parts.join(' · ')}</div>`;
+}
 
 function ataProgramStatus(tech,program,today){
   today=today||ataToday();
@@ -3826,7 +3889,9 @@ function ataProgramPct(prog){
 function ataAllProgramsComplete(tech){
   if(!tech||!ataCurriculum||!ataCurriculum.length)return false;
   const today=ataToday();
-  return ATA_PROGRAMS.every(p=>{
+  const required=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p));
+  if(!required.length)return false;
+  return required.every(p=>{
     const ps=ataProgramStatus(tech,p,today);
     return ps.total>0&&ps.completed>=ps.total;
   });
@@ -3858,6 +3923,84 @@ function ataCategoryMeta(cat){
 function ataCategoryChip(cat){
   const m=ataCategoryMeta(cat);
   return`<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:${m.color};background:${m.bg}">ATA ${m.label}</span>`;
+}
+function ataLookupTechRecord(techId){
+  if(techId==null)return null;
+  const id=String(techId);
+  if(ataTechSelfData&&String(ataTechSelfData.id)===id)return ataTechSelfData;
+  if(ataAdminData&&ataAdminData.techs){
+    const hit=(ataAdminData.techs||[]).find(t=>String(t.id)===id);
+    if(hit)return hit;
+  }
+  if(ataPmData&&ataPmData.techs){
+    const hit=(ataPmData.techs||[]).find(t=>String(t.id)===id);
+    if(hit)return hit;
+  }
+  return null;
+}
+/** Merge dashboard/home tech fields with ATA roster record for status display. */
+function ataTechForStatusDisplay(entity){
+  if(!entity)return null;
+  const id=entity.id!=null?entity.id:entity.tech_id;
+  if(id==null)return null;
+  const ata=ataLookupTechRecord(id);
+  const base=ata?Object.assign({},ata):{id:id,starts:{},completions:{},attempts:{}};
+  if(entity.required_categories!=null)base.required_categories=entity.required_categories;
+  if(entity.start_date!=null)base.start_date=entity.start_date;
+  if(entity.bootcamp_start_date!=null)base.bootcamp_start_date=entity.bootcamp_start_date;
+  if(entity.ata_archived!=null||entity.ata_archived_at){
+    base.ata_archived=entity.ata_archived;
+    base.ata_archived_at=entity.ata_archived_at;
+  }
+  if(entity.ata_completed!=null||entity.ata_completed_at){
+    base.ata_completed=entity.ata_completed;
+    base.ata_completed_at=entity.ata_completed_at;
+  }
+  return base;
+}
+/** PM list + Tech home: Complete / Exempt, or % for each required ATA program. */
+function ataStatusDisplayHtml(entity){
+  const tech=ataTechForStatusDisplay(entity);
+  if(!tech)return`<span class="sp-ata-muted">ATA —</span>`;
+  const cat=ataCategory(tech);
+  if(cat==='exempt')return ataCategoryChip('exempt');
+  if(cat==='complete')return ataCategoryChip('complete');
+  if(!ataCurriculum||!ataCurriculum.length){
+    return`<span class="sp-ata-muted">ATA …</span>`;
+  }
+  const s=ataTechSummary(tech);
+  const pills=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p))
+    .map(p=>`<span class="sp-ata">${ATA_PROGRAM_LABEL[p]} ${s.pcts[p]||0}%</span>`);
+  return pills.length?pills.join(''):ataCategoryChip('active');
+}
+function trainingFocusInlineHtml(t,opts){
+  opts=opts||{};
+  const focus=(t&&t.training_focus||'').trim();
+  const start=t&&t.training_goal_start?fmtDate(t.training_goal_start):'';
+  const end=t&&t.training_goal_end?fmtDate(t.training_goal_end):'';
+  const maxLen=opts.maxLen!=null?opts.maxLen:80;
+  const focusLbl=focus?(focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus):'';
+  const bits=[];
+  if(focusLbl)bits.push(`<span class="sp-focus" title="${adminEsc(focus)}">Focus: ${adminEsc(focusLbl)}</span>`);
+  else bits.push(`<span class="sp-ata-muted">No current focus</span>`);
+  if(start||end){
+    bits.push(`<span class="sp-focus-dates">${start?('Start '+adminEsc(start)):'Start —'}${end?(' · End '+adminEsc(end)):' · End —'}</span>`);
+  }else{
+    bits.push(`<span class="sp-focus-dates">Start — · End —</span>`);
+  }
+  return bits.join('');
+}
+/** ATA status + current focus / dates on one line (PM list + Tech home). */
+function techStatusFocusRowHtml(t){
+  return ataStatusDisplayHtml(t)+trainingFocusInlineHtml(t);
+}
+function refreshAtaStatusDisplays(){
+  if(regionTechs&&regionTechs.length&&document.getElementById('tech-grid')){
+    const pg=document.getElementById('pg-pm');
+    if(pg&&pg.classList.contains('active'))renderTechGrid(regionTechs);
+  }
+  const el=document.getElementById('tech-home-ata-status');
+  if(el&&currentTechData)el.innerHTML=techStatusFocusRowHtml(currentTechData);
 }
 // Tech view ATA tab: Active learners (and Complete, so they can review history).
 function ataIsActiveLearner(tech){
@@ -4301,12 +4444,14 @@ function ataFilteredAdminTechs(){
 
 function ataStartCell(summary,program){
   const tech=summary.tech;
+  if((program==='intermediate'||program==='advanced')&&!ataProgramRequired(tech,program)){
+    return`<td><div style="font-size:12px;color:#888;font-weight:600">Not Required</div></td>`;
+  }
   const ps=summary.byProgram[program];
   const val=adminDateInputValue(ataStart(tech,program));
-  let locked=false,lockMsg='';
   const hasWork=ps.completed>0||(ps.failed||0)>0;
-  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')&&!val&&!hasWork){locked=true;lockMsg='Unlocks when Basic is complete';}
-  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')&&!val&&!hasWork){locked=true;lockMsg='Unlocks when Intermediate is complete';}
+  const lock=ataProgramLockState(tech,program,val,hasWork);
+  const locked=lock.locked,lockMsg=lock.lockMsg;
   const input=`<input type="date" class="admin-edit-field" style="min-width:140px" min="2000-01-01" max="2100-12-31" value="${val}" ${locked&&!val?'disabled':''} oninput="ataSaveStart(${tech.id},'${program}',this.value)" onblur="ataStartBlur(${tech.id},'${program}')">`;
   const prog=ps.start?`<div style="font-size:10px;color:#666;margin-top:3px">${ps.completed}/${ps.total} done${ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:''}</div>`
     :locked?`<div style="font-size:10px;color:#b58900;margin-top:3px">🔒 ${lockMsg}</div>`
@@ -4373,9 +4518,7 @@ function ataRenderAdmin(){
     const t=s.tech;
     const cat=s.category||ataCategory(t);
     const warn=s.status==='behind'&&cat==='active'?`<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#C0392B" onclick="ataEmailWarning(${t.id})">✉ Warn</button>`:'';
-    const pctLine=cat==='active'
-      ?`<div style="margin-top:4px;font-size:10px;color:#555;font-weight:600">Basic ${s.pcts.basic}% · Int ${s.pcts.intermediate}% · Adv ${s.pcts.advanced}%</div>`
-      :'';
+    const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return `<tr>
       <td><input type="checkbox" ${ataSelected[t.id]?'checked':''} onchange="ataToggleSelect(${t.id},this.checked)" aria-label="Select ${adminEsc(t.name)}"></td>
       <td style="font-weight:700;color:#1B3A6B">${adminEsc(t.name)}</td>
@@ -5025,18 +5168,20 @@ function renderPmAta(){
     return true;
   }).sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
   if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match.</div>';return;}
-  const cell=p=>p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
+  const cell=(s,program)=>{
+    if(!ataProgramRequired(s.tech,program))return'<span style="color:#888;font-weight:600">Not Required</span>';
+    const p=s.byProgram[program];
+    return p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
+  };
   const body=rows.map(s=>{
     const cat=s.category||ataCategory(s.tech);
-    const pctLine=cat==='active'
-      ?`<div style="margin-top:4px;font-size:10px;color:#555;font-weight:600">Basic ${s.pcts.basic}% · Int ${s.pcts.intermediate}% · Adv ${s.pcts.advanced}%</div>`
-      :'';
+    const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
     <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}${s.totalResetsMonth&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${s.totalResetsMonth} reset${s.totalResetsMonth===1?'':'s'} this month</div>`:''}</td>
-    <td>${cell(s.byProgram.basic)}</td>
-    <td>${cell(s.byProgram.intermediate)}</td>
-    <td>${cell(s.byProgram.advanced)}</td>
+    <td>${cell(s,'basic')}</td>
+    <td>${cell(s,'intermediate')}</td>
+    <td>${cell(s,'advanced')}</td>
     <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">Report</button></td>
   </tr>`;
   }).join('');
@@ -5132,13 +5277,13 @@ async function ataDownloadSelfPdf(){
 }
 function ataHomeProgramCell(summary,program){
   const tech=summary.tech;
+  if(!ataProgramRequired(tech,program))return'';
   const ps=summary.byProgram[program];
   const start=ataStart(tech,program);
   const pct=summary.pcts[program]||0;
   const hasWork=ps.completed>0||(ps.failed||0)>0;
-  let locked=false,lockMsg='';
-  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')&&!start&&!hasWork){locked=true;lockMsg='Unlocks when Basic is complete';}
-  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')&&!start&&!hasWork){locked=true;lockMsg='Unlocks when Intermediate is complete';}
+  const lock=ataProgramLockState(tech,program,start,hasWork);
+  const locked=lock.locked,lockMsg=lock.lockMsg;
   const startLbl=start?fmtDate(start):'';
   let prog='';
   if(ps.start){
@@ -5170,12 +5315,13 @@ function renderTechAtaHomeCard(tech){
   const failBadge=s.totalFailed
     ?` <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
     :'';
+  const programCells=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).map(p=>ataHomeProgramCell(s,p)).join('');
   host.innerHTML=`<div class="my-scores" style="margin:0 0 14px;${clickable?'cursor:pointer':''}" ${clickable?'onclick="showTechAta()"':''} title="${clickable?'Open ATA schedule':''}">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
       <div><div class="detail-name">ATA Progress</div><div class="detail-sub">Active digital ATA tracking</div></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}</div>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${ATA_PROGRAMS.map(p=>ataHomeProgramCell(s,p)).join('')}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${programCells}</div>
     ${clickable?`<div style="margin-top:12px;font-size:12px;color:#1B3A6B;font-weight:700">View full schedule →</div>`:''}
   </div>`;
 }
@@ -5184,7 +5330,7 @@ function renderTechAta(tech){
   if(!tech){body.innerHTML='<div class="admin-empty" style="padding:12px">No ATA record found for your account yet.</div>';return;}
   ataTechSelfData=tech;
   const s=ataTechSummary(tech);
-  const visible=s.progs.filter(p=>p.start||p.completed>0||p.failed>0||p.lessonRows.some(lr=>lr.best!=null));
+  const visible=s.progs.filter(p=>ataProgramRequired(tech,p.program)&&(p.start||p.completed>0||p.failed>0||p.lessonRows.some(lr=>lr.best!=null)));
   if(!visible.length){
     body.innerHTML='<div class="my-scores"><div style="font-size:13px;color:#555">Your ATA program hasn\'t been started yet. Once an admin assigns your Basic start date, your weekly lesson schedule will appear here.</div></div>';
     return;
@@ -6734,7 +6880,6 @@ async function deleteSkill(id){
 
 function scoreColor(v){
   if(v===null)return'rgba(255,255,255,0.2)';
-  // 4 is the new top (Proficient); 5 kept green for historical Exceptional ratings.
   if(v>=4)return'#1D9E75';
   if(v>=3)return'#7C3AED';
   if(v>=2)return'#4A90D9';
@@ -7240,6 +7385,11 @@ async function loadPMDashboard(){
   renderTechGrid(techs);
   renderAlertsView(techs);
   renderCompareView(techs);
+  try{
+    await ensureAtaCurriculum();
+    ataPmData=await rpc('app_ata_pm_data',{p_token:currentToken})||{techs:[]};
+    renderTechGrid(regionTechs);
+  }catch(_){}
 }
 
 function filterTechsBySearch(techs,query){
@@ -7328,16 +7478,7 @@ function renderTechGrid(techs){
   if(!filtered.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians match “'+adminEsc(query.trim())+'”.</div>';return;}
   document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
-    const prev=t.assessments.length>1?t.assessments[t.assessments.length-2]:null;
     const meta=pmTechRowMeta(t);
-    const scores=SKILL_CATS.map(c=>{
-      const v=last?catScore(last,c):null;
-      if(v===null)return'';
-      const pv=prev?catScore(prev,c):null;
-      const stalled=pv!==null&&v<=2&&v<=pv;
-      const scoreTxt=isProjectsCat(c)?String(Math.round(v)):v.toFixed(1);
-      return`<span class="sp ${spClass(v)}">${c.emoji} ${scoreTxt}${stalled?' <span class="flag">!</span>':''}</span>`;
-    }).join('');
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
         <div class="trow-top">
@@ -7347,7 +7488,7 @@ function renderTechGrid(techs){
             <div class="trow-sub">${meta}${t.lead_tech?'<span class="nm-sep">·</span>Lead: '+adminEsc(t.lead_tech.split(' ')[0]):''}</div>
           </div>
         </div>
-        <div class="score-row">${scores||'<span style="font-size:11px;color:#bbb">No assessments yet</span>'}</div>
+        <div class="score-row">${techStatusFocusRowHtml(t)}</div>
       </div>
       <div class="trow-right">
         ${last?`<span class="date-chip last">Last: ${fmtDate(last.date)}</span>`:''}
@@ -7506,16 +7647,25 @@ async function editTechFromAdmin(techId,region,name){
 function updateTechViewAdminChrome(){
   const on=!!techViewMode;
   const fromAdmin=on&&techViewBackPage==='pg-admin';
+  const fromPm=on&&techViewBackPage==='pg-pm';
+  const pgTech=document.getElementById('pg-tech');
+  if(pgTech)pgTech.classList.toggle('tech-pm-embed',fromPm);
   const box=document.getElementById('tech-admin-switch');
-  if(box)box.classList.toggle('visible',on);
+  // Sidebar chrome is for Admin edit/view only; PM uses topbar Back to PM.
+  if(box)box.classList.toggle('visible',fromAdmin);
   const change=document.getElementById('tech-admin-change-btn');
   if(change)change.style.display=fromAdmin?'':'none';
   const ataBack=document.getElementById('ata-admin-back-btn');
-  if(ataBack)ataBack.style.display=on?'':'none';
+  if(ataBack){
+    ataBack.style.display=on?'':'none';
+    ataBack.textContent=fromPm?'Back to PM':(fromAdmin?'Back to admin':'Back');
+  }
   const ataSwitch=document.getElementById('ata-admin-switch-btn');
   if(ataSwitch)ataSwitch.style.display=fromAdmin?'':'none';
   const backBtn=document.getElementById('tech-admin-back-btn');
-  if(backBtn)backBtn.textContent=fromAdmin?'← Back to admin':(techViewBackPage==='pg-pm'?'← Back to PM':'← Back');
+  if(backBtn)backBtn.textContent=fromAdmin?'Back to admin':'Back';
+  const topBack=document.getElementById('tech-topbar-back-btn');
+  if(topBack)topBack.textContent='Back to PM';
 }
 function switchAdminTechView(){
   const reopen=techViewBackPage==='pg-admin';
@@ -7527,6 +7677,8 @@ function exitTechView(){
   const back=techViewBackPage;
   techViewMode=null;
   ataTechSelfData=null;
+  const pgTech=document.getElementById('pg-tech');
+  if(pgTech)pgTech.classList.remove('tech-pm-embed');
   updateTechViewAdminChrome();
   if(back==='pg-admin'){
     currentToken=null;
@@ -7554,9 +7706,11 @@ function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
     const jobHtml=job?`<span class="skill-job-name">${adminEsc(job)}</span>`:'';
     return`<div class="skill-row"><span class="skill-name">${sk.name}${jobHtml}</span><span class="skill-rating-label">${label}</span><div class="skill-dot" style="background:${done?scoreBg(4):'#f0f0f0'};color:${done?scoreColor(4):'#999'}">${done?'✓':'—'}</div><span class="skill-prev"></span>${trend}</div>`;
   }
-  const v=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
-  const pv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
-  if(v===null)return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
+  const rawV=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
+  const rawPv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
+  const v=rawV===null?null:normalizeSkillScore(rawV,sec);
+  const pv=rawPv===null||rawPv===undefined?null:normalizeSkillScore(rawPv,sec);
+  if(v===null||Number.isNaN(Number(v)))return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
   const trend=showTrend&&pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
   const ratingLabel=skillRatingDisplayLabel(sk,sec,v);
   const prevLabel=showTrend&&pv!==null?`was ${skillRatingDisplayLabel(sk,sec,pv)||pv}`:'';
@@ -7566,6 +7720,7 @@ function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
 
 let techResultsAssessment=null;
 let techResultsRatingFilter=null;
+let techResultsFocusSection=null;
 
 function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   if(!assessment)return'';
@@ -7574,11 +7729,12 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
   const startOpen=!!opts.startOpen;
   const sortByRating=!!opts.sortByRating;
   const ratingFilter=opts.ratingFilter!=null?Number(opts.ratingFilter):null;
-  const expandIfFiltered=!!ratingFilter;
+  const sectionFilter=opts.sectionFilter||opts.focusSection||null;
+  const expandIfFiltered=!!ratingFilter||!!sectionFilter;
   const showTrend=opts.showTrend!==false&&!!prevAssessment;
   const rawScores=rawOf(assessment)||{};
   const prevRawScores=prevAssessment?(rawOf(prevAssessment)||{}):{};
-  return QUESTIONNAIRE.map(sec=>{
+  return QUESTIONNAIRE.filter(sec=>!sectionFilter||sec.key===sectionFilter).map(sec=>{
     const secKey=sec.key;
     const modId=idPrefix+secKey;
     const catKey=SKILL_CATS.find(c=>c.skey===secKey||(c.key&&(c.key.startsWith(secKey)||secKey===c.key.replace('_avg',''))))||null;
@@ -7591,15 +7747,16 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     let skills=sec.skills;
     if(ratingFilter){
       skills=skills.filter(sk=>{
-        const v=rawScores[sk.id]!==undefined?Number(rawScores[sk.id]):null;
+        if(rawScores[sk.id]===undefined)return false;
+        const v=normalizeSkillScore(rawScores[sk.id],sec);
         return v===ratingFilter;
       });
       if(!skills.length)return'';
     }
     if(sortByRating){
       skills=skills.slice().sort((a,b)=>{
-        const va=rawScores[a.id]!==undefined?Number(rawScores[a.id]):null;
-        const vb=rawScores[b.id]!==undefined?Number(rawScores[b.id]):null;
+        const va=rawScores[a.id]!==undefined?normalizeSkillScore(rawScores[a.id],sec):null;
+        const vb=rawScores[b.id]!==undefined?normalizeSkillScore(rawScores[b.id],sec):null;
         if(va===null&&vb===null)return 0;
         if(va===null)return 1;
         if(vb===null)return -1;
@@ -7670,18 +7827,24 @@ function buildAssessmentResultsContent(assessment,prevAssessment,opts){
 
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
+  const focusSection=opts.focusSection||opts.sectionFilter||null;
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
     idPrefix:'tech-res-',
     startOpen:true,
     sortByRating:true,
     ratingFilter:opts.ratingFilter,
+    sectionFilter:focusSection,
     showTrend:!!prevAssessment
   });
-  const comment=assessment.comment?`<div class="tech-res-comment"><strong>Assessment comment:</strong> "${assessment.comment}"</div>`:'';
+  const comment=!focusSection&&assessment.comment?`<div class="tech-res-comment"><strong>Assessment comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
-  const emptyMsg=opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`:'';
-  const cover=buildTechAssessmentCoverSection(t,assessment);
+  const emptyMsg=opts.ratingFilter&&!modules.trim()?`<div class="tech-res-empty">No skills rated ${opts.ratingFilter} in this assessment.</div>`
+    :(focusSection&&!modules.trim()?`<div class="tech-res-empty">No scores for this category yet.</div>`:'');
+  const cover=focusSection?'':buildTechAssessmentCoverSection(t,assessment);
+  const focusLabel=focusSection?(QUESTIONNAIRE.find(s=>s.key===focusSection)||{}).section:'';
+  const focusHdr=focusSection?`<div style="margin-bottom:12px"><div style="font-size:15px;font-weight:800;color:#1B3A6B">${adminEsc(focusLabel||'Category')}</div><button type="button" class="btn btn-outline" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="viewLatestAssessment()">View full assessment</button></div>`:'';
   return`${submittedNote}
+    ${focusHdr}
     ${cover}
     ${emptyMsg||modules}
     ${comment}`;
@@ -7933,7 +8096,11 @@ function refreshTechResultsView(){
   const prev=idx>0?assessments[idx-1]:null;
   const body=document.getElementById('tech-results-body');
   if(body){
-    body.innerHTML=buildAssessmentResultsContent(techResultsAssessment,prev,{ratingFilter:techResultsRatingFilter,tech:currentTechData});
+    body.innerHTML=buildAssessmentResultsContent(techResultsAssessment,prev,{
+      ratingFilter:techResultsRatingFilter,
+      focusSection:techResultsFocusSection,
+      tech:currentTechData
+    });
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
@@ -7946,7 +8113,8 @@ function viewLatestAssessment(){
     alert('Complete your first assessment to view results.');
     return;
   }
-  openTechResultsView(assessments[assessments.length-1]);
+  techResultsFocusSection=null;
+  openTechResultsView(assessments[assessments.length-1],{});
 }
 
 function openTechCategoryResults(secKey){
@@ -7968,14 +8136,20 @@ function openTechResultsView(assessment,opts){
   if(!assessment||!currentTechData)return;
   techResultsAssessment=assessment;
   techResultsRatingFilter=null;
+  techResultsFocusSection=opts.focusSection||opts.sectionFilter||null;
   const assessments=currentTechData.assessments||[];
   const idx=assessments.indexOf(assessment);
   const prev=idx>0?assessments[idx-1]:null;
   const body=document.getElementById('tech-results-body');
   const dateEl=document.getElementById('tech-results-date');
+  const titleEl=document.getElementById('tech-results-title');
+  if(titleEl){
+    const focusSec=techResultsFocusSection?QUESTIONNAIRE.find(s=>s.key===techResultsFocusSection):null;
+    titleEl.textContent=focusSec?(focusSec.section+' Results'):'Assessment Results';
+  }
   if(dateEl)dateEl.textContent='Submitted '+fmtDateFull(assessment.date);
   if(body){
-    body.innerHTML=buildAssessmentResultsContent(assessment,prev,Object.assign({tech:currentTechData},opts));
+    body.innerHTML=buildAssessmentResultsContent(assessment,prev,Object.assign({tech:currentTechData},opts,{focusSection:techResultsFocusSection}));
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
@@ -7984,34 +8158,16 @@ function openTechResultsView(assessment,opts){
     overlay.classList.add('visible');
     document.body.style.overflow='hidden';
   }
-  if(opts.focusSection){
-    const key=String(opts.focusSection);
-    const target=document.getElementById('res-sec-tech-res-'+key)||document.getElementById('mod-tech-res-'+key);
-    if(target){
-      const skills=document.getElementById('mod-tech-res-'+key);
-      const head=target.querySelector('.mod-head');
-      const tog=document.getElementById('tog-tech-res-'+key);
-      if(skills&&!skills.classList.contains('open')){
-        skills.classList.add('open');
-        if(head)head.classList.add('open');
-        if(tog)tog.textContent='▼';
-      }
-      setTimeout(()=>{
-        const scroller=document.getElementById('tech-results-body');
-        if(scroller){
-          const top=target.offsetTop-12;
-          scroller.scrollTo({top:Math.max(0,top),behavior:'smooth'});
-        }else target.scrollIntoView({behavior:'smooth',block:'start'});
-      },40);
-    }
-  }
 }
 
 function closeTechResultsView(opts){
   opts=opts||{};
   const overlay=document.getElementById('tech-results-overlay');
   techResultsRatingFilter=null;
+  techResultsFocusSection=null;
   techResultsAssessment=null;
+  const titleEl=document.getElementById('tech-results-title');
+  if(titleEl)titleEl.textContent='Assessment Results';
   if(overlay)overlay.classList.remove('visible');
   document.body.style.overflow='';
   if(!opts.keepView)setTechMainView('tech-view-home');
@@ -8166,8 +8322,10 @@ async function prefetchTechAtaHomeCard(){
     const tech=await ataResolveSelfRecord();
     updateTechAtaAccess(tech);
     if(tech)renderTechAtaHomeCard(tech);
+    refreshAtaStatusDisplays();
   }catch(_){
     updateTechAtaAccess(null);
+    refreshAtaStatusDisplays();
   }
 }
 
@@ -8263,9 +8421,11 @@ function renderTechHome(t,opts){
   </div>`;
   const trainingFocusHtml=renderTrainingFocusHtml(t);
 
+  const fromPm=techViewBackPage==='pg-pm';
   const banner=embedInPm?'':(adminEdit
-    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
-    :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'');
+    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
+    :readOnly&&!fromPm?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
+    :'');
   // Home checklist is Orientation only (read task list). Pre-Bootcamp + skill categories are edited only via assessment screens.
   const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,homeOnly:true,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys,tech:t}):"";
   const emptyScoresMsg=embedInPm
@@ -8276,6 +8436,7 @@ function renderTechHome(t,opts){
     ${checklistHtml}
     <div class="my-scores">
       ${techHomeNameLineHtml(t)}
+      <div class="score-row" id="tech-home-ata-status" style="margin:10px 0 0">${techStatusFocusRowHtml(t)}</div>
       ${tenureHtml}
       ${trainingFocusHtml}
     </div>
