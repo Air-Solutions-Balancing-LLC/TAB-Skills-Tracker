@@ -1144,13 +1144,14 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
-        <div class="login-sub" style="color:#666;margin-bottom:8px">Table view of every technician so you can spot missing profile data. Red <span style="color:#C0392B;font-weight:700">—</span> marks an empty required field. Export matches the current search filter.</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px">
-          <div class="pm-search-wrap" style="flex:1;min-width:220px;padding:0;margin:0">
-            <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-            <div class="pm-search-hint" id="admin-tech-search-hint"></div>
-          </div>
+        <div class="pm-search-wrap">
+          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
+          <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
           <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
+          <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Red — marks missing profile fields. Export uses the current search filter.</span>
         </div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
@@ -1169,7 +1170,7 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
-        <div class="report-wrap" id="list-techs" style="overflow-x:auto"></div>
+        <div class="admin-list" id="list-techs"></div>
         </div>
       </div>
 
@@ -5708,6 +5709,7 @@ function updateAdminTechSearchHint(query,shown,total){
 function onAdminTechSearch(){renderAdminLists();}
 
 let adminTechTableRows=[];
+let adminTechViewMode='list';
 const ADMIN_TECH_TABLE_COLS=[
   {key:'name',label:'Name'},
   {key:'email',label:'Email'},
@@ -5779,10 +5781,17 @@ function adminTechRowData(p){
     missSet:missSet
   };
 }
+function toggleAdminTechTableView(){
+  adminTechViewMode=adminTechViewMode==='table'?'list':'table';
+  const btn=document.getElementById('admin-tech-table-btn');
+  if(btn)btn.textContent=adminTechViewMode==='table'?'List view':'Table view';
+  const hint=document.getElementById('admin-tech-table-hint');
+  if(hint)hint.style.display=adminTechViewMode==='table'?'':'none';
+  renderAdminLists();
+}
 function renderAdminTechTable(rows){
   const el=document.getElementById('list-techs');
   if(!el)return;
-  adminTechTableRows=rows||[];
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
   const head=ADMIN_TECH_TABLE_COLS.map(c=>`<th>${adminEsc(c.label)}</th>`).join('')+'<th>Actions</th>';
   const body=rows.map(p=>{
@@ -5810,6 +5819,8 @@ function renderAdminTechTable(rows){
     const actions=`<td><div class="admin-tech-actions">${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button></div></td>`;
     return`<tr>${cells}${actions}</tr>`;
   }).join('');
+  el.className='report-wrap';
+  el.style.overflowX='auto';
   el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 async function exportAdminTechsExcel(){
@@ -5854,10 +5865,22 @@ function renderAdminLists(){
   const techListEl=document.getElementById('list-techs');
   const query=document.getElementById('admin-tech-search')?document.getElementById('admin-tech-search').value:'';
   const filteredTechs=filterPeopleBySearch(techs,query);
+  adminTechTableRows=filteredTechs;
   updateAdminTechSearchHint(query,filteredTechs.length,techs.length);
-  if(!techs.length){adminTechTableRows=[];if(techListEl)techListEl.innerHTML='<div class="admin-empty">None yet.</div>';}
-  else if(!filteredTechs.length){adminTechTableRows=[];if(techListEl)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}
-  else renderAdminTechTable(filteredTechs);
+  const btn=document.getElementById('admin-tech-table-btn');
+  if(btn)btn.textContent=adminTechViewMode==='table'?'List view':'Table view';
+  const hint=document.getElementById('admin-tech-table-hint');
+  if(hint)hint.style.display=adminTechViewMode==='table'?'':'none';
+  if(adminTechViewMode==='table'){
+    if(!techs.length){if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';techListEl.innerHTML='<div class="admin-empty">None yet.</div>';}}
+    else if(!filteredTechs.length){if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}}
+    else renderAdminTechTable(filteredTechs);
+  }else{
+    if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';}
+    if(!techs.length)renderPeople(techListEl,[],{showRegion:true,action:'delete',canView:true});
+    else if(!filteredTechs.length){if(techListEl)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}
+    else renderPeople(techListEl,filteredTechs,{showRegion:true,action:'delete',canView:true});
+  }
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
