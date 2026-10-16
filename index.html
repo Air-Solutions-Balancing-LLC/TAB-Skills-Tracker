@@ -98,6 +98,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
+.admin-tech-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+.admin-tech-table th{text-align:left;padding:8px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1}
+.admin-tech-table td{padding:8px 8px;border-bottom:1px solid #eef1f6;vertical-align:middle;color:#333;max-width:180px}
+.admin-tech-table tr:hover td{background:#f8faff}
+.admin-tech-table .admin-miss{color:#C0392B;font-weight:700}
+.admin-tech-table .admin-miss-list{color:#C0392B;font-size:11px;font-weight:600;line-height:1.35}
+.admin-tech-table .admin-ok{color:#0F6E56;font-weight:600}
+.admin-tech-actions{display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap}
 .admin-tech-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-tech-edit:hover{background:#e0ebff}
 .admin-cancel{font-size:12px;color:#666;background:#f1f1f1;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
@@ -1136,9 +1144,13 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
-        <div class="pm-search-wrap">
-          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        <div class="login-sub" style="color:#666;margin-bottom:8px">Table view of every technician so you can spot missing profile data. Red <span style="color:#C0392B;font-weight:700">—</span> marks an empty required field. Export matches the current search filter.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px">
+          <div class="pm-search-wrap" style="flex:1;min-width:220px;padding:0;margin:0">
+            <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+            <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+          </div>
+          <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
         </div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
@@ -1157,7 +1169,7 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
-        <div class="admin-list" id="list-techs"></div>
+        <div class="report-wrap" id="list-techs" style="overflow-x:auto"></div>
         </div>
       </div>
 
@@ -1451,6 +1463,17 @@ body.mobile-nav-open{overflow:hidden}
     <div class="assess-modal-actions" style="justify-content:space-between;gap:10px">
       <button type="button" class="btn btn-outline" onclick="closeAdminTechViewPicker()">Cancel</button>
       <button type="button" class="btn" id="admin-tech-view-open-btn" style="background:#4A90D9" onclick="confirmAdminTechViewPicker()" disabled>Open Tech View</button>
+    </div>
+  </div>
+</div>
+
+<div class="assess-modal-overlay" id="admin-purge-tech-modal" role="dialog" aria-modal="true" aria-labelledby="admin-purge-tech-title" onclick="if(event.target===this)closePurgeTechModal()">
+  <div class="assess-modal">
+    <h3 id="admin-purge-tech-title">Delete Tech</h3>
+    <p id="admin-purge-tech-msg">Permanently delete this technician? This cannot be undone.</p>
+    <div class="assess-modal-actions" style="justify-content:flex-end;gap:10px">
+      <button type="button" class="btn btn-outline" onclick="closePurgeTechModal()">No</button>
+      <button type="button" class="btn" id="admin-purge-tech-yes" style="background:#C0392B">Yes</button>
     </div>
   </div>
 </div>
@@ -5684,6 +5707,140 @@ function updateAdminTechSearchHint(query,shown,total){
 
 function onAdminTechSearch(){renderAdminLists();}
 
+let adminTechTableRows=[];
+const ADMIN_TECH_TABLE_COLS=[
+  {key:'name',label:'Name'},
+  {key:'email',label:'Email'},
+  {key:'position',label:'Position'},
+  {key:'region',label:'Region'},
+  {key:'nebb',label:'NEBB'},
+  {key:'cert_exp',label:'Cert expiration'},
+  {key:'cecs',label:'CECs'},
+  {key:'site',label:'NEBB site'},
+  {key:'start',label:'Employee start'},
+  {key:'bootcamp',label:'Bootcamp start'},
+  {key:'focus',label:'Training focus'},
+  {key:'goal_start',label:'Goal start'},
+  {key:'goal_end',label:'Goal end'},
+  {key:'required',label:'Required categories'},
+  {key:'missing',label:'Missing'}
+];
+function adminTechBlank(v){return v==null||String(v).trim()==='';}
+function adminTechMissingFields(p){
+  const miss=[];
+  if(adminTechBlank(p.full_name)&&adminTechBlank(p.email))miss.push('Name');
+  if(adminTechBlank(p.email))miss.push('Email');
+  if(adminTechBlank(p.job_position))miss.push('Position');
+  if(adminTechBlank(p.region))miss.push('Region');
+  if(adminTechBlank(p.nebb_status))miss.push('NEBB');
+  if(adminTechBlank(p.start_date))miss.push('Employee start');
+  if(adminTechBlank(p.bootcamp_start_date))miss.push('Bootcamp start');
+  const tier=nebbStatusTier(p.nebb_status);
+  if((tier==='ct'||tier==='cp')&&adminTechBlank(p.cert_expires_on))miss.push('Cert expiration');
+  return miss;
+}
+function adminTechReqCatsLabel(p){
+  const keys=parseRequiredCategories(p.required_categories);
+  if(!keys||!keys.length)return'';
+  const map={};
+  PROFICIENCY_CATEGORY_OPTIONS.forEach(o=>{map[o.key]=o.label;});
+  return keys.map(k=>map[k]||k).join(', ');
+}
+function adminTechCellHtml(val,missing){
+  if(adminTechBlank(val))return missing?'<span class="admin-miss">—</span>':'<span style="color:#bbb">—</span>';
+  return adminEsc(String(val));
+}
+function adminTechYesNo(v){
+  if(v===true)return'Yes';
+  if(v===false)return'No';
+  return'';
+}
+function adminTechRowData(p){
+  const miss=adminTechMissingFields(p);
+  const missSet=new Set(miss);
+  return{
+    person:p,
+    name:p.full_name||'',
+    email:p.email||'',
+    position:p.job_position||'',
+    region:p.region?regionLabel(p.region):'',
+    regionCode:p.region||'',
+    nebb:nebbStatusLabel(p.nebb_status),
+    cert_exp:adminDateInputValue(p.cert_expires_on),
+    cecs:adminTechYesNo(p.cecs_complete),
+    site:adminTechYesNo(p.nebb_site_updated),
+    start:adminDateInputValue(p.start_date),
+    bootcamp:adminDateInputValue(p.bootcamp_start_date),
+    focus:(p.training_focus||'').trim(),
+    goal_start:adminDateInputValue(p.training_goal_start),
+    goal_end:adminDateInputValue(p.training_goal_end),
+    required:adminTechReqCatsLabel(p),
+    missing:miss,
+    missSet:missSet
+  };
+}
+function renderAdminTechTable(rows){
+  const el=document.getElementById('list-techs');
+  if(!el)return;
+  adminTechTableRows=rows||[];
+  if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
+  const head=ADMIN_TECH_TABLE_COLS.map(c=>`<th>${adminEsc(c.label)}</th>`).join('')+'<th>Actions</th>';
+  const body=rows.map(p=>{
+    const d=adminTechRowData(p);
+    const cells=[
+      adminTechCellHtml(d.name,d.missSet.has('Name')),
+      adminTechCellHtml(d.email,d.missSet.has('Email')),
+      adminTechCellHtml(d.position,d.missSet.has('Position')),
+      adminTechCellHtml(d.regionCode||d.region,d.missSet.has('Region')),
+      adminTechCellHtml(d.nebb,d.missSet.has('NEBB')),
+      adminTechCellHtml(d.cert_exp,d.missSet.has('Cert expiration')),
+      adminEsc(d.cecs||'—'),
+      adminEsc(d.site||'—'),
+      adminTechCellHtml(d.start,d.missSet.has('Employee start')),
+      adminTechCellHtml(d.bootcamp,d.missSet.has('Bootcamp start')),
+      adminTechCellHtml(d.focus,false),
+      adminTechCellHtml(d.goal_start,false),
+      adminTechCellHtml(d.goal_end,false),
+      adminTechCellHtml(d.required,false),
+      d.missing.length?`<span class="admin-miss-list">${adminEsc(d.missing.join(', '))}</span>`:`<span class="admin-ok">Complete</span>`
+    ].map(html=>`<td>${html}</td>`).join('');
+    const viewBtn=p.tech_id&&p.region
+      ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
+      :'';
+    const actions=`<td><div class="admin-tech-actions">${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button></div></td>`;
+    return`<tr>${cells}${actions}</tr>`;
+  }).join('');
+  el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+async function exportAdminTechsExcel(){
+  const rows=adminTechTableRows.length?adminTechTableRows:(adminPeople||[]).filter(p=>p.role==='technician'&&!p.deleted);
+  if(!rows.length){alert('No technicians to export.');return;}
+  try{
+    const XLSX=await ensureXlsx();
+    const headers=ADMIN_TECH_TABLE_COLS.map(c=>c.label);
+    const data=rows.map(p=>{
+      const d=adminTechRowData(p);
+      return[
+        d.name,d.email,d.position,d.regionCode||d.region,d.nebb,d.cert_exp,d.cecs,d.site,
+        d.start,d.bootcamp,d.focus,d.goal_start,d.goal_end,d.required,
+        d.missing.length?d.missing.join(', '):'Complete'
+      ];
+    });
+    const ws=XLSX.utils.aoa_to_sheet([headers].concat(data));
+    ws['!cols']=headers.map((h,i)=>{
+      const max=Math.max(h.length,...data.map(r=>String(r[i]||'').length));
+      return{wch:Math.min(Math.max(max+2,10),40)};
+    });
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Technicians');
+    const stamp=new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb,'TAB-Technicians-'+stamp+'.xlsx');
+  }catch(e){
+    console.error(e);
+    alert('Could not export Excel. '+(e.message||'Try again.'));
+  }
+}
+
 function renderAdminLists(){
   const admins=[],pms=[],techs=[],deleted=[];
   adminPeople.forEach(p=>{
@@ -5698,9 +5855,9 @@ function renderAdminLists(){
   const query=document.getElementById('admin-tech-search')?document.getElementById('admin-tech-search').value:'';
   const filteredTechs=filterPeopleBySearch(techs,query);
   updateAdminTechSearchHint(query,filteredTechs.length,techs.length);
-  if(!techs.length)renderPeople(techListEl,[],{showRegion:true,action:'delete',canView:true});
-  else if(!filteredTechs.length)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';
-  else renderPeople(techListEl,filteredTechs,{showRegion:true,action:'delete',canView:true});
+  if(!techs.length){adminTechTableRows=[];if(techListEl)techListEl.innerHTML='<div class="admin-empty">None yet.</div>';}
+  else if(!filteredTechs.length){adminTechTableRows=[];if(techListEl)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}
+  else renderAdminTechTable(filteredTechs);
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
   document.getElementById('ct-admins').textContent=admins.length;
   document.getElementById('ct-pms').textContent=pms.length;
@@ -5814,9 +5971,9 @@ function renderPeople(el,rows,opts){
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
     const actions=opts.action==='restore'
-      ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button>`
+      ?`<button type="button" class="admin-restore" onclick="restoreTech(${p.id})">Restore</button><button type="button" class="admin-del" onclick="confirmPurgeTech(${p.id})">Delete</button>`
       :`${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button>`;
-    return `<div class="admin-row"><div class="who">${adminPeopleNameLine(p,opts)}</div>${actions}</div>`;
+    return `<div class="admin-row"><div class="who">${adminPeopleNameLine(p,opts)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${actions}</div></div>`;
   }).join('');
 }
 
@@ -5950,6 +6107,41 @@ async function restoreTech(id){
     await rpc('app_admin_restore_tech',{p_id:id});
     await loadAdminLists();
   }catch(e){err.textContent='Could not restore: '+(e.message||'try again');err.style.display='block';}
+}
+
+let adminPurgeTechId=null;
+function confirmPurgeTech(id){
+  adminPurgeTechId=id;
+  const p=(adminPeople||[]).find(x=>Number(x.id)===Number(id));
+  const name=(p&&(p.full_name||p.email))||'this technician';
+  const msg=document.getElementById('admin-purge-tech-msg');
+  if(msg)msg.textContent='Permanently delete '+name+'? This cannot be undone.';
+  const yes=document.getElementById('admin-purge-tech-yes');
+  if(yes)yes.onclick=()=>purgeTechConfirmed();
+  const modal=document.getElementById('admin-purge-tech-modal');
+  if(modal)modal.classList.add('visible');
+}
+function closePurgeTechModal(){
+  adminPurgeTechId=null;
+  const modal=document.getElementById('admin-purge-tech-modal');
+  if(modal)modal.classList.remove('visible');
+}
+async function purgeTechConfirmed(){
+  const id=adminPurgeTechId;
+  closePurgeTechModal();
+  if(!id)return;
+  const err=document.getElementById('admin-err');
+  if(err){err.style.display='none';err.textContent='';}
+  try{
+    await rpc('app_admin_purge_tech',{p_id:id});
+    await loadAdminLists();
+  }catch(e){
+    const msg=e.message||'';
+    if(err){
+      err.textContent='Could not delete: '+(msg.includes('app_admin_purge_tech')?'Run supabase/admin-purge-tech.sql in Supabase, then try again.':(msg||'try again'));
+      err.style.display='block';
+    }
+  }
 }
 
 // ── Admin: skills & categories (drag and drop) ───────────────────────────────
