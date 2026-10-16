@@ -4017,20 +4017,29 @@ function ataTechForStatusDisplay(entity){
   }
   return base;
 }
+/** Active ATA program % pills (Basic 97%, …) — shown on ATA Progress card / PM list. */
+function ataProgramPctPillsHtml(tech){
+  if(!tech||ataCategory(tech)!=='active')return'';
+  if(!ataCurriculum||!ataCurriculum.length)return'';
+  const s=ataTechSummary(tech);
+  return ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p))
+    .map(p=>`<span class="sp-ata">${ATA_PROGRAM_LABEL[p]} ${s.pcts[p]||0}%</span>`).join('');
+}
 /** PM list + Tech home: Complete / Exempt, or % for each required ATA program. */
-function ataStatusDisplayHtml(entity){
+function ataStatusDisplayHtml(entity,opts){
+  opts=opts||{};
   const tech=ataTechForStatusDisplay(entity);
   if(!tech)return`<span class="sp-ata-muted">ATA —</span>`;
   const cat=ataCategory(tech);
   if(cat==='exempt')return ataCategoryChip('exempt');
   if(cat==='complete')return ataCategoryChip('complete');
+  // Active program % pills live on the ATA Progress card on Tech home.
+  if(opts.programPcts===false)return'';
   if(!ataCurriculum||!ataCurriculum.length){
     return`<span class="sp-ata-muted">ATA …</span>`;
   }
-  const s=ataTechSummary(tech);
-  const pills=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p))
-    .map(p=>`<span class="sp-ata">${ATA_PROGRAM_LABEL[p]} ${s.pcts[p]||0}%</span>`);
-  return pills.length?pills.join(''):ataCategoryChip('active');
+  const pills=ataProgramPctPillsHtml(tech);
+  return pills||ataCategoryChip('active');
 }
 function trainingFocusInlineHtml(t,opts){
   opts=opts||{};
@@ -4054,7 +4063,8 @@ function trainingFocusInlineHtml(t,opts){
 }
 /** ATA status + current focus on one line (PM list + Tech home). */
 function techStatusFocusRowHtml(t,opts){
-  return ataStatusDisplayHtml(t)+trainingFocusInlineHtml(t,opts);
+  opts=opts||{};
+  return ataStatusDisplayHtml(t,opts)+trainingFocusInlineHtml(t,opts);
 }
 function refreshAtaStatusDisplays(){
   if(regionTechs&&regionTechs.length&&document.getElementById('tech-grid')){
@@ -4062,7 +4072,11 @@ function refreshAtaStatusDisplays(){
     if(pg&&pg.classList.contains('active'))renderTechGrid(regionTechs);
   }
   const el=document.getElementById('tech-home-ata-status');
-  if(el&&currentTechData)el.innerHTML=techStatusFocusRowHtml(currentTechData);
+  if(el&&currentTechData){
+    const ataOnly=ataStatusDisplayHtml(currentTechData,{programPcts:false});
+    el.innerHTML=ataOnly;
+    el.style.display=ataOnly?'':'none';
+  }
 }
 // Tech view ATA tab: Active learners (and Complete, so they can review history).
 function ataIsActiveLearner(tech){
@@ -5378,9 +5392,14 @@ function renderTechAtaHomeCard(tech){
     ?` <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
     :'';
   const programCells=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).map(p=>ataHomeProgramCell(s,p)).join('');
+  const pctPills=ataProgramPctPillsHtml(tech);
   host.innerHTML=`<div class="my-scores" style="margin:0 0 14px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-      <div><div class="detail-name">ATA Progress</div><div class="detail-sub">Active digital ATA tracking</div></div>
+      <div>
+        <div class="detail-name">ATA Progress</div>
+        <div class="detail-sub">Active digital ATA tracking</div>
+        ${pctPills?`<div class="score-row" style="margin:8px 0 0">${pctPills}</div>`:''}
+      </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
         ${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}
         ${clickable?`<button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#4A90D9" onclick="event.stopPropagation();showTechAta()">📚 ATA Tracking</button>`:''}
@@ -8566,11 +8585,16 @@ function renderTechHome(t,opts){
         </span>`
       :'');
   const nameHeader=`<div class="tech-home-header-row">${techHomeNameLineHtml(t)}${techHomeActions}</div>`;
+  // Tech home: no inline Focus row (Training Focus card is below). Keep Complete/Exempt chips only.
+  const ataStatusOnly=ataStatusDisplayHtml(t,{programPcts:false});
+  const ataStatusRow=ataStatusOnly
+    ?`<div class="score-row" id="tech-home-ata-status" style="margin:10px 0 0">${ataStatusOnly}</div>`
+    :`<div class="score-row" id="tech-home-ata-status" style="display:none;margin:10px 0 0"></div>`;
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
       ${nameHeader}
-      <div class="score-row" id="tech-home-ata-status" style="margin:10px 0 0">${techStatusFocusRowHtml(t)}</div>
+      ${ataStatusRow}
       ${tenureHtml}
       ${trainingFocusHtml}
     </div>
