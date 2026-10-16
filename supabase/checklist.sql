@@ -1,7 +1,8 @@
--- Orientation + Pre-Bootcamp checklist sections (not scored)
+-- Pre-Bootcamp checklist section (not scored)
 -- Run in Supabase -> SQL Editor on an EXISTING database.
 -- Safe to re-run. Adds section_type, checklist sections, and checklist RPCs.
 -- (skills.sql also includes these migrations for fresh installs.)
+-- Orientation tracking was removed — do not re-activate that section.
 
 -- ── Section type: rated (1–4 skills) vs checklist (complete / incomplete) ─────
 ALTER TABLE public.skill_sections
@@ -17,12 +18,14 @@ ALTER TABLE public.technicians
 ALTER TABLE public.skill_sections
   ADD COLUMN IF NOT EXISTS checklist_mode text;
 
-UPDATE public.skill_sections SET checklist_mode = 'checkbox' WHERE skey = 'orientation';
-UPDATE public.skill_sections SET checklist_mode = 'rated'    WHERE skey = 'pre_bootcamp';
+UPDATE public.skill_sections SET checklist_mode = 'rated' WHERE skey = 'pre_bootcamp';
+-- Keep legacy Orientation row inactive if it still exists.
+UPDATE public.skill_sections SET active = false, checklist_mode = 'checkbox' WHERE skey = 'orientation';
+UPDATE public.skills SET active = false
+ WHERE section_id IN (SELECT id FROM public.skill_sections WHERE skey = 'orientation');
 
--- ── Insert checklist sections before Safety ───────────────────────────────────
+-- ── Insert Pre-Bootcamp checklist before Safety ───────────────────────────────
 INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type, checklist_mode) VALUES
-  ('orientation',   'Orientation',   '📋', '#6B8CAE', NULL, 1, 'checklist', 'checkbox'),
   ('pre_bootcamp',  'Pre-Bootcamp',  '🎒', '#8B7355', NULL, 2, 'checklist', 'rated')
 ON CONFLICT (skey) DO UPDATE
   SET label = EXCLUDED.label,
@@ -98,7 +101,8 @@ BEGIN
            )
            ORDER BY s.sort_order, s.id
          ), '[]'::jsonb) INTO v_result
-  FROM public.skill_sections s;
+  FROM public.skill_sections s
+  WHERE s.skey IS DISTINCT FROM 'orientation';
 
   RETURN v_result;
 END;

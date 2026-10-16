@@ -498,7 +498,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .skill-alert-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #dde8f8;font-size:13px;color:#333;font-weight:500}
 .skill-alert-row:last-child{border-bottom:none}
 
-/* ORIENTATION / PRE-BOOTCAMP CHECKLIST (not scored) */
+/* PRE-BOOTCAMP CHECKLIST (not scored) */
 .cl-box{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid #6B8CAE}
 .cl-box-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:4px}
 .cl-box-sub{font-size:12px;color:#888;margin-bottom:14px;line-height:1.5}
@@ -1252,7 +1252,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="login-logo">Skills &amp; Categories</div>
         <button type="button" class="btn" style="padding:8px 14px;background:#888" onclick="showPage('pg-admin')">← Back</button>
       </div>
-      <div class="login-sub" style="color:#666">Rename a category, drag skills between categories, and add, edit, or delete skills. Checklist sections (Orientation, Pre-Bootcamp) are task lists — not scored.</div>
+      <div class="login-sub" style="color:#666">Rename a category, drag skills between categories, and add, edit, or delete skills. Checklist sections (Pre-Bootcamp) are task lists — not scored.</div>
       <div class="err" id="skills-err"></div>
       <div id="skills-board"></div>
     </div>
@@ -1860,8 +1860,9 @@ async function ensureSkills(force){
 }
 function buildSkillModel(sections){
   const all=sections.map(s=>({key:s.key,section:s.section,emoji:s.emoji,color:s.color,avg_field:s.avg_field,section_type:s.section_type||'rated',checklist_mode:s.checklist_mode||null,skills:(s.skills||[]).map(sk=>({id:sk.id,cat:sk.cat,name:sk.name}))}));
-  CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist');
-  QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist');
+  // Orientation tracking removed — never surface that checklist section.
+  CHECKLIST_SECTIONS=all.filter(s=>s.section_type==='checklist'&&s.key!=='orientation');
+  QUESTIONNAIRE=all.filter(s=>s.section_type!=='checklist'&&s.key!=='orientation');
   const toCat=s=>({key:s.avg_field||null,skey:s.key,label:s.section,emoji:s.emoji,codes:s.skills.map(sk=>sk.id),section_type:s.section_type||'rated'});
   TECH_CATS=QUESTIONNAIRE.map(toCat);
   // Include scored sections even without a legacy avg column (scores come from raw_scores).
@@ -1916,13 +1917,6 @@ function checklistProgress(completed){
   const ratedPct=ratedSec?sectionRatingPct(completed,ratedSec):0;
   return{done,total,pct:total?Math.round((done/total)*100):0,ratedPct,ratedSec};
 }
-function orientationSectionComplete(completed){
-  const secs=CHECKLIST_SECTIONS.filter(s=>!isRatedChecklistSection(s));
-  if(!secs.length)return true;
-  const skills=secs.flatMap(s=>s.skills||[]);
-  if(!skills.length)return true;
-  return skills.every(sk=>isChecklistDone(completed,sk.id));
-}
 function preBootcampSectionComplete(completed){
   const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
   if(!sec||!(sec.skills||[]).length)return true;
@@ -1933,16 +1927,12 @@ function isPreBootcampRequired(t){
 }
 function visibleChecklistSections(completed,t,opts){
   opts=opts||{};
-  const oriDone=orientationSectionComplete(completed);
-  const pbDone=preBootcampSectionComplete(completed);
   // Pre-Bootcamp is edited only via the Pre-Bootcamp assessment screen, not inline on home.
-  const showPb=!opts.homeOnly&&isPreBootcampRequired(t)&&!pbDone;
-  const showOri=!oriDone;
-  if(!showPb&&!showOri)return[];
-  return CHECKLIST_SECTIONS.filter(sec=>{
-    if(isRatedChecklistSection(sec))return showPb;
-    return showOri;
-  });
+  if(opts.homeOnly)return[];
+  const pbDone=preBootcampSectionComplete(completed);
+  const showPb=isPreBootcampRequired(t)&&!pbDone;
+  if(!showPb)return[];
+  return CHECKLIST_SECTIONS.filter(isRatedChecklistSection);
 }
 function renderChecklistItemHtml(sk,completed,sec,readOnly){
   if(isRatedChecklistSection(sec)){
@@ -1971,7 +1961,6 @@ function renderChecklistHtml(completed,opts){
   const visible=visibleChecklistSections(completed,opts.tech||null,{homeOnly:!!opts.homeOnly});
   if(!visible.length)return'';
   const prog=checklistProgress(completed);
-  const showOri=visible.some(s=>!isRatedChecklistSection(s));
   const showPb=visible.some(isRatedChecklistSection);
   const sections=visible.map(sec=>{
     const secKey=sec.key;
@@ -2001,13 +1990,11 @@ function renderChecklistHtml(completed,opts){
   }).join('');
   let progNote='';
   if(showPb&&prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
-  else if(showOri&&prog.total)progNote=` Orientation: <strong>${prog.done}/${prog.total}</strong> done.`;
-  let subText='These do not affect your skill scores.';
-  if(showPb)subText='Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.';
-  else if(showOri)subText='Mark Orientation tasks complete as you finish them. These do not affect your skill scores.';
+  const subText=showPb
+    ?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.'
+    :'These do not affect your skill scores.';
   const bootcampDateLabel=showPb&&bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
-  const title=showOri&&showPb?'Orientation — Pre Bootcamp':(showPb?'Pre-Bootcamp':'Orientation');
-  return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 ${title}${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
+  return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Pre-Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
 }
 function ratedChecklistSectionExists(){return CHECKLIST_SECTIONS.some(isRatedChecklistSection);}
 async function setChecklistRating(code,level){
@@ -6802,7 +6789,7 @@ async function loadSkillsAdmin(){
   const board=document.getElementById('skills-board');
   board.innerHTML='<div class="sk-empty">Loading…</div>';
   try{
-    adminSkills=await rpc('app_admin_list_skills',{})||[];
+    adminSkills=(await rpc('app_admin_list_skills',{})||[]).filter(s=>s&&s.key!=='orientation');
   }catch(e){
     board.innerHTML='';
     skErr('Could not load skills. '+(e.message||'Make sure supabase/skills.sql has been run.'));
@@ -7025,7 +7012,7 @@ function bootcampHasPassed(t){
 //   ADVANCED     13+ months    (1.2+ years)
 // Survey + National Accounts are always required at every level.
 // Scored sections are cumulative through the technician's current level.
-// Orientation / Pre-Bootcamp stay on My Progress and never lock the assessment.
+// Pre-Bootcamp stays on My Progress and never locks the assessment.
 function employmentTenureMonths(t){
   const days=employmentTenureDays(t);
   if(days===null)return null;
@@ -7066,8 +7053,7 @@ function tenureRequiredCategoryKeys(t){
   const accountSecs=['survey','national_accounts'];
   const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   const keys=[];
-  if(days!==null&&days<10)keys.push('orientation');
-  else if(hasNotStartedBootcamp(t))keys.push('pre_bootcamp');
+  if(hasNotStartedBootcamp(t))keys.push('pre_bootcamp');
   if(months===null){
     return [...keys,...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs];
   }
@@ -7081,7 +7067,7 @@ function tenureRequiredCategoryKeys(t){
 function techRequiredCategoryKeys(t){
   const saved=parseRequiredCategories(t&&t.required_categories);
   if(saved!==null)return saved;
-  return tenureRequiredCategoryKeys(t).filter(k=>k!=='orientation');
+  return tenureRequiredCategoryKeys(t);
 }
 function checklistCategoryPct(t,key){
   const sec=(CHECKLIST_SECTIONS||[]).find(s=>s.key===key);
@@ -7092,7 +7078,7 @@ function checklistCategoryPct(t,key){
   return sectionRatingPct(completed,sec);
 }
 function categoryPctForOverall(t,assessment,key){
-  if(key==='pre_bootcamp'||key==='orientation')return checklistCategoryPct(t,key);
+  if(key==='pre_bootcamp')return checklistCategoryPct(t,key);
   const cat=SKILL_CATS.find(c=>c.skey===key);
   if(!cat||!assessment)return null;
   return categoryCombinedPct(assessment,cat);
@@ -7106,8 +7092,8 @@ function overallProficiencyPct(t,assessment){
 function requiredAssessmentSections(t){
   const custom=parseRequiredCategories(t&&t.required_categories);
   if(custom!==null){
-    const checklist=custom.filter(k=>k==='pre_bootcamp'||k==='orientation');
-    const rated=custom.filter(k=>k!=='pre_bootcamp'&&k!=='orientation');
+    const checklist=custom.filter(k=>k==='pre_bootcamp');
+    const rated=custom.filter(k=>k!=='pre_bootcamp');
     return{
       all:false,
       rated,
@@ -7117,7 +7103,6 @@ function requiredAssessmentSections(t){
     };
   }
   const months=employmentTenureMonths(t);
-  const days=employmentTenureDays(t);
   const accountSecs=['survey','national_accounts'];
   const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   if(months===null)return{
@@ -7127,9 +7112,7 @@ function requiredAssessmentSections(t){
     level:null,
     message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
   };
-  const checklist=days!==null&&days<10
-    ?['orientation']
-    :(hasNotStartedBootcamp(t)?['pre_bootcamp']:[]);
+  const checklist=hasNotStartedBootcamp(t)?['pre_bootcamp']:[];
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,
@@ -8480,8 +8463,8 @@ function renderTechHome(t,opts){
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
     :readOnly&&!fromPm?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
     :'');
-  // Home checklist is Orientation only (read task list). Pre-Bootcamp + skill categories are edited only via assessment screens.
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,homeOnly:true,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys,tech:t}):"";
+  // Home no longer shows checklist sections; Pre-Bootcamp is edited only via its assessment screen.
+  const checklistHtml='';
   const emptyScoresMsg=embedInPm
     ?'No scores yet — this technician has not submitted an assessment.'
     :'No scores yet — take your first assessment using Take Assessment above.';

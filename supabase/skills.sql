@@ -6,7 +6,7 @@
 --   skill_sections  = the experience-level groups shown in the questionnaire.
 --                     section_type is 'rated' (1–4 scoring) or 'checklist'
 --                     (complete/incomplete, not scored). Checklist sections
---                     appear before Safety (Orientation, Pre-Bootcamp).
+--                     appear before Safety (Pre-Bootcamp).
 --                     The original 5 carry an avg_field that maps to the legacy
 --                     assessment columns (safety_avg, basic_avg, ...). New
 --                     sections have avg_field = NULL; their scores are derived
@@ -50,12 +50,14 @@ UPDATE public.skill_sections SET section_type = 'rated' WHERE section_type IS NU
 ALTER TABLE public.skill_sections
   ADD COLUMN IF NOT EXISTS checklist_mode text;
 
-UPDATE public.skill_sections SET checklist_mode = 'checkbox' WHERE skey = 'orientation';
-UPDATE public.skill_sections SET checklist_mode = 'rated'    WHERE skey = 'pre_bootcamp';
+UPDATE public.skill_sections SET checklist_mode = 'rated' WHERE skey = 'pre_bootcamp';
+-- Orientation tracking removed — keep row inactive if it still exists.
+UPDATE public.skill_sections SET active = false, checklist_mode = 'checkbox' WHERE skey = 'orientation';
+UPDATE public.skills SET active = false
+ WHERE section_id IN (SELECT id FROM public.skill_sections WHERE skey = 'orientation');
 
 -- ── Seed checklist + scored sections ─────────────────────────────────────────
 INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_order, section_type, checklist_mode) VALUES
-  ('orientation',  'Orientation',  '📋', '#6B8CAE', NULL,           1, 'checklist', 'checkbox'),
   ('pre_bootcamp', 'Pre-Bootcamp', '🎒', '#8B7355', NULL,           2, 'checklist', 'rated'),
   ('safety',       'Safety + Core Values + Tools',     '🛡️', '#4A90D9', 'safety_avg',       3, 'rated', NULL),
   ('safety_instruments', 'Safety and Instruments',     '🧰', '#0F6E56', NULL,                4, 'rated', NULL),
@@ -71,9 +73,13 @@ INSERT INTO public.skill_sections (skey, label, emoji, color, avg_field, sort_or
 ON CONFLICT (skey) DO UPDATE
   SET section_type = COALESCE(EXCLUDED.section_type, public.skill_sections.section_type),
       checklist_mode = COALESCE(EXCLUDED.checklist_mode, public.skill_sections.checklist_mode),
-      sort_order   = CASE WHEN public.skill_sections.skey IN ('orientation','pre_bootcamp','safety_instruments','basic_solo_projects','basic_survey_projects','intermediate_7_12','special_testing_complex')
+      sort_order   = CASE WHEN public.skill_sections.skey IN ('pre_bootcamp','safety_instruments','basic_solo_projects','basic_survey_projects','intermediate_7_12','special_testing_complex')
                           THEN EXCLUDED.sort_order
                           ELSE public.skill_sections.sort_order END;
+
+UPDATE public.skill_sections SET active = false WHERE skey = 'orientation';
+UPDATE public.skills SET active = false
+ WHERE section_id IN (SELECT id FROM public.skill_sections WHERE skey = 'orientation');
 
 -- Ensure scored sections sit below the checklist sections on existing databases.
 UPDATE public.skill_sections SET sort_order = 3, section_type = 'rated' WHERE skey = 'safety';
@@ -275,7 +281,8 @@ BEGIN
            )
            ORDER BY s.sort_order, s.id
          ), '[]'::jsonb) INTO v_result
-  FROM public.skill_sections s;
+  FROM public.skill_sections s
+  WHERE s.skey IS DISTINCT FROM 'orientation';
 
   RETURN v_result;
 END;
