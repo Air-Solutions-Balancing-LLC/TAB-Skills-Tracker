@@ -311,6 +311,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .main-content{margin-left:220px;flex:1;min-width:0;background:#f0f2f5}
 #pg-tech .main-content{padding:12px 20px 24px;box-sizing:border-box}
 #pg-tech .topbar{border-radius:12px;margin-bottom:4px}
+/* Home topbar is mobile-only (menu + assess); title bar served no purpose on desktop. */
+#pg-tech #tech-view-home > .topbar{display:none}
 #pg-tech .page-body{padding:16px 8px 8px}
 #pg-tech .q-wrap{padding:16px 8px 20px}
 /* PM viewing a technician: no sidebar — full-width content; Back sits by the tech name */
@@ -671,6 +673,7 @@ body.mobile-nav-open{overflow:hidden}
   .mobile-menu-btn{display:inline-flex}
   .mobile-assess-actions{display:inline-flex}
   .mobile-assess-btn.visible{display:inline-flex}
+  #pg-tech #tech-view-home > .topbar{display:flex}
   .sb-assess-wrap{display:none}
   .topbar{padding:12px 14px;gap:10px;flex-wrap:wrap;align-items:center}
   .topbar-title{font-size:16px}
@@ -1395,7 +1398,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-home" class="view active">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div>
+          <div class="topbar-grow"></div>
           <div class="mobile-assess-actions">
             <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">📋 Pre-Bootcamp</button>
             <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
@@ -6567,6 +6570,25 @@ function renderPeople(el,rows,opts){
   }).join('');
 }
 
+async function editTechCardFromView(){
+  const techId=currentTechData&&currentTechData.id;
+  if(!techId||techViewBackPage!=='pg-admin')return;
+  try{
+    if(!(adminPeople||[]).some(x=>String(x.tech_id)===String(techId))){
+      await loadAdminLists();
+    }
+    const p=(adminPeople||[]).find(x=>String(x.tech_id)===String(techId));
+    if(!p){
+      const err=document.getElementById('admin-err');
+      if(err){err.textContent='Could not find this technician in User Management.';err.style.display='block';}
+      return;
+    }
+    editPerson(p.id);
+  }catch(e){
+    const err=document.getElementById('admin-err');
+    if(err){err.textContent='Could not open Edit Tech: '+(e.message||'try again');err.style.display='block';}
+  }
+}
 function editPerson(id){
   const p=(adminPeople||[]).find(x=>x.id===id);
   if(!p)return;
@@ -6674,6 +6696,26 @@ async function saveEdit(id,role){
     cancelEdit();
     await loadAdminLists();
     try{await ataLoadAdmin();}catch(_){}
+    if(techViewBackPage==='pg-admin'&&techViewMode==='readonly'&&currentTechData&&role==='technician'){
+      const person=(adminPeople||[]).find(x=>x.id===id);
+      if(person&&String(person.tech_id)===String(currentTechData.id)){
+        currentTechData=Object.assign({},currentTechData,{
+          name:person.full_name||currentTechData.name,
+          region:person.region||currentTechData.region,
+          job_position:person.job_position||'',
+          lead_tech:person.lead_tech||'',
+          nebb_status:person.nebb_status||'',
+          start_date:person.start_date||null,
+          bootcamp_start_date:person.bootcamp_start_date||null,
+          training_focus:person.training_focus||'',
+          training_goal_start:person.training_goal_start||null,
+          training_goal_end:person.training_goal_end||null,
+          required_categories:person.required_categories!=null?person.required_categories:currentTechData.required_categories,
+          ata_category:person.ata_category||currentTechData.ata_category
+        });
+        renderTechHome(currentTechData,{readOnly:true});
+      }
+    }
   }catch(e){
     if(err){err.textContent='Could not save: '+(e.message||'try again');err.style.display='block';}
   }
@@ -8377,9 +8419,6 @@ function renderTechHome(t,opts){
   const assessments=t.assessments||[];
   const nameLabel=document.getElementById('tech-name-label');
   if(nameLabel)nameLabel.textContent=t.name;
-  const reg=t.region||'';
-  const regionLabel=document.getElementById('tech-region-label');
-  if(regionLabel)regionLabel.textContent=reg?((REGION_LABELS[reg]||reg)+' · '+reg):'TAB Skills Self-Assessment';
   const last=assessments.length?assessments[assessments.length-1]:null;
   const prev=assessments.length>1?assessments[assessments.length-2]:null;
   const first=assessments.length?assessments[0]:null;
@@ -8461,7 +8500,7 @@ function renderTechHome(t,opts){
   const fromPm=techViewBackPage==='pg-pm';
   const banner=embedInPm?'':(adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
-    :readOnly&&!fromPm?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
+    :readOnly&&!fromPm?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#E87722" onclick="editTechCardFromView()">Edit Tech</button><button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
     :'');
   // Home no longer shows checklist sections; Pre-Bootcamp is edited only via its assessment screen.
   const checklistHtml='';
