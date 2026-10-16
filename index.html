@@ -315,11 +315,11 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 #pg-tech #tech-view-home > .topbar{display:none}
 #pg-tech .page-body{padding:16px 8px 8px}
 #pg-tech .q-wrap{padding:16px 8px 20px}
-/* PM viewing a technician: no sidebar — full-width content; Back sits by the tech name */
-#pg-tech.tech-pm-embed #tech-sidebar,
-#pg-tech.tech-pm-embed .sidebar-overlay{display:none!important}
-#pg-tech.tech-pm-embed .main-content{margin-left:0;width:100%}
-#pg-tech.tech-pm-embed .mobile-menu-btn{display:none!important}
+/* Tech app: no sidebar — actions live on the home page / ATA card / admin banner */
+#pg-tech #tech-sidebar,
+#pg-tech .sidebar-overlay{display:none!important}
+#pg-tech .main-content{margin-left:0;width:100%}
+#pg-tech .mobile-menu-btn{display:none!important}
 #pg-tech.tech-pm-embed .mobile-assess-actions{display:none!important}
 #pg-tech.tech-pm-embed #tech-view-home > .topbar{display:none!important}
 .view{display:none}.view.active{display:block}
@@ -1375,7 +1375,7 @@ body.mobile-nav-open{overflow:hidden}
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div id="tech-admin-switch" class="sb-admin-switch">
         <button type="button" class="btn" style="background:#E87722" id="tech-admin-edit-btn" onclick="editTechCardFromView()">Edit Tech</button>
-        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change technician</button>
+        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change Technician</button>
         <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
       </div>
       <div class="sb-assess-wrap">
@@ -1412,7 +1412,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
           <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
-          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>
+          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">Change Technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
         </div>
         <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
@@ -5347,13 +5347,15 @@ function renderTechAtaHomeCard(tech){
     ?` <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
     :'';
   const programCells=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).map(p=>ataHomeProgramCell(s,p)).join('');
-  host.innerHTML=`<div class="my-scores" style="margin:0 0 14px;${clickable?'cursor:pointer':''}" ${clickable?'onclick="showTechAta()"':''} title="${clickable?'Open ATA schedule':''}">
+  host.innerHTML=`<div class="my-scores" style="margin:0 0 14px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
       <div><div class="detail-name">ATA Progress</div><div class="detail-sub">Active digital ATA tracking</div></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        ${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}
+        ${clickable?`<button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#4A90D9" onclick="event.stopPropagation();showTechAta()">📚 ATA Tracking</button>`:''}
+      </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${programCells}</div>
-    ${clickable?`<div style="margin-top:12px;font-size:12px;color:#1B3A6B;font-weight:700">View full schedule →</div>`:''}
   </div>`;
 }
 function renderTechAta(tech){
@@ -7730,7 +7732,7 @@ function adminTechViewChromeHtml(){
     ?`<button type="button" class="btn" style="padding:6px 12px;background:#E87722;flex-shrink:0" onclick="editTechCardFromView()">Edit Tech</button>`
     :'';
   const changeBtn=techViewBackPage==='pg-admin'
-    ?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9;flex-shrink:0" onclick="switchAdminTechView()">Change technician</button>`
+    ?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9;flex-shrink:0" onclick="switchAdminTechView()">Change Technician</button>`
     :'';
   return`${editBtn}${changeBtn}<button type="button" class="btn" style="padding:6px 12px;flex-shrink:0" onclick="exitTechView()">Back</button>`;
 }
@@ -8488,7 +8490,8 @@ function renderTechHome(t,opts){
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
-  const showAssessActions=!readOnly&&!adminEdit;
+  // Show assess CTAs for the tech and for admin edit sessions (sidebar is gone).
+  const showAssessActions=!readOnly;
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta">
       <span><strong>Years employed:</strong> ${tenure||'—'}</span>
@@ -8521,7 +8524,16 @@ function renderTechHome(t,opts){
     ?'No scores yet — this technician has not submitted an assessment.'
     :'No scores yet — take your first assessment using Take Assessment above.';
 
-  const nameHeader=`<div class="tech-home-header-row">${techHomeNameLineHtml(t)}${fromPm?`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>`:''}</div>`;
+  const hasAssessments=!!(assessments&&assessments.length);
+  const techHomeActions=fromPm
+    ?`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>`
+    :(!readOnly
+      ?`<span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#1D9E75${!hasAssessments?';opacity:.45':''}" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">📄 View My Assessment</button>
+          ${adminEdit?'':`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="doLogout()">Sign out</button>`}
+        </span>`
+      :'');
+  const nameHeader=`<div class="tech-home-header-row">${techHomeNameLineHtml(t)}${techHomeActions}</div>`;
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
@@ -8530,7 +8542,6 @@ function renderTechHome(t,opts){
       ${tenureHtml}
       ${trainingFocusHtml}
     </div>
-    ${notesHtml}
     <div id="tech-ata-home-card"></div>
     <div class="my-scores" style="margin-top:14px">
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
@@ -8538,7 +8549,8 @@ function renderTechHome(t,opts){
       <div class="my-cat-grid">${myBlocks||`<div style="font-size:13px;color:#999;grid-column:1/-1">${emptyScoresMsg}</div>`}</div>
     </div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
-    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
+    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}
+    ${notesHtml}`;
   if(!embedInPm){
     updateTechAssessNav(t,readOnly);
     renderTechSidebarNav();
