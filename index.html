@@ -1151,8 +1151,11 @@ body.mobile-nav-open{overflow:hidden}
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
           <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
           <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
-          <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Red — marks missing profile fields. Export uses the current search filter.</span>
+          <button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px;font-size:12px" onclick="document.getElementById('admin-tech-import-file').click()">Import from Excel</button>
+          <input type="file" id="admin-tech-import-file" accept=".xlsx,.xls,.csv,text/csv" style="display:none" onchange="importAdminTechsExcel(this)">
+          <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Red — marks missing profile fields. Category columns are Yes/No. Export/Import use email to match technicians.</span>
         </div>
+        <div id="admin-tech-import-status" style="font-size:12px;margin:0 0 8px;min-height:0"></div>
         <div class="admin-add">
           <input id="add-tech-name" placeholder="Full name">
           <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -5710,7 +5713,7 @@ function onAdminTechSearch(){renderAdminLists();}
 
 let adminTechTableRows=[];
 let adminTechViewMode='list';
-const ADMIN_TECH_TABLE_COLS=[
+const ADMIN_TECH_BASE_COLS=[
   {key:'name',label:'Name'},
   {key:'email',label:'Email'},
   {key:'position',label:'Position'},
@@ -5723,10 +5726,14 @@ const ADMIN_TECH_TABLE_COLS=[
   {key:'bootcamp',label:'Bootcamp start'},
   {key:'focus',label:'Training focus'},
   {key:'goal_start',label:'Goal start'},
-  {key:'goal_end',label:'Goal end'},
-  {key:'required',label:'Required categories'},
-  {key:'missing',label:'Missing'}
+  {key:'goal_end',label:'Goal end'}
 ];
+function adminTechCategoryCols(){
+  return PROFICIENCY_CATEGORY_OPTIONS.map(o=>({key:'cat_'+o.key,label:o.label,catKey:o.key}));
+}
+function adminTechAllCols(){
+  return ADMIN_TECH_BASE_COLS.concat(adminTechCategoryCols()).concat([{key:'missing',label:'Missing'}]);
+}
 function adminTechBlank(v){return v==null||String(v).trim()==='';}
 function adminTechMissingFields(p){
   const miss=[];
@@ -5741,13 +5748,6 @@ function adminTechMissingFields(p){
   if((tier==='ct'||tier==='cp')&&adminTechBlank(p.cert_expires_on))miss.push('Cert expiration');
   return miss;
 }
-function adminTechReqCatsLabel(p){
-  const keys=parseRequiredCategories(p.required_categories);
-  if(!keys||!keys.length)return'';
-  const map={};
-  PROFICIENCY_CATEGORY_OPTIONS.forEach(o=>{map[o.key]=o.label;});
-  return keys.map(k=>map[k]||k).join(', ');
-}
 function adminTechCellHtml(val,missing){
   if(adminTechBlank(val))return missing?'<span class="admin-miss">—</span>':'<span style="color:#bbb">—</span>';
   return adminEsc(String(val));
@@ -5757,9 +5757,16 @@ function adminTechYesNo(v){
   if(v===false)return'No';
   return'';
 }
+function adminTechRequiredSet(p){
+  const keys=parseRequiredCategories(p.required_categories);
+  return new Set(keys||[]);
+}
 function adminTechRowData(p){
   const miss=adminTechMissingFields(p);
   const missSet=new Set(miss);
+  const req=adminTechRequiredSet(p);
+  const cats={};
+  PROFICIENCY_CATEGORY_OPTIONS.forEach(o=>{cats[o.key]=req.has(o.key)?'Yes':'No';});
   return{
     person:p,
     name:p.full_name||'',
@@ -5776,7 +5783,7 @@ function adminTechRowData(p){
     focus:(p.training_focus||'').trim(),
     goal_start:adminDateInputValue(p.training_goal_start),
     goal_end:adminDateInputValue(p.training_goal_end),
-    required:adminTechReqCatsLabel(p),
+    cats:cats,
     missing:miss,
     missSet:missSet
   };
@@ -5793,10 +5800,11 @@ function renderAdminTechTable(rows){
   const el=document.getElementById('list-techs');
   if(!el)return;
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
-  const head=ADMIN_TECH_TABLE_COLS.map(c=>`<th>${adminEsc(c.label)}</th>`).join('')+'<th>Actions</th>';
+  const cols=adminTechAllCols();
+  const head=cols.map(c=>`<th title="${adminEsc(c.label)}">${adminEsc(c.label)}</th>`).join('')+'<th>Actions</th>';
   const body=rows.map(p=>{
     const d=adminTechRowData(p);
-    const cells=[
+    const baseCells=[
       adminTechCellHtml(d.name,d.missSet.has('Name')),
       adminTechCellHtml(d.email,d.missSet.has('Email')),
       adminTechCellHtml(d.position,d.missSet.has('Position')),
@@ -5809,10 +5817,14 @@ function renderAdminTechTable(rows){
       adminTechCellHtml(d.bootcamp,d.missSet.has('Bootcamp start')),
       adminTechCellHtml(d.focus,false),
       adminTechCellHtml(d.goal_start,false),
-      adminTechCellHtml(d.goal_end,false),
-      adminTechCellHtml(d.required,false),
-      d.missing.length?`<span class="admin-miss-list">${adminEsc(d.missing.join(', '))}</span>`:`<span class="admin-ok">Complete</span>`
-    ].map(html=>`<td>${html}</td>`).join('');
+      adminTechCellHtml(d.goal_end,false)
+    ];
+    const catCells=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
+      const on=d.cats[o.key]==='Yes';
+      return on?'<span class="admin-ok">Yes</span>':'<span style="color:#999">No</span>';
+    });
+    const missCell=d.missing.length?`<span class="admin-miss-list">${adminEsc(d.missing.join(', '))}</span>`:`<span class="admin-ok">Complete</span>`;
+    const cells=baseCells.concat(catCells).concat([missCell]).map(html=>`<td>${html}</td>`).join('');
     const viewBtn=p.tech_id&&p.region
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
@@ -5823,24 +5835,30 @@ function renderAdminTechTable(rows){
   el.style.overflowX='auto';
   el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
+function adminTechExcelHeaders(){
+  return ADMIN_TECH_BASE_COLS.map(c=>c.label)
+    .concat(PROFICIENCY_CATEGORY_OPTIONS.map(o=>o.label))
+    .concat(['Missing']);
+}
+function adminTechExcelRow(p){
+  const d=adminTechRowData(p);
+  return[
+    d.name,d.email,d.position,d.regionCode||d.region,d.nebb,d.cert_exp,d.cecs,d.site,
+    d.start,d.bootcamp,d.focus,d.goal_start,d.goal_end
+  ].concat(PROFICIENCY_CATEGORY_OPTIONS.map(o=>d.cats[o.key]||'No'))
+   .concat([d.missing.length?d.missing.join(', '):'Complete']);
+}
 async function exportAdminTechsExcel(){
   const rows=adminTechTableRows.length?adminTechTableRows:(adminPeople||[]).filter(p=>p.role==='technician'&&!p.deleted);
   if(!rows.length){alert('No technicians to export.');return;}
   try{
     const XLSX=await ensureXlsx();
-    const headers=ADMIN_TECH_TABLE_COLS.map(c=>c.label);
-    const data=rows.map(p=>{
-      const d=adminTechRowData(p);
-      return[
-        d.name,d.email,d.position,d.regionCode||d.region,d.nebb,d.cert_exp,d.cecs,d.site,
-        d.start,d.bootcamp,d.focus,d.goal_start,d.goal_end,d.required,
-        d.missing.length?d.missing.join(', '):'Complete'
-      ];
-    });
+    const headers=adminTechExcelHeaders();
+    const data=rows.map(adminTechExcelRow);
     const ws=XLSX.utils.aoa_to_sheet([headers].concat(data));
     ws['!cols']=headers.map((h,i)=>{
-      const max=Math.max(h.length,...data.map(r=>String(r[i]||'').length));
-      return{wch:Math.min(Math.max(max+2,10),40)};
+      const max=Math.max(String(h).length,...data.map(r=>String(r[i]||'').length));
+      return{wch:Math.min(Math.max(max+2,8),36)};
     });
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Technicians');
@@ -5849,6 +5867,158 @@ async function exportAdminTechsExcel(){
   }catch(e){
     console.error(e);
     alert('Could not export Excel. '+(e.message||'Try again.'));
+  }
+}
+function adminTechImportStatus(msg,ok){
+  const el=document.getElementById('admin-tech-import-status');
+  if(!el)return;
+  el.style.color=ok===false?'#C0392B':(ok?'#0F6E56':'#555');
+  el.textContent=msg||'';
+}
+function adminNormalizeHeader(h){
+  return String(h||'').trim().toLowerCase().replace(/[:*\s]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function adminYesNoFromImport(v){
+  const s=String(v==null?'':v).trim().toLowerCase();
+  if(!s)return null;
+  if(['yes','y','true','1','x'].includes(s))return true;
+  if(['no','n','false','0'].includes(s))return false;
+  return null;
+}
+function adminRegionFromImport(v){
+  const s=String(v||'').trim();
+  if(!s)return'';
+  const byCode=ADMIN_REGIONS.find(([c])=>c.toLowerCase()===s.toLowerCase());
+  if(byCode)return byCode[0];
+  const byLabel=ADMIN_REGIONS.find(([,l])=>l.toLowerCase()===s.toLowerCase());
+  if(byLabel)return byLabel[0];
+  return s;
+}
+function adminNebbFromImport(v){
+  const s=String(v||'').trim();
+  if(!s)return'';
+  const low=s.toLowerCase();
+  if(low.includes('cp'))return'NEBB CP';
+  if(low.includes('ct'))return'NEBB CT';
+  if(low.includes('train'))return'In Training';
+  return s;
+}
+function adminDateFromImport(v,XLSX){
+  if(v==null||v==='')return'';
+  if(typeof v==='number'&&XLSX&&XLSX.SSF&&typeof XLSX.SSF.parse_date_code==='function'){
+    const d=XLSX.SSF.parse_date_code(v);
+    if(d)return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
+  }
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m)return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');
+  const dt=new Date(s);
+  if(!isNaN(dt.getTime()))return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  return'';
+}
+function adminPositionFromImport(v){
+  const s=String(v||'').trim();
+  if(!s)return'';
+  const hit=ADMIN_POSITION_OPTIONS.find(([val,lab])=>val&&(val.toLowerCase()===s.toLowerCase()||lab.toLowerCase()===s.toLowerCase()));
+  return hit?hit[0]:s;
+}
+async function importAdminTechsExcel(input){
+  const file=input&&input.files&&input.files[0];
+  if(input)input.value='';
+  if(!file)return;
+  adminTechImportStatus('Reading '+file.name+'…');
+  try{
+    const XLSX=await ensureXlsx();
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:true});
+    const sheet=wb.Sheets[wb.SheetNames[0]];
+    const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:''});
+    if(!matrix.length){adminTechImportStatus('Spreadsheet is empty.',false);return;}
+    const headers=matrix[0].map(adminNormalizeHeader);
+    const idx={};
+    headers.forEach((h,i)=>{if(h)idx[h]=i;});
+    const col=(...names)=>{
+      for(const n of names){
+        const k=adminNormalizeHeader(n);
+        if(idx[k]!=null)return idx[k];
+      }
+      return-1;
+    };
+    const cEmail=col('Email');
+    if(cEmail<0){adminTechImportStatus('Could not find an Email column. Export first, then edit and re-import that file.',false);return;}
+    const cName=col('Name','Full name');
+    const cPos=col('Position');
+    const cRegion=col('Region');
+    const cNebb=col('NEBB','NEBB status');
+    const cCert=col('Cert expiration','Certification Expiration');
+    const cCecs=col('CECs','CECs Complete');
+    const cSite=col('NEBB site','NEBB Site Updated');
+    const cStart=col('Employee start','Employee start date','Start date');
+    const cBoot=col('Bootcamp start','Bootcamp start date');
+    const cFocus=col('Training focus','Training goal');
+    const cGStart=col('Goal start','Goal start date');
+    const cGEnd=col('Goal end','Goal end date');
+    const catIdx=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
+      const i=col(o.label,o.key);
+      return{key:o.key,i:i};
+    });
+    const peopleByEmail={};
+    (adminPeople||[]).forEach(p=>{
+      if(p.role!=='technician'||p.deleted)return;
+      const em=String(p.email||'').trim().toLowerCase();
+      if(em)peopleByEmail[em]=p;
+    });
+    let updated=0,skipped=0,failed=0;
+    const errors=[];
+    for(let r=1;r<matrix.length;r++){
+      const row=matrix[r]||[];
+      const email=String(row[cEmail]||'').trim().toLowerCase();
+      if(!email){skipped++;continue;}
+      const person=peopleByEmail[email];
+      if(!person){failed++;errors.push(email+' (not found)');continue;}
+      const get=(i)=>i>=0?row[i]:'';
+      const reqKeys=[];
+      catIdx.forEach(({key,i})=>{
+        if(i<0)return;
+        const yn=adminYesNoFromImport(get(i));
+        if(yn===true)reqKeys.push(key);
+      });
+      const hasCatCols=catIdx.some(c=>c.i>=0);
+      try{
+        await rpc('app_admin_update_person',{
+          p_id:person.id,
+          p_name:cName>=0?String(get(cName)||'').trim()||null:null,
+          p_email:email,
+          p_role:null,
+          p_region:cRegion>=0?adminRegionFromImport(get(cRegion)):null,
+          p_start_date:cStart>=0?adminDateFromImport(get(cStart),XLSX):null,
+          p_bootcamp_start_date:cBoot>=0?adminDateFromImport(get(cBoot),XLSX):null,
+          p_nebb_status:cNebb>=0?adminNebbFromImport(get(cNebb)):null,
+          p_cert_expires_on:cCert>=0?adminDateFromImport(get(cCert),XLSX):null,
+          p_cecs_complete:cCecs>=0?adminYesNoFromImport(get(cCecs)):null,
+          p_nebb_site_updated:cSite>=0?adminYesNoFromImport(get(cSite)):null,
+          p_required_categories:hasCatCols?reqKeys:null,
+          p_training_focus:cFocus>=0?String(get(cFocus)||''):null,
+          p_training_goal_start:cGStart>=0?adminDateFromImport(get(cGStart),XLSX):null,
+          p_training_goal_end:cGEnd>=0?adminDateFromImport(get(cGEnd),XLSX):null,
+          p_job_position:cPos>=0?adminPositionFromImport(get(cPos)):null
+        });
+        updated++;
+      }catch(e){
+        failed++;
+        errors.push(email+' ('+(e.message||'error')+')');
+      }
+    }
+    await loadAdminLists();
+    let msg='Import complete: '+updated+' updated';
+    if(skipped)msg+=', '+skipped+' skipped (no email)';
+    if(failed)msg+=', '+failed+' failed';
+    if(errors.length)msg+='. '+errors.slice(0,5).join('; ')+(errors.length>5?'…':'');
+    adminTechImportStatus(msg,failed===0);
+  }catch(e){
+    console.error(e);
+    adminTechImportStatus('Import failed. '+(e.message||'Try again.'),false);
   }
 }
 
