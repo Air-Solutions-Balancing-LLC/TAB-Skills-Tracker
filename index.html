@@ -2164,6 +2164,17 @@ function lastPreBootcampDateLabel(t){
   const d=String(raw).slice(0,10);
   return'Last: '+fmtDateFull(d);
 }
+async function beginAssessmentFromHome(){
+  // Admin View is read-only; switch into an edit session first so scores can save.
+  if(techViewMode==='readonly'&&techViewBackPage==='pg-admin'&&currentTechData){
+    const t=currentTechData;
+    await editTechFromAdmin(t.id,t.region,t.name);
+    if(techViewMode!=='edit')return;
+  }
+  const draft=getAssessmentDraft(currentTechData);
+  if(draft)continueQuestionnaire();
+  else startQuestionnaire();
+}
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
@@ -2174,32 +2185,33 @@ function updateTechAssessNav(t,readOnly){
   if(nav)nav.classList.remove('visible');
   if(done)done.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
-  if(homeWrap)homeWrap.style.display='none';
   updateTechPreBootcampNav(t,readOnly);
   updateTechViewAssessmentNav(t,readOnly);
-  if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
+  const canAssess=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
   const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update assessment':'📝 Take Assessment');
-  const clickFn=draft?continueQuestionnaire:startQuestionnaire;
-  // Prefer home tenure-bar buttons; keep sidebar buttons hidden when home CTA exists.
+  const clickFn=beginAssessmentFromHome;
+  // Always show home Take Assessment + last date (sidebar is gone).
   if(homeBtn&&homeWrap){
-    homeWrap.style.display='';
+    homeWrap.style.display='flex';
     homeBtn.textContent=btnLabel;
-    homeBtn.onclick=clickFn;
+    homeBtn.disabled=!canAssess;
+    homeBtn.style.opacity=canAssess?'':'0.55';
+    homeBtn.onclick=canAssess?clickFn:null;
     if(homeDate)homeDate.textContent=lastAssessmentDateLabel(t);
-  }else if(nav){
+  }else if(nav&&canAssess){
     nav.classList.add('visible');
     nav.textContent=btnLabel;
     nav.onclick=clickFn;
   }
-  if(mobile){
+  if(mobile&&canAssess){
     mobile.classList.add('visible');
     mobile.textContent=draft?'▶ Continue':(submittedThisMonth?'📝 Update':'📝 Assess');
     mobile.onclick=clickFn;
   }
-  if(submittedThisMonth&&done&&!(homeBtn&&homeWrap)){
+  if(submittedThisMonth&&done&&!(homeBtn&&homeWrap)&&canAssess){
     const last=assessments[assessments.length-1];
     done.classList.add('visible');
     done.textContent='Last submitted '+fmtDateFull(last.date)+'. You can update anytime.';
@@ -8489,24 +8501,23 @@ function renderTechHome(t,opts){
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
-  // Show assess CTAs for the tech and for admin edit sessions (sidebar is gone).
-  const showAssessActions=!readOnly;
+  // Take Assessment + last date always sit on the tenure row (sidebar removed).
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta">
       <span><strong>Years employed:</strong> ${tenure||'—'}</span>
       <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
       ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
     </div>
-    ${showAssessActions?`<div class="tech-tenure-actions">
+    <div class="tech-tenure-actions">
       <div class="tech-tenure-action" id="home-preboot-action" style="display:none">
         <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">📋 Pre-Bootcamp</button>
         <div class="tech-tenure-action-date" id="home-preboot-date"></div>
       </div>
-      <div class="tech-tenure-action" id="home-assess-action" style="display:none">
+      <div class="tech-tenure-action" id="home-assess-action">
         <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">📝 Take Assessment</button>
-        <div class="tech-tenure-action-date" id="home-assess-date"></div>
+        <div class="tech-tenure-action-date" id="home-assess-date">${adminEsc(lastAssessmentDateLabel(t))}</div>
       </div>
-    </div>`:''}
+    </div>
   </div>`;
   const trainingFocusHtml=renderTrainingFocusHtml(t);
 
@@ -8550,8 +8561,8 @@ function renderTechHome(t,opts){
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}
     ${notesHtml}`;
+  updateTechAssessNav(t,readOnly);
   if(!embedInPm){
-    updateTechAssessNav(t,readOnly);
     renderTechSidebarNav();
     updateTechViewAdminChrome();
   }
