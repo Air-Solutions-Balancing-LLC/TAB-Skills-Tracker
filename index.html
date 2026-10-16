@@ -84,11 +84,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:10px}
 .admin-row .who{flex:1;min-width:0}
 .admin-row .nm,.tech-home-name-line .nm{font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.admin-row .nm-line,.tech-home-name-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0;margin:0 0 14px}
-.admin-row .nm-meta,.tech-home-name-line .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
-.admin-row .nm-sep,.tech-home-name-line .nm-sep{color:#b0b6c0;font-weight:400}
+.admin-row .nm-line,.tech-home-name-line,.trow-name-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0;margin:0 0 14px}
+.admin-row .nm-meta,.tech-home-name-line .nm-meta,.trow-name-line .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
+.admin-row .nm-sep,.tech-home-name-line .nm-sep,.trow-name-line .nm-sep{color:#b0b6c0;font-weight:400}
 .tech-home-name-line .nm{font-size:17px;font-weight:800;letter-spacing:-.3px;color:#1B3A6B}
 .tech-home-name-line .nm-meta{font-size:13px;color:#555}
+.trow-name-line{margin:0}
+.trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow-name-line .nm-meta{font-size:12px;color:#555}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
 .edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
@@ -6445,7 +6448,7 @@ function editDeckBodyHtml(p){
       <label class="admin-start-wrap"><span class="admin-start-lbl">Full name</span><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"></label>
       <label class="admin-start-wrap"><span class="admin-start-lbl">Email</span><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com"></label>
       ${isTech
-        ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Position</span><select id="edit-position-${p.id}" class="admin-edit-field">${positionOptionsHtml(p.job_position||'')}</select></label>`
+        ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Position</span><select id="edit-position-${p.id}" class="admin-edit-field">${positionOptionsHtml(p.job_position||'')}</select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Lead Tech</span><input id="edit-lead-${p.id}" class="admin-edit-field" value="${adminEsc(p.lead_tech||'')}" placeholder="Lead technician name" maxlength="120"></label>`
         :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`}
     </div>
   </div>`;
@@ -6476,6 +6479,8 @@ function adminPeopleNameLine(p,opts){
     if(p.region)bits.push(String(p.region));
     const nebb=nebbStatusLabel(p.nebb_status);
     if(nebb)bits.push(nebb);
+    const lead=(p.lead_tech||'').trim();
+    if(lead)bits.push('Lead: '+lead);
   }
   if(!bits.length)return`<div class="nm">${name}</div>`;
   const meta=bits.map(b=>`<span class="nm-meta">${adminEsc(b)}</span>`).join('<span class="nm-sep">·</span>');
@@ -6486,9 +6491,20 @@ function techHomeNameLineHtml(t){
     full_name:t.name,
     job_position:t.job_position||'',
     region:t.region||'',
-    nebb_status:t.nebb_status||''
+    nebb_status:t.nebb_status||'',
+    lead_tech:t.lead_tech||''
   },{showRegion:true});
   return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
+}
+function pmTechNameLineHtml(t){
+  const line=adminPeopleNameLine({
+    full_name:t.name,
+    job_position:t.job_position||'',
+    region:t.region||'',
+    nebb_status:t.nebb_status||'',
+    lead_tech:t.lead_tech||''
+  },{showRegion:true});
+  return line.replace('class="nm-line"','class="nm-line trow-name-line"');
 }
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
@@ -6553,7 +6569,7 @@ async function saveEdit(id,role){
   if(err){err.style.display='none';err.textContent='';}
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null,p_job_position:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null,p_job_position:null,p_lead_tech:null};
   const nebb=document.getElementById('edit-nebb-'+id);
   const certExp=document.getElementById('edit-cert-exp-'+id);
   const cecs=document.getElementById('edit-cecs-'+id);
@@ -6567,6 +6583,8 @@ async function saveEdit(id,role){
     args.p_region=r?r.value:null;
     const pos=document.getElementById('edit-position-'+id);
     args.p_job_position=pos?pos.value:'';
+    const lead=document.getElementById('edit-lead-'+id);
+    args.p_lead_tech=lead?lead.value:'';
     const sd=document.getElementById('edit-start-'+id);
     args.p_start_date=sd?sd.value:null;
     const bsd=document.getElementById('edit-bootcamp-start-'+id);
@@ -7452,18 +7470,6 @@ function renderAlertBox(techs){
   box.innerHTML=`<div class="alert-box"><div class="alert-title">⚠️ Skills stalled — score ≤ 2, no improvement in last 2 assessments</div><div class="alert-pills">${issues.map(i=>`<span class="alert-pill">${i}</span>`).join('')}</div></div>`;
 }
 
-function pmTechRowMeta(t){
-  const bits=[];
-  const nebb=nebbStatusLabel(t.nebb_status);
-  if(nebb){
-    if(/^NEBB\s+/i.test(nebb)){
-      bits.push('NEBB');
-      bits.push(nebb.replace(/^NEBB\s+/i,'').trim());
-    }else bits.push(nebb);
-  }
-  if(t.region)bits.push(String(t.region));
-  return bits.map(b=>adminEsc(b)).join('<span class="nm-sep">·</span>');
-}
 function renderTechGrid(techs){
   if(!techs.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians found.</div>';updatePmSearchHint('',0,0);return;}
   const query=document.getElementById('pm-tech-search')?document.getElementById('pm-tech-search').value:'';
@@ -7472,19 +7478,15 @@ function renderTechGrid(techs){
   if(!filtered.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians match “'+adminEsc(query.trim())+'”.</div>';return;}
   document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
-    const meta=pmTechRowMeta(t);
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
         <div class="trow-top">
-          <div class="trow-meta">
-            <div class="trow-name">${adminEsc(t.name)}</div>
-            <div class="trow-sub">${meta}${t.lead_tech?'<span class="nm-sep">·</span>Lead: '+adminEsc(t.lead_tech.split(' ')[0]):''}</div>
-          </div>
+          <div class="trow-meta">${pmTechNameLineHtml(t)}</div>
         </div>
         <div class="score-row">${techStatusFocusRowHtml(t)}</div>
       </div>
       <div class="trow-right">
-        ${last?`<span class="date-chip last">Last: ${fmtDate(last.date)}</span>`:''}
+        ${last?`<span class="date-chip last">Last Updated: ${fmtDate(last.date)}</span>`:''}
         <span class="trow-chevron" aria-hidden="true">›</span>
       </div>
     </div>`;
