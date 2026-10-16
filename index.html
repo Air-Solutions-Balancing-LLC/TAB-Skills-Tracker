@@ -324,7 +324,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .topbar-badge{font-size:11px;padding:5px 14px;border-radius:20px;background:#1B3A6B;color:#fff;font-weight:700;letter-spacing:.3px}
 
 /* METRICS */
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:20px 24px 0}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:20px 24px 0}
 .metric{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-bottom:4px solid #1B3A6B}
 .metric-label{font-size:11px;color:#999;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
 .metric-val{font-size:28px;font-weight:800;color:#1B3A6B}
@@ -353,7 +353,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .trow-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .trow-top{display:flex;align-items:center;gap:10px;min-width:0}
 .trow-meta{min-width:0;flex:1}
-.av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;background:#E6EEF8;color:#1B3A6B}
 .trow-name{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-sub{font-size:12px;font-weight:500;color:#555;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-sub .nm-sep{color:#b0b6c0;margin:0 4px}
@@ -385,7 +384,6 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .detail-topbar{padding:16px 24px;border-bottom:none;display:flex;align-items:center;gap:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06);position:sticky;top:0;z-index:5}
 .back-btn{font-size:12px;color:#1B3A6B;cursor:pointer;padding:8px 16px;border-radius:10px;border:2px solid #1B3A6B;white-space:nowrap;font-weight:700;background:#EEF4FF;transition:all .2s}
 .back-btn:hover{background:#1B3A6B;color:#fff}
-.detail-av{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;background:#E6EEF8;color:#1B3A6B;flex-shrink:0}
 .detail-name{font-size:17px;font-weight:800;color:#1a1a2e;letter-spacing:-.3px}
 .detail-sub{font-size:12px;color:#999;margin-top:3px}
 .detail-body{padding:20px 24px;background:#f0f2f5}
@@ -1330,7 +1328,6 @@ body.mobile-nav-open{overflow:hidden}
         <div class="detail-topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="back-btn" onclick="closePmTechProgress()">← Back</div>
-          <div class="detail-av" id="detail-av-initials">--</div>
           <div><div class="detail-name" id="detail-tech-name">--</div><div class="detail-sub" id="detail-tech-sub">--</div></div>
         </div>
         <div class="detail-body" id="detail-body"><div class="loading">Loading...</div></div>
@@ -6899,7 +6896,6 @@ function spClass(v){
   if(v>=2)return'sp2';
   return'sp4';
 }
-function initials(name){return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function parseDateOnly(d){
   if(!d)return null;
   const s=String(d).slice(0,10);
@@ -7412,7 +7408,6 @@ function onPmTechSearch(){
 }
 
 function renderMetrics(techs){
-  const total=techs.reduce((s,t)=>s+t.assessments.length,0);
   const avgs=techs.filter(t=>t.assessments.length).map(t=>{
     const last=t.assessments[t.assessments.length-1];
     const vals=SKILL_CATS.map(c=>catScore(last,c)).filter(v=>v!==null);
@@ -7422,10 +7417,9 @@ function renderMetrics(techs){
   const stalled=countStalled(techs);
   document.getElementById('alert-count').textContent=stalled;
   document.getElementById('pm-metrics').innerHTML=`
-    <div class="metric"><div class="metric-label">👷 Technicians</div><div class="metric-val">${techs.length}</div></div>
-    <div class="metric"><div class="metric-label">📈 Team avg</div><div class="metric-val">${avg}</div></div>
-    <div class="metric"><div class="metric-label">📋 Assessments</div><div class="metric-val">${total}</div></div>
-    <div class="metric metric-alert"><div class="metric-label">⚠️ Stalled</div><div class="metric-val" style="color:#9090c0">${stalled}</div></div>`;
+    <div class="metric"><div class="metric-label">Technicians</div><div class="metric-val">${techs.length}</div></div>
+    <div class="metric"><div class="metric-label">Team avg</div><div class="metric-val">${avg}</div></div>
+    <div class="metric metric-alert"><div class="metric-label">Stalled</div><div class="metric-val" style="color:#9090c0">${stalled}</div></div>`;
 }
 
 function countStalled(techs){
@@ -7482,7 +7476,6 @@ function renderTechGrid(techs){
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
         <div class="trow-top">
-          <div class="av">${initials(t.name)}</div>
           <div class="trow-meta">
             <div class="trow-name">${adminEsc(t.name)}</div>
             <div class="trow-sub">${meta}${t.lead_tech?'<span class="nm-sep">·</span>Lead: '+adminEsc(t.lead_tech.split(' ')[0]):''}</div>
