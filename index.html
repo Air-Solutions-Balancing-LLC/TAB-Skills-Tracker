@@ -5709,14 +5709,10 @@ function adminPeopleNameLine(p,opts){
   const name=adminEsc(p.full_name||p.email||'');
   const bits=[];
   if(opts&&opts.showRegion){
-    const nebb=nebbStatusLabel(p.nebb_status);
-    if(nebb){
-      if(/^NEBB\s+/i.test(nebb)){
-        bits.push('NEBB');
-        bits.push(nebb.replace(/^NEBB\s+/i,'').trim());
-      }else bits.push(nebb);
-    }
+    if(p.job_position)bits.push(String(p.job_position));
     if(p.region)bits.push(String(p.region));
+    const nebb=nebbStatusLabel(p.nebb_status);
+    if(nebb)bits.push(nebb);
   }
   if(!bits.length)return`<div class="nm">${name}</div>`;
   const meta=bits.map(b=>`<span class="nm-meta">${adminEsc(b)}</span>`).join('<span class="nm-sep">·</span>');
