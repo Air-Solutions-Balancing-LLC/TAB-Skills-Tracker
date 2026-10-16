@@ -14,6 +14,7 @@ const REGION_LABELS = {
   MA: 'Mid-Atlantic',
   MW: 'Midwest',
   National: 'National',
+  'National-TAB Survey': 'National-TAB Survey',
   NE: 'New England',
   PC: 'Pacific Coast',
   RM: 'Rocky Mountain',

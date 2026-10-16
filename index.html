@@ -83,10 +83,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-sec-body .pm-search-wrap input{max-width:none}
 .admin-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:10px}
 .admin-row .who{flex:1;min-width:0}
-.admin-row .nm{font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.admin-row .nm-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0}
-.admin-row .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
-.admin-row .nm-sep{color:#b0b6c0;font-weight:400}
+.admin-row .nm,.tech-home-name-line .nm{font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-row .nm-line,.tech-home-name-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0;margin:0 0 14px}
+.admin-row .nm-meta,.tech-home-name-line .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
+.admin-row .nm-sep,.tech-home-name-line .nm-sep{color:#b0b6c0;font-weight:400}
+.tech-home-name-line .nm{font-size:17px;font-weight:800;letter-spacing:-.3px;color:#1B3A6B}
+.tech-home-name-line .nm-meta{font-size:13px;color:#555}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
 .edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
@@ -465,6 +467,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .my-overall-pct{font-size:32px;font-weight:800;color:#1B3A6B;letter-spacing:-.5px;line-height:1}
 .my-cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px;margin-top:4px}
 .my-cat-block{background:#f8faff;border:1.5px solid #E6EEF8;border-radius:14px;padding:16px 12px;text-align:center;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;scroll-margin-top:76px}
+.my-cat-block.clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.my-cat-block.clickable:hover{border-color:#b8d0f5;box-shadow:0 4px 14px rgba(27,58,107,.1);transform:translateY(-1px)}
+.my-cat-block.clickable:focus-visible{outline:2px solid #1B3A6B;outline-offset:2px}
 .my-cat-emoji{font-size:22px;line-height:1}
 .my-cat-logo{width:52px;height:38px;object-fit:contain;display:block}
 .my-cat-name{font-size:12px;font-weight:700;color:#1B3A6B;line-height:1.35}
@@ -598,8 +603,13 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-cover-col-right{text-align:right}
 .tech-cover-comments{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px;border-top:4px solid #E87722;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-cover-comments .tech-notes-title{margin-bottom:6px}
-.tech-tenure-info{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-tenure-info{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
+.tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;flex:1;min-width:0}
+.tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
+.tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:140px}
+.tech-tenure-action .btn{width:100%;justify-content:center;padding:9px 12px;font-size:12px;white-space:nowrap}
+.tech-tenure-action-date{font-size:11px;color:#888;text-align:center;line-height:1.3}
 .tech-required-box{background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:12px 14px;margin-bottom:14px}
 .tech-required-box .tech-required-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#4A90D9;margin-bottom:4px}
 .tech-required-box .tech-required-msg{font-size:14px;font-weight:700;color:#1B3A6B;line-height:1.4}
@@ -795,6 +805,7 @@ body.mobile-nav-open{overflow:hidden}
           <option value="MA">Mid-Atlantic</option>
           <option value="MW">Midwest</option>
           <option value="National">National</option>
+          <option value="National-TAB Survey">National-TAB Survey</option>
           <option value="NE">New England</option>
           <option value="PC">Pacific Coast</option>
           <option value="RM">Rocky Mountain</option>
@@ -819,7 +830,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="login-logo">User Management</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">PM Login</button>
-          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">Pick Technician</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">Technician View</button>
           <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
         </div>
       </div>
@@ -866,6 +877,7 @@ body.mobile-nav-open{overflow:hidden}
                     <option value="MA">Mid-Atlantic</option>
                     <option value="MW">Midwest</option>
                     <option value="National">National</option>
+                    <option value="National-TAB Survey">National-TAB Survey</option>
                     <option value="NE">New England</option>
                     <option value="PC">Pacific Coast</option>
                     <option value="RM">Rocky Mountain</option>
@@ -908,6 +920,7 @@ body.mobile-nav-open{overflow:hidden}
                     <option value="MA">Mid-Atlantic</option>
                     <option value="MW">Midwest</option>
                     <option value="National">National</option>
+                    <option value="National-TAB Survey">National-TAB Survey</option>
                     <option value="NE">New England</option>
                     <option value="PC">Pacific Coast</option>
                     <option value="RM">Rocky Mountain</option>
@@ -950,6 +963,7 @@ body.mobile-nav-open{overflow:hidden}
                     <option value="MA">Mid-Atlantic</option>
                     <option value="MW">Midwest</option>
                     <option value="National">National</option>
+                    <option value="National-TAB Survey">National-TAB Survey</option>
                     <option value="NE">New England</option>
                     <option value="PC">Pacific Coast</option>
                     <option value="RM">Rocky Mountain</option>
@@ -991,6 +1005,7 @@ body.mobile-nav-open{overflow:hidden}
                   <option value="MA">Mid-Atlantic</option>
                   <option value="MW">Midwest</option>
                   <option value="National">National</option>
+                  <option value="National-TAB Survey">National-TAB Survey</option>
                   <option value="NE">New England</option>
                   <option value="PC">Pacific Coast</option>
                   <option value="RM">Rocky Mountain</option>
@@ -1013,7 +1028,7 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
-          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress. Scores and resets show as soon as Teachable has them — even if that Thursday due date is still in the future. New Teachable students (company email) show up after <strong>Sync from Teachable</strong>, and empty start dates fill from their <strong>course enrollment</strong>. Deadlines are that week’s <strong>Thursday</strong>; if that Thursday is a holiday, the due date moves to the <strong>next Thursday</strong>. Edit the shared <strong>Master course list</strong> below to add/rename lessons for everyone. Open a tech’s <strong>Report</strong> → <strong>Edit progress</strong> to change scores, pass status, and completed dates (admin edits are locked from Teachable overwrite). Select veterans or former techs and <strong>Archive</strong> them so they drop off this list and the Friday PDF.</div>
+          <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress in three categories: <strong>Active</strong> (in progress), <strong>Complete</strong> (Basic + Intermediate + Advanced all passed), and <strong>Exempt</strong> (not required). Technicians see their ATA status on My Progress — Active techs also see % Basic / Intermediate / Advanced. Sync from Teachable for scores; use <strong>Mark Exempt</strong> for people who should not be tracked.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
@@ -1067,17 +1082,18 @@ body.mobile-nav-open{overflow:hidden}
               </select>
             </div>
             <div class="report-filter-field">
-              <label for="ata-roster">Roster</label>
+              <label for="ata-roster">Category</label>
               <select id="ata-roster" onchange="onAtaAdminFilterChange()">
-                <option value="active" selected>Active ATA</option>
-                <option value="archived">Former / archived</option>
+                <option value="active" selected>Active</option>
+                <option value="complete">Complete</option>
+                <option value="exempt">Exempt</option>
                 <option value="all">All technicians</option>
               </select>
             </div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px">
-            <button type="button" class="btn" id="ata-archive-btn" style="padding:7px 12px;font-size:12px;background:#6b7280" onclick="ataArchiveSelected(true)">Archive selected</button>
-            <button type="button" class="btn" id="ata-restore-btn" style="padding:7px 12px;font-size:12px;background:#0F6E56" onclick="ataArchiveSelected(false)">Restore selected</button>
+            <button type="button" class="btn" id="ata-archive-btn" style="padding:7px 12px;font-size:12px;background:#6b7280" onclick="ataArchiveSelected(true)">Mark Exempt</button>
+            <button type="button" class="btn" id="ata-restore-btn" style="padding:7px 12px;font-size:12px;background:#0F6E56" onclick="ataArchiveSelected(false)">Restore to Active</button>
             <span id="ata-selected-hint" style="font-size:11px;color:#888"></span>
           </div>
           <div class="report-filter-hint" id="ata-filter-hint"></div>
@@ -1100,6 +1116,7 @@ body.mobile-nav-open{overflow:hidden}
             <option value="MA">Mid-Atlantic</option>
             <option value="MW">Midwest</option>
             <option value="National">National</option>
+            <option value="National-TAB Survey">National-TAB Survey</option>
             <option value="NE">New England</option>
             <option value="PC">Pacific Coast</option>
             <option value="RM">Rocky Mountain</option>
@@ -1127,6 +1144,7 @@ body.mobile-nav-open{overflow:hidden}
             <option value="MA">Mid-Atlantic</option>
             <option value="MW">Midwest</option>
             <option value="National">National</option>
+            <option value="National-TAB Survey">National-TAB Survey</option>
             <option value="NE">New England</option>
             <option value="PC">Pacific Coast</option>
             <option value="RM">Rocky Mountain</option>
@@ -1165,6 +1183,7 @@ body.mobile-nav-open{overflow:hidden}
             <option value="MA">Mid-Atlantic</option>
             <option value="MW">Midwest</option>
             <option value="National">National</option>
+            <option value="National-TAB Survey">National-TAB Survey</option>
             <option value="NE">New England</option>
             <option value="PC">Pacific Coast</option>
             <option value="RM">Rocky Mountain</option>
@@ -1223,6 +1242,7 @@ body.mobile-nav-open{overflow:hidden}
           <option value="MA">Mid-Atlantic</option>
           <option value="MW">Midwest</option>
           <option value="National">National</option>
+          <option value="National-TAB Survey">National-TAB Survey</option>
           <option value="NE">New England</option>
           <option value="PC">Pacific Coast</option>
           <option value="RM">Rocky Mountain</option>
@@ -1334,14 +1354,8 @@ body.mobile-nav-open{overflow:hidden}
           <div class="sb-section">Navigation</div>
           <button type="button" class="sb-sidebar-close" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
         </div>
-        <div class="sb-nav active" id="sb-nav-home" onclick="showTechHome();closeMobileNav()">📊 My Progress</div>
         <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
         <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">📚 ATA Tracking</button>
-        <button type="button" class="sb-section-toggle" id="sb-skill-toggle" onclick="toggleSbSkillSections()" aria-expanded="true">
-          <span class="sb-section">Skill sections</span>
-          <span class="sb-section-chevron" id="sb-skill-chevron">▼</span>
-        </button>
-        <div id="tech-sb-sections" class="sb-skill-links"></div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -1882,10 +1896,12 @@ function preBootcampSectionComplete(completed){
 function isPreBootcampRequired(t){
   return techRequiredCategoryKeys(t).includes('pre_bootcamp');
 }
-function visibleChecklistSections(completed,t){
+function visibleChecklistSections(completed,t,opts){
+  opts=opts||{};
   const oriDone=orientationSectionComplete(completed);
   const pbDone=preBootcampSectionComplete(completed);
-  const showPb=isPreBootcampRequired(t)&&!pbDone;
+  // Pre-Bootcamp is edited only via the Pre-Bootcamp assessment screen, not inline on home.
+  const showPb=!opts.homeOnly&&isPreBootcampRequired(t)&&!pbDone;
   const showOri=!oriDone;
   if(!showPb&&!showOri)return[];
   return CHECKLIST_SECTIONS.filter(sec=>{
@@ -1917,7 +1933,7 @@ function renderChecklistHtml(completed,opts){
   const bootcampStartDate=opts.bootcampStartDate||null;
   const openKeys=new Set(opts.openKeys||[]);
   if(!CHECKLIST_SECTIONS.length)return'';
-  const visible=visibleChecklistSections(completed,opts.tech||null);
+  const visible=visibleChecklistSections(completed,opts.tech||null,{homeOnly:!!opts.homeOnly});
   if(!visible.length)return'';
   const prog=checklistProgress(completed);
   const showOri=visible.some(s=>!isRatedChecklistSection(s));
@@ -2101,31 +2117,56 @@ function getAssessmentDraft(t){
   if(!draft||draft.month!==currentAssessmentMonth())return null;
   return draft;
 }
+function lastAssessmentDateLabel(t){
+  const assessments=t&&t.assessments?t.assessments:[];
+  if(!assessments.length)return'No assessment yet';
+  return'Last: '+fmtDateFull(assessments[assessments.length-1].date);
+}
+function lastPreBootcampDateLabel(t){
+  const raw=t&&(t.pre_bootcamp_updated_at||t.pre_bootcamp_updated);
+  if(!raw){
+    const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
+    return preBootcampHasAnyRating(completed)?'In progress':'Not taken yet';
+  }
+  const d=String(raw).slice(0,10);
+  return'Last: '+fmtDateFull(d);
+}
 function updateTechAssessNav(t,readOnly){
   const nav=document.getElementById('tech-assess-nav');
   const done=document.getElementById('tech-assess-done');
   const mobile=document.getElementById('tech-assess-mobile');
+  const homeBtn=document.getElementById('home-assess-btn');
+  const homeWrap=document.getElementById('home-assess-action');
+  const homeDate=document.getElementById('home-assess-date');
   if(nav)nav.classList.remove('visible');
   if(done)done.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
+  if(homeWrap)homeWrap.style.display='none';
   updateTechPreBootcampNav(t,readOnly);
   updateTechViewAssessmentNav(t,readOnly);
   if(readOnly)return;
   const assessments=t&&t.assessments?t.assessments:[];
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
-  const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update this month\'s assessment':'📝 Take this month\'s assessment');
-  if(nav){
+  const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update assessment':'📝 Take Assessment');
+  const clickFn=draft?continueQuestionnaire:startQuestionnaire;
+  // Prefer home tenure-bar buttons; keep sidebar buttons hidden when home CTA exists.
+  if(homeBtn&&homeWrap){
+    homeWrap.style.display='';
+    homeBtn.textContent=btnLabel;
+    homeBtn.onclick=clickFn;
+    if(homeDate)homeDate.textContent=lastAssessmentDateLabel(t);
+  }else if(nav){
     nav.classList.add('visible');
     nav.textContent=btnLabel;
-    nav.onclick=draft?continueQuestionnaire:startQuestionnaire;
+    nav.onclick=clickFn;
   }
   if(mobile){
     mobile.classList.add('visible');
     mobile.textContent=draft?'▶ Continue':(submittedThisMonth?'📝 Update':'📝 Assess');
-    mobile.onclick=draft?continueQuestionnaire:startQuestionnaire;
+    mobile.onclick=clickFn;
   }
-  if(submittedThisMonth&&done){
+  if(submittedThisMonth&&done&&!(homeBtn&&homeWrap)){
     const last=assessments[assessments.length-1];
     done.classList.add('visible');
     done.textContent='Last submitted '+fmtDateFull(last.date)+'. You can update anytime.';
@@ -2148,15 +2189,24 @@ function shouldShowPreBootcampCta(t){
 function updateTechPreBootcampNav(t,readOnly){
   const nav=document.getElementById('tech-preboot-nav');
   const mobile=document.getElementById('tech-preboot-mobile');
+  const homeBtn=document.getElementById('home-preboot-btn');
+  const homeWrap=document.getElementById('home-preboot-action');
+  const homeDate=document.getElementById('home-preboot-date');
   if(nav)nav.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
+  if(homeWrap)homeWrap.style.display='none';
   if(readOnly||!shouldShowPreBootcampCta(t))return;
   const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
   const prog=checklistProgress(completed);
   const continuing=preBootcampHasAnyRating(completed)&&prog.ratedPct<100;
-  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Take Pre-Bootcamp assessment';
+  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
   const mobileLabel=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
-  if(nav){
+  if(homeBtn&&homeWrap){
+    homeWrap.style.display='';
+    homeBtn.textContent=label;
+    homeBtn.onclick=openPreBootcampAssessment;
+    if(homeDate)homeDate.textContent=lastPreBootcampDateLabel(t);
+  }else if(nav){
     nav.classList.add('visible');
     nav.textContent=label;
     nav.onclick=openPreBootcampAssessment;
@@ -2285,64 +2335,16 @@ function closeMobileNav(){
   document.body.classList.remove('mobile-nav-open');
   syncMobileMenuBtns(false);
 }
-let sbSkillSectionsOpen=true;
-function toggleSbSkillSections(){
-  sbSkillSectionsOpen=!sbSkillSectionsOpen;
-  const el=document.getElementById('tech-sb-sections');
-  const toggle=document.getElementById('sb-skill-toggle');
-  const chev=document.getElementById('sb-skill-chevron');
-  if(el)el.classList.toggle('collapsed',!sbSkillSectionsOpen);
-  if(toggle)toggle.setAttribute('aria-expanded',sbSkillSectionsOpen?'true':'false');
-  if(chev)chev.textContent=sbSkillSectionsOpen?'▼':'▶';
-}
-function techSidebarSectionPct(sec){
-  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
-  const total=sec.skills.length;
-  if(!total)return 0;
-  if(isProjectsSection(sec)){
-    if(inQ)return Math.round((projectSectionScoreLive(sec)/total)*100);
-    const raw=lastAssessmentRawScores();
-    return Math.round((projectDoneCount(raw,sec.skills.map(sk=>sk.id))/total)*100);
-  }
-  if(inQ){
-    const rated=sec.skills.filter(sk=>qAnswers[sk.id]!==undefined).length;
-    return Math.round((rated/total)*100);
-  }
-  const raw=lastAssessmentRawScores();
-  let sum=0,n=0;
-  const max=sectionScaleMax(sec);
-  sec.skills.forEach(sk=>{
-    const v=Number(raw[sk.id]);
-    if(v>=1&&v<=5){sum+=ratingPct(v,max);n++;}
-  });
-  return n?Math.round(sum/n):0;
-}
 function renderTechSidebarNav(){
-  const wrap=document.getElementById('tech-sb-sections');
-  if(!wrap||!QUESTIONNAIRE.length)return;
-  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
   const ataEl=document.getElementById('tech-view-ata');
   const inAta=ataEl&&ataEl.classList.contains('active');
-  const inPre=isTechPreBootcampViewActive();
-  const homeNav=document.getElementById('sb-nav-home');
-  if(homeNav)homeNav.classList.toggle('active',!inQ&&!inAta&&!inPre);
-  const sections=inQ?visibleQuestionnaireSections(currentTechData):QUESTIONNAIRE;
-  wrap.innerHTML=sections.map(sec=>{
-    const pct=techSidebarSectionPct(sec);
-    const pctLabel=inQ?pct+'% rated':(pct?pct+'%':'—');
-    const pctClass=!pct?'sb-pct-low':pct>=80?'sb-pct-good':pct>=50?'sb-pct-mid':'sb-pct-low';
-    return`<div class="sb-skill-link" onclick="jumpToTechSection('${sec.key}')"><span class="sb-skill-emoji">${sec.emoji}</span><span class="sb-skill-name">${adminEsc(sec.section)}</span><span class="sb-skill-pct ${pctClass}">${pctLabel}</span></div>`;
-  }).join('');
-  wrap.classList.toggle('collapsed',!sbSkillSectionsOpen);
-  const chev=document.getElementById('sb-skill-chevron');
-  if(chev)chev.textContent=sbSkillSectionsOpen?'▼':'▶';
+  const ataNav=document.getElementById('sb-nav-ata');
+  if(ataNav)ataNav.classList.toggle('active',!!inAta);
+  const viewNav=document.getElementById('sb-nav-view-assessment');
+  if(viewNav)viewNav.classList.remove('active');
 }
 function jumpToTechSection(key){
-  if(isTechPreBootcampViewActive())showTechHome();
-  const inQ=document.getElementById('tech-view-questionnaire').classList.contains('active');
-  closeMobileNav();
-  const target=document.getElementById(inQ?'q-sec-'+key:'home-sec-'+key);
-  if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+  openTechCategoryResults(key);
 }
 function renderTechNotesHtml(t,opts){
   const readOnly=!!opts.readOnly;
@@ -2381,6 +2383,63 @@ async function saveNotesToTech(){
     currentTechData.notes_to_tech=saved||'';
     alert('Notes saved.');
   }catch(e){alert('Could not save notes. Please try again.');console.error(e);}
+}
+function canEditTrainingFocus(){
+  // PM/Admin viewing a tech (readonly or edit). Actual technicians cannot edit.
+  return !!techViewMode;
+}
+function renderTrainingFocusHtml(t){
+  const focusText=(t.training_focus||'').trim();
+  const focusStart=adminDateInputValue(t.training_goal_start);
+  const focusEnd=adminDateInputValue(t.training_goal_end);
+  if(!canEditTrainingFocus()){
+    return`<div class="training-focus-card">
+      <div class="training-focus-label">Training Focus</div>
+      <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goal set yet.'}</div>
+      <div class="training-focus-dates">
+        <span><strong>Start:</strong> ${fmtDateFull(t.training_goal_start)||'—'}</span>
+        <span><strong>End:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
+      </div>
+    </div>`;
+  }
+  return`<div class="training-focus-card">
+    <div class="training-focus-label">Training Focus</div>
+    <textarea id="home-training-focus" class="admin-edit-field textarea" style="margin-top:4px;min-height:72px" placeholder="What should this technician focus on right now?" maxlength="2000">${adminEsc(t.training_focus||'')}</textarea>
+    <div class="training-focus-dates" style="align-items:flex-end">
+      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Start</span><input type="date" id="home-training-start" class="admin-edit-field" value="${focusStart}"></label>
+      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">End</span><input type="date" id="home-training-end" class="admin-edit-field" value="${focusEnd}"></label>
+      <button type="button" class="btn" style="padding:9px 14px;font-size:12px;background:#1B3A6B" onclick="saveTrainingFocus()">Save training focus</button>
+    </div>
+  </div>`;
+}
+async function saveTrainingFocus(){
+  if(!currentTechData||!canEditTrainingFocus())return;
+  const focusEl=document.getElementById('home-training-focus');
+  const startEl=document.getElementById('home-training-start');
+  const endEl=document.getElementById('home-training-end');
+  if(!focusEl)return;
+  try{
+    const res=await rpc('app_save_training_focus',{
+      p_tech_id:currentTechData.id,
+      p_focus:focusEl.value||'',
+      p_goal_start:startEl?startEl.value:'',
+      p_goal_end:endEl?endEl.value:'',
+      p_token:currentToken||null
+    });
+    currentTechData.training_focus=(res&&res.training_focus)||'';
+    currentTechData.training_goal_start=(res&&res.training_goal_start)||null;
+    currentTechData.training_goal_end=(res&&res.training_goal_end)||null;
+    if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]&&String(regionTechs[currentDetailIdx].id)===String(currentTechData.id)){
+      regionTechs[currentDetailIdx].training_focus=currentTechData.training_focus;
+      regionTechs[currentDetailIdx].training_goal_start=currentTechData.training_goal_start;
+      regionTechs[currentDetailIdx].training_goal_end=currentTechData.training_goal_end;
+    }
+    alert('Training focus saved.');
+  }catch(e){
+    const msg=e&&e.message||'';
+    alert('Could not save training focus. '+(msg.includes('app_save_training_focus')?'Run supabase/training-focus-pm-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    console.error(e);
+  }
 }
 
 let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,currentToken=null;
@@ -2745,7 +2804,7 @@ async function doLogout(){
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
-const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
+const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['National-TAB Survey','National-TAB Survey'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
 const ADMIN_POSITION_OPTIONS=[
   ['','Not set'],
@@ -3755,15 +3814,59 @@ function ataProgramStatus(tech,program,today){
 }
 
 function ataIsArchived(tech){return !!(tech&&(tech.ata_archived===true||tech.ata_archived_at));}
-// Tech view ATA tab: only people currently taking digital ATA (Teachable), not
-// veterans, former techs, or people who already finished every started module.
+function ataIsCompletedFlag(tech){return !!(tech&&(tech.ata_completed===true||tech.ata_completed_at));}
+// ATA tracking categories for roster + tech home:
+//   Active   — still working digital ATA (not complete, not exempt)
+//   Complete — manually marked, or Basic + Intermediate + Advanced all passed
+//   Exempt   — marked exempt (ata_archived_at) / not required
+function ataProgramPct(prog){
+  if(!prog||!prog.total)return 0;
+  return Math.round((100*prog.completed)/prog.total);
+}
+function ataAllProgramsComplete(tech){
+  if(!tech||!ataCurriculum||!ataCurriculum.length)return false;
+  const today=ataToday();
+  return ATA_PROGRAMS.every(p=>{
+    const ps=ataProgramStatus(tech,p,today);
+    return ps.total>0&&ps.completed>=ps.total;
+  });
+}
+function ataCategory(tech){
+  if(!tech)return'active';
+  if(ataIsArchived(tech))return'exempt';
+  if(ataIsCompletedFlag(tech)||ataAllProgramsComplete(tech))return'complete';
+  return'active';
+}
+function ataOnReports(tech){return ataCategory(tech)==='active';}
+function personAtaCategory(p){
+  if(!p||p.role!=='technician')return'active';
+  if(p.ata_archived||p.ata_archived_at)return'exempt';
+  if(p.ata_completed||p.ata_completed_at)return'complete';
+  if(p.tech_id&&ataAdminData&&ataAdminData.techs){
+    const t=(ataAdminData.techs||[]).find(x=>String(x.id)===String(p.tech_id));
+    if(t)return ataCategory(t);
+  }
+  return'active';
+}
+function ataCategoryMeta(cat){
+  switch(cat){
+    case 'complete':return{label:'Complete',color:'#1B3A6B',bg:'#EEF4FF'};
+    case 'exempt':return{label:'Exempt',color:'#6b7280',bg:'#F3F4F6'};
+    default:return{label:'Active',color:'#0F6E56',bg:'#E7F5EF'};
+  }
+}
+function ataCategoryChip(cat){
+  const m=ataCategoryMeta(cat);
+  return`<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:${m.color};background:${m.bg}">ATA ${m.label}</span>`;
+}
+// Tech view ATA tab: Active learners (and Complete, so they can review history).
 function ataIsActiveLearner(tech){
-  if(!tech||ataIsArchived(tech))return false;
-  const starts=tech.starts||{};
-  if(!ATA_PROGRAMS.some(p=>!!starts[p]))return false;
-  if(!ataCurriculum||!ataCurriculum.length)return true;
-  const s=ataTechSummary(tech);
-  return s.status==='on_track'||s.status==='behind';
+  if(!tech)return false;
+  const cat=ataCategory(tech);
+  return cat==='active'||cat==='complete';
+}
+function ataCanShowHomeCard(tech){
+  return !!tech&&ataCategory(tech)==='active';
 }
 function updateTechAtaAccess(tech){
   const show=ataIsActiveLearner(tech);
@@ -3772,13 +3875,10 @@ function updateTechAtaAccess(tech){
     nav.style.display=show?'':'none';
     if(!show)nav.classList.remove('active');
   }
-  const host=document.getElementById('tech-ata-home-card');
-  if(host&&!show)host.innerHTML='';
   const ataView=document.getElementById('tech-view-ata');
   if(!show&&ataView&&ataView.classList.contains('active')){
     setTechMainView('tech-view-home');
-    const homeNav=document.getElementById('sb-nav-home');
-    if(homeNav)homeNav.classList.add('active');
+    renderTechSidebarNav();
   }
 }
 
@@ -3838,14 +3938,17 @@ function ataTechSummary(tech){
   const resets=ataTechResetCounts(tech);
   const overdueList=[];
   active.forEach(p=>p.overdueList.forEach(o=>overdueList.push(Object.assign({program:p.program},o))));
+  const category=ataCategory(tech);
   let status;
-  if(ataIsArchived(tech))status='archived';
+  if(category==='exempt')status='archived';
+  else if(category==='complete')status='complete';
   else if(!active.length)status='not_started';
-  else if(active.every(p=>p.status==='complete'))status='complete';
-  else if(totalOverdue>0)status='behind';
+  else if(totalOverdue>0||totalFailed>0)status='behind';
   else status='on_track';
   const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
-  return {tech,progs,byProgram,active,totalOverdue,totalFailed,totalAtLimit,totalResetsMonth:resets.month,totalResets:resets.total,overdueList,status};
+  const pcts={};
+  ATA_PROGRAMS.forEach(p=>{pcts[p]=ataProgramPct(byProgram[p]);});
+  return {tech,progs,byProgram,active,totalOverdue,totalFailed,totalAtLimit,totalResetsMonth:resets.month,totalResets:resets.total,overdueList,status,category,pcts};
 }
 
 function ataStatusMeta(status){
@@ -3853,7 +3956,7 @@ function ataStatusMeta(status){
     case 'behind':return {label:'Behind',color:'#C0392B',bg:'#FDECEA'};
     case 'on_track':return {label:'On track',color:'#0F6E56',bg:'#E7F5EF'};
     case 'complete':return {label:'Complete',color:'#1B3A6B',bg:'#EEF4FF'};
-    case 'archived':return {label:'Former',color:'#6b7280',bg:'#F3F4F6'};
+    case 'archived':return {label:'Exempt',color:'#6b7280',bg:'#F3F4F6'};
     default:return {label:'Not started',color:'#8a8a8a',bg:'#F0F0F0'};
   }
 }
@@ -4183,9 +4286,12 @@ function ataFilteredAdminTechs(){
   const techs=(ataAdminData&&ataAdminData.techs)||[];
   const q=ataAdminSearch.trim().toLowerCase();
   return techs.map(t=>ataTechSummary(t)).filter(s=>{
-    const archived=ataIsArchived(s.tech);
-    if(ataAdminRosterFilter==='active'&&archived)return false;
-    if(ataAdminRosterFilter==='archived'&&!archived)return false;
+    const cat=s.category||ataCategory(s.tech);
+    if(ataAdminRosterFilter==='active'&&cat!=='active')return false;
+    if(ataAdminRosterFilter==='complete'&&cat!=='complete')return false;
+    if(ataAdminRosterFilter==='exempt'||ataAdminRosterFilter==='archived'){
+      if(cat!=='exempt')return false;
+    }
     if(ataAdminRegion&&s.tech.region!==ataAdminRegion)return false;
     if(ataAdminStatusFilter&&s.status!==ataAdminStatusFilter)return false;
     if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
@@ -4225,7 +4331,7 @@ function ataToggleSelectAll(on){
 async function ataArchiveSelected(archived){
   const ids=ataSelectedIds();
   if(!ids.length){alert('Select one or more technicians first.');return;}
-  const verb=archived?'move to Former / archived':'restore to Active ATA';
+  const verb=archived?'mark as Exempt':'restore to Active';
   if(!confirm(verb.charAt(0).toUpperCase()+verb.slice(1)+' for '+ids.length+' technician'+(ids.length===1?'':'s')+'? They stay in the company roster'+(archived?' and can be restored later.':'')+'.'))return;
   try{
     for(const id of ids){
@@ -4233,10 +4339,10 @@ async function ataArchiveSelected(archived){
     }
     ataSelected={};
     await ataLoadAdmin();
-    ataSetImportStatus((archived?'Archived ':'Restored ')+ids.length+' technician'+(ids.length===1?'':'s')+'.','ok');
+    ataSetImportStatus((archived?'Marked Exempt: ':'Restored to Active: ')+ids.length+' technician'+(ids.length===1?'':'s')+'.','ok');
   }catch(e){
     const msg=e.message||'';
-    alert('Could not update archive. Open Supabase → SQL Editor, paste supabase/ata-archive.sql, click Run, then try Archive again.\n\nhttps://supabase.com/dashboard/project/vwjizsgmfjwgnaojgkmt/sql/new');
+    alert('Could not update ATA category. Open Supabase → SQL Editor, paste supabase/ata-category.sql, click Run, then try again.\n\nhttps://supabase.com/dashboard/project/vwjizsgmfjwgnaojgkmt/sql/new');
   }
 }
 
@@ -4245,20 +4351,31 @@ function ataRenderAdmin(){
   if(!wrap)return;
   const rows=ataFilteredAdminTechs();
   const all=(ataAdminData&&ataAdminData.techs)||[];
-  const archivedN=all.filter(ataIsArchived).length;
+  const catCounts={active:0,complete:0,exempt:0};
+  all.forEach(t=>{const c=ataCategory(t);if(catCounts[c]!=null)catCounts[c]++;});
   const total=all.length;
   const hint=document.getElementById('ata-filter-hint');
   if(hint){
     let t=total?(rows.length+' shown'):'';
-    if(ataAdminRosterFilter==='active'&&archivedN)t+=(t?' · ':'')+archivedN+' former hidden';
+    t+=(t?' · ':'')+'Active '+catCounts.active+' · Complete '+catCounts.complete+' · Exempt '+catCounts.exempt;
     hint.textContent=t;
   }
   ataUpdateSelectedHint();
-  if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">'+(ataAdminRosterFilter==='archived'?'No former / archived technicians. Select people on Active ATA and click Archive selected.':'No technicians match the current filters.')+'</div>';return;}
+  if(!rows.length){
+    const emptyMsg=ataAdminRosterFilter==='exempt'||ataAdminRosterFilter==='archived'
+      ?'No exempt technicians. Select people on Active and click Mark Exempt.'
+      :(ataAdminRosterFilter==='complete'?'No technicians have completed all ATA modules yet.':'No technicians match the current filters.');
+    wrap.innerHTML='<div class="admin-empty" style="padding:12px">'+emptyMsg+'</div>';
+    return;
+  }
   const allChecked=rows.length&&rows.every(s=>ataSelected[s.tech.id]);
   const body=rows.map(s=>{
     const t=s.tech;
-    const warn=s.status==='behind'?`<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#C0392B" onclick="ataEmailWarning(${t.id})">✉ Warn</button>`:'';
+    const cat=s.category||ataCategory(t);
+    const warn=s.status==='behind'&&cat==='active'?`<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#C0392B" onclick="ataEmailWarning(${t.id})">✉ Warn</button>`:'';
+    const pctLine=cat==='active'
+      ?`<div style="margin-top:4px;font-size:10px;color:#555;font-weight:600">Basic ${s.pcts.basic}% · Int ${s.pcts.intermediate}% · Adv ${s.pcts.advanced}%</div>`
+      :'';
     return `<tr>
       <td><input type="checkbox" ${ataSelected[t.id]?'checked':''} onchange="ataToggleSelect(${t.id},this.checked)" aria-label="Select ${adminEsc(t.name)}"></td>
       <td style="font-weight:700;color:#1B3A6B">${adminEsc(t.name)}</td>
@@ -4266,12 +4383,12 @@ function ataRenderAdmin(){
       ${ataStartCell(s,'basic')}
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
-      <td>${ataStatusChip(s.status)}${s.totalFailed&&s.status!=='archived'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit&&s.status!=='archived'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
+      <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
       <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">Report</button></td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<table class="report-table">
-    <thead><tr><th><input type="checkbox" ${allChecked?'checked':''} onchange="ataToggleSelectAll(this.checked)" title="Select all shown" aria-label="Select all shown"></th><th>Technician</th><th>Region</th><th>Basic start</th><th>Intermediate start</th><th>Advanced start</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th><input type="checkbox" ${allChecked?'checked':''} onchange="ataToggleSelectAll(this.checked)" title="Select all shown" aria-label="Select all shown"></th><th>Technician</th><th>Region</th><th>Basic start</th><th>Intermediate start</th><th>Advanced start</th><th>ATA category</th><th>Actions</th></tr></thead>
     <tbody>${body}</tbody>
   </table>`;
 }
@@ -4487,14 +4604,19 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
 async function ataDownloadWeeklyReport(scope){
   let summaries,scopeLabel;
   if(scope==='pm'){
-    summaries=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>!ataIsArchived(s.tech));
+    summaries=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>ataOnReports(s.tech));
     scopeLabel='Region: '+regionLabel(currentRegion);
   }else{
-    summaries=ataFilteredAdminTechs();
+    // Weekly reports only include Active ATA — Complete and Exempt are excluded.
+    const prevRoster=ataAdminRosterFilter;
+    ataAdminRosterFilter='active';
+    summaries=ataFilteredAdminTechs().filter(s=>ataOnReports(s.tech));
+    ataAdminRosterFilter=prevRoster;
     scopeLabel=ataAdminRegion?('Region: '+regionLabel(ataAdminRegion)):'All regions';
+    scopeLabel+='  ·  Active ATA only';
     if(ataAdminStatusFilter)scopeLabel+='  ·  Status: '+ataStatusMeta(ataAdminStatusFilter).label;
   }
-  if(!summaries.length){alert('No technicians to include. Load data first or adjust filters.');return;}
+  if(!summaries.length){alert('No Active technicians to include. Complete and Exempt are left off the weekly report.');return;}
   try{
     await ensureJsPdf();
     const doc=buildAtaWeeklyReportDoc(summaries,scopeLabel);
@@ -4897,23 +5019,29 @@ function renderPmAta(){
   const wrap=document.getElementById('pm-ata-wrap');if(!wrap)return;
   const q=ataPmSearch.trim().toLowerCase();
   const rows=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>{
-    if(ataIsArchived(s.tech))return false;
+    if(!ataOnReports(s.tech))return false;
     if(ataPmStatusFilter&&s.status!==ataPmStatusFilter)return false;
     if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
     return true;
   }).sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
   if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match.</div>';return;}
   const cell=p=>p.start?`${p.completed}/${p.total}${p.overdue?` · <span style="color:#C0392B;font-weight:700">${p.overdue} late</span>`:''}`:'<span style="color:#999">—</span>';
-  const body=rows.map(s=>`<tr>
+  const body=rows.map(s=>{
+    const cat=s.category||ataCategory(s.tech);
+    const pctLine=cat==='active'
+      ?`<div style="margin-top:4px;font-size:10px;color:#555;font-weight:600">Basic ${s.pcts.basic}% · Int ${s.pcts.intermediate}% · Adv ${s.pcts.advanced}%</div>`
+      :'';
+    return`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
-    <td>${ataStatusChip(s.status)}${s.totalFailed?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}${s.totalResetsMonth?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${s.totalResetsMonth} reset${s.totalResetsMonth===1?'':'s'} this month</div>`:''}</td>
+    <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}${s.totalResetsMonth&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${s.totalResetsMonth} reset${s.totalResetsMonth===1?'':'s'} this month</div>`:''}</td>
     <td>${cell(s.byProgram.basic)}</td>
     <td>${cell(s.byProgram.intermediate)}</td>
     <td>${cell(s.byProgram.advanced)}</td>
     <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">Report</button></td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
   wrap.innerHTML=`<div style="overflow-x:auto"><table class="report-table">
-    <thead><tr><th>Technician</th><th>Status</th><th>Basic</th><th>Intermediate</th><th>Advanced</th><th></th></tr></thead>
+    <thead><tr><th>Technician</th><th>ATA category</th><th>Basic</th><th>Intermediate</th><th>Advanced</th><th></th></tr></thead>
     <tbody>${body}</tbody></table></div>`;
 }
 
@@ -4951,11 +5079,17 @@ async function ataResolveSelfRecord(){
   const tid=currentTechId||(currentTechData&&currentTechData.id);
   if(ataTechSelfData&&(!tid||String(ataTechSelfData.id)===String(tid)))return ataTechSelfData;
   let tech=null;
-  if(currentToken){
+  if(currentToken&&!techViewMode){
     try{tech=await rpc('app_ata_tech_data',{p_token:currentToken});}catch(_){}
   }
   if(!tech)tech=await ataFindTechRecord(tid);
-  if(!tech&&userIsAdmin&&tid){
+  if(!tech&&tid&&currentToken&&(techViewMode==='readonly'||currentRole==='pm')){
+    try{
+      ataPmData=await rpc('app_ata_pm_data',{p_token:currentToken})||ataPmData;
+      tech=await ataFindTechRecord(tid);
+    }catch(_){}
+  }
+  if(!tech&&tid&&(userIsAdmin||techViewBackPage==='pg-admin')){
     try{
       ataAdminData=await rpc('app_ata_admin_data',{})||ataAdminData;
       tech=await ataFindTechRecord(tid);
@@ -4996,23 +5130,53 @@ async function ataDownloadSelfPdf(){
     doc.save('ATA-Schedule-'+(tech.name||'Technician').replace(/[^\w]+/g,'-')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
   }catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
 }
+function ataHomeProgramCell(summary,program){
+  const tech=summary.tech;
+  const ps=summary.byProgram[program];
+  const start=ataStart(tech,program);
+  const pct=summary.pcts[program]||0;
+  const hasWork=ps.completed>0||(ps.failed||0)>0;
+  let locked=false,lockMsg='';
+  if(program==='intermediate'&&!ataProgramComplete(tech,'basic')&&!start&&!hasWork){locked=true;lockMsg='Unlocks when Basic is complete';}
+  if(program==='advanced'&&!ataProgramComplete(tech,'intermediate')&&!start&&!hasWork){locked=true;lockMsg='Unlocks when Intermediate is complete';}
+  const startLbl=start?fmtDate(start):'';
+  let prog='';
+  if(ps.start){
+    prog=`<div style="font-size:12px;color:#555;margin-top:4px;font-weight:600">${ps.completed}/${ps.total} done · ${pct}%`
+      +(ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:'')
+      +((ps.failed||0)?` · <span style="color:#C0392B;font-weight:700">${ps.failed} failed</span>`:'')
+      +`</div>`;
+  }else if(locked){
+    prog=`<div style="font-size:12px;color:#b58900;margin-top:4px;font-weight:600">🔒 ${lockMsg}</div>`;
+  }else{
+    prog=`<div style="font-size:12px;color:#999;margin-top:4px">Not started</div>`;
+  }
+  return`<div style="flex:1;min-width:140px">
+    <div style="font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.3px">${ATA_PROGRAM_LABEL[program]}</div>
+    <div style="font-size:13px;font-weight:700;color:#1B3A6B;margin-top:2px">${startLbl||(locked?'—':'Not started')}</div>
+    ${prog}
+  </div>`;
+}
 function renderTechAtaHomeCard(tech){
   const host=document.getElementById('tech-ata-home-card');
   if(!host)return;
-  if(!ataIsActiveLearner(tech)){
+  updateTechAtaAccess(tech);
+  if(!ataCanShowHomeCard(tech)){
     host.innerHTML='';
-    updateTechAtaAccess(tech);
     return;
   }
-  updateTechAtaAccess(tech);
   const s=ataTechSummary(tech);
-  const bits=s.progs.filter(p=>p.start||p.completed).map(p=>`${ATA_PROGRAM_LABEL[p.program]} ${p.completed}/${p.total}`).join(' · ')||'Not started yet';
-  host.innerHTML=`<div class="my-scores" style="margin-top:14px;cursor:pointer" onclick="showTechAta()">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div><div class="detail-name">📚 ATA Tracking</div><div class="detail-sub">${adminEsc(bits)} · scores show even before Thursday</div></div>
-      ${ataStatusChip(s.status)}
+  const clickable=ataIsActiveLearner(tech);
+  const failBadge=s.totalFailed
+    ?` <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
+    :'';
+  host.innerHTML=`<div class="my-scores" style="margin:0 0 14px;${clickable?'cursor:pointer':''}" ${clickable?'onclick="showTechAta()"':''} title="${clickable?'Open ATA schedule':''}">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div><div class="detail-name">ATA Progress</div><div class="detail-sub">Active digital ATA tracking</div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}</div>
     </div>
-    <div style="margin-top:10px;font-size:12px;color:#1B3A6B;font-weight:700">View full schedule →</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${ATA_PROGRAMS.map(p=>ataHomeProgramCell(s,p)).join('')}</div>
+    ${clickable?`<div style="margin-top:12px;font-size:12px;color:#1B3A6B;font-weight:700">View full schedule →</div>`:''}
   </div>`;
 }
 function renderTechAta(tech){
@@ -6111,6 +6275,23 @@ function trainingFocusEditorHtml(p){
     </div>
   </div>`;
 }
+function ataStatusEditorHtml(p){
+  if(p.role!=='technician'||!p.tech_id)return'';
+  const cat=personAtaCategory(p);
+  return`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">ATA Status</div>
+    <div class="edit-deck-grid">
+      <label class="admin-start-wrap"><span class="admin-start-lbl">ATA category</span>
+        <select id="edit-ata-status-${p.id}" class="admin-edit-field">
+          <option value="active"${cat==='active'?' selected':''}>Active</option>
+          <option value="complete"${cat==='complete'?' selected':''}>Complete</option>
+          <option value="exempt"${cat==='exempt'?' selected':''}>Exempt</option>
+        </select>
+      </label>
+      <div class="admin-start-wrap span-2" style="font-size:12px;color:#666;line-height:1.45;padding-top:22px">Active techs appear on weekly ATA reports and see % Basic / Intermediate / Advanced on My Progress. Complete and Exempt are hidden from those reports.</div>
+    </div>
+  </div>`;
+}
 function editDeckBodyHtml(p){
   const name=adminEsc(p.full_name||'');
   const email=adminEsc(p.email||'');
@@ -6141,7 +6322,7 @@ function editDeckBodyHtml(p){
       <label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>
     </div>
   </div>`:'';
-  return profile+cert+employment+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
+  return profile+cert+employment+ataStatusEditorHtml(p)+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
 }
 
 function adminPeopleNameLine(p,opts){
@@ -6156,6 +6337,15 @@ function adminPeopleNameLine(p,opts){
   if(!bits.length)return`<div class="nm">${name}</div>`;
   const meta=bits.map(b=>`<span class="nm-meta">${adminEsc(b)}</span>`).join('<span class="nm-sep">·</span>');
   return`<div class="nm-line"><span class="nm">${name}</span><span class="nm-sep">·</span>${meta}</div>`;
+}
+function techHomeNameLineHtml(t){
+  const line=adminPeopleNameLine({
+    full_name:t.name,
+    job_position:t.job_position||'',
+    region:t.region||'',
+    nebb_status:t.nebb_status||''
+  },{showRegion:true});
+  return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
 }
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
@@ -6254,8 +6444,27 @@ async function saveEdit(id,role){
   }
   try{
     await rpc('app_admin_update_person',args);
+    if(role==='technician'){
+      const person=(adminPeople||[]).find(x=>x.id===id);
+      const ataEl=document.getElementById('edit-ata-status-'+id);
+      if(person&&person.tech_id&&ataEl){
+        try{
+          await rpc('app_ata_set_category',{p_tech_id:person.tech_id,p_category:ataEl.value||'active'});
+        }catch(ataErr){
+          const msg=ataErr&&ataErr.message||'';
+          if(err){
+            err.textContent='Profile saved, but ATA status needs supabase/ata-category.sql run in Supabase. '+(msg||'');
+            err.style.display='block';
+          }
+          try{await loadAdminLists();}catch(_){}
+          try{await ataLoadAdmin();}catch(_){}
+          return;
+        }
+      }
+    }
     cancelEdit();
     await loadAdminLists();
+    try{await ataLoadAdmin();}catch(_){}
   }catch(e){
     if(err){err.textContent='Could not save: '+(e.message||'try again');err.style.display='block';}
   }
@@ -7193,27 +7402,18 @@ async function openTech(idx){
   currentDetailIdx=idx;
   const t=regionTechs[idx];
   if(!t)return;
-  await showPmTechProgress(t);
+  const tech=Object.assign({},t);
+  if(!tech.region)tech.region=currentRegion;
+  techViewBackPage='pg-pm';
+  await openTechReadOnly(tech);
 }
 
+// Legacy embed helpers kept for any residual callers; PM now uses full tech page.
 async function showPmTechProgress(t){
   const tech=Object.assign({},t);
   if(!tech.region)tech.region=currentRegion;
-  techViewMode='readonly';
   techViewBackPage='pg-pm';
-  ataTechSelfData=null;
-  document.getElementById('detail-av-initials').textContent=initials(tech.name);
-  document.getElementById('detail-tech-name').textContent=tech.name;
-  document.getElementById('detail-tech-sub').textContent=techStatusSummaryText(tech)+(tech.lead_tech?' · Lead: '+tech.lead_tech:'')+(currentRegion?' · '+(REGION_LABELS[currentRegion]||currentRegion):'');
-  const body=document.getElementById('detail-body');
-  if(body)body.innerHTML='<div class="loading">Loading profile...</div>';
-  setPMView('tech',null);
-  document.querySelectorAll('#pm-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
-  await ensureSkills();
-  tech.checklist_completed=await loadChecklistForTech(tech.id);
-  currentTechData=tech;
-  renderTechHome(tech,{readOnly:true,containerId:'detail-body',embedInPm:true});
-  window.scrollTo(0,0);
+  await openTechReadOnly(tech);
 }
 
 function closePmTechProgress(){
@@ -7339,11 +7539,9 @@ function exitTechView(){
     return;
   }
   showPage('pg-pm');
-  if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]){
-    showPmTechProgress(regionTechs[currentDetailIdx]);
-  }else{
-    closePmTechProgress();
-  }
+  currentDetailIdx=null;
+  currentTechData=null;
+  closePmTechProgress();
 }
 
 function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
@@ -7411,7 +7609,7 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
     const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
     const openCls=(startOpen||expandIfFiltered)?' open':'';
     const togChar=(startOpen||expandIfFiltered)?'▼':'▶';
-    return`<div class="mod-section">
+    return`<div class="mod-section" id="res-sec-${modId}">
       <div class="mod-head${openCls}" onclick="toggleMod('${modId}')">
         <span class="mod-emoji">${sec.emoji}</span>
         <span class="mod-name">${sec.section}</span>
@@ -7751,6 +7949,20 @@ function viewLatestAssessment(){
   openTechResultsView(assessments[assessments.length-1]);
 }
 
+function openTechCategoryResults(secKey){
+  closeMobileNav();
+  // Home category cards are view-only. Editing happens only in Take Assessment.
+  if(document.getElementById('tech-view-questionnaire')?.classList.contains('active')){
+    showTechHome();
+  }
+  const assessments=currentTechData&&currentTechData.assessments;
+  if(!assessments||!assessments.length){
+    alert('Take an assessment first to view category results. Use Take Assessment above.');
+    return;
+  }
+  openTechResultsView(assessments[assessments.length-1],{focusSection:secKey});
+}
+
 function openTechResultsView(assessment,opts){
   opts=opts||{};
   if(!assessment||!currentTechData)return;
@@ -7771,6 +7983,27 @@ function openTechResultsView(assessment,opts){
   if(overlay){
     overlay.classList.add('visible');
     document.body.style.overflow='hidden';
+  }
+  if(opts.focusSection){
+    const key=String(opts.focusSection);
+    const target=document.getElementById('res-sec-tech-res-'+key)||document.getElementById('mod-tech-res-'+key);
+    if(target){
+      const skills=document.getElementById('mod-tech-res-'+key);
+      const head=target.querySelector('.mod-head');
+      const tog=document.getElementById('tog-tech-res-'+key);
+      if(skills&&!skills.classList.contains('open')){
+        skills.classList.add('open');
+        if(head)head.classList.add('open');
+        if(tog)tog.textContent='▼';
+      }
+      setTimeout(()=>{
+        const scroller=document.getElementById('tech-results-body');
+        if(scroller){
+          const top=target.offsetTop-12;
+          scroller.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+        }else target.scrollIntoView({behavior:'smooth',block:'start'});
+      },40);
+    }
   }
 }
 
@@ -7932,7 +8165,7 @@ async function prefetchTechAtaHomeCard(){
   try{
     const tech=await ataResolveSelfRecord();
     updateTechAtaAccess(tech);
-    if(ataIsActiveLearner(tech))renderTechAtaHomeCard(tech);
+    if(tech)renderTechAtaHomeCard(tech);
   }catch(_){
     updateTechAtaAccess(null);
   }
@@ -7964,11 +8197,12 @@ function renderTechHome(t,opts){
     :`<div class="my-overall"><div><div class="my-overall-label">Overall proficiency</div></div><div class="my-overall-pct" style="color:${pctDisplayColor(overallPct)}">${overallPct}%</div></div>`;
   const myBlocks=catPcts.map(({cat:c,pct})=>{
     const reqCls=requiredKeys.has(c.skey)?' required-cat':'';
+    const clickAttrs=` class="my-cat-block clickable${reqCls}" id="home-sec-${c.skey}" role="button" tabindex="0" onclick="openTechCategoryResults('${c.skey}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTechCategoryResults('${c.skey}');}"`;
     if(pct===null||pct===undefined){
-      return`<div class="my-cat-block${reqCls}" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct empty">—</div></div>`;
+      return`<div${clickAttrs}><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct empty">—</div></div>`;
     }
     const col=pctDisplayColor(pct);
-    return`<div class="my-cat-block${reqCls}" id="home-sec-${c.skey}"><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct" style="color:${col}">${pct}%</div></div>`;
+    return`<div${clickAttrs}><div class="my-cat-emoji">${c.emoji}</div><div class="my-cat-name">${adminEsc(c.label)}</div><div class="my-cat-pct" style="color:${col}">${pct}%</div></div>`;
   }).join('')+nebbCtCertBlockHtml(t);
 
   const stalled=[];
@@ -8009,70 +8243,59 @@ function renderTechHome(t,opts){
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
-  const checklistHint=reqInfo.checklist&&reqInfo.checklist.includes('orientation')
-    ?' Also complete Orientation at the top of My Progress — it does not block this assessment.'
-    :(reqInfo.checklist&&reqInfo.checklist.includes('pre_bootcamp')
-      ?' Also complete Pre-Bootcamp at the top of My Progress — it does not block this assessment.'
-      :'');
-  const requiredHint=reqInfo.all
-    ?'Complete every scored section. Survey and National Accounts are always required.'+(techStartDate(t)?'': ' Assign an employee start date to use tenure-based required levels.')
-    :'Based on time with the company'+(levelLabel?` — ${levelLabel}`:'')+'. Survey and National Accounts are always included.'+checklistHint;
+  const showAssessActions=!readOnly&&!adminEdit;
   const tenureHtml=`<div class="tech-tenure-info">
-    <span><strong>Years employed:</strong> ${tenure||'—'}</span>
-    <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
-    ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
-  </div>`;
-  const requiredHtml=`<div class="tech-required-box">
-    <div class="tech-required-label">Required this period</div>
-    <div class="tech-required-msg">${adminEsc(reqInfo.message)}</div>
-    <div class="tech-required-hint">${requiredHint}</div>
-  </div>`;
-  const focusText=(t.training_focus||'').trim();
-  const focusStart=fmtDateFull(t.training_goal_start);
-  const focusEnd=fmtDateFull(t.training_goal_end);
-  const trainingFocusHtml=`<div class="training-focus-card">
-    <div class="training-focus-label">Training Focus</div>
-    <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goal set yet.'}</div>
-    <div class="training-focus-dates">
-      <span><strong>Start:</strong> ${focusStart||'—'}</span>
-      <span><strong>End:</strong> ${focusEnd||'—'}</span>
+    <div class="tech-tenure-meta">
+      <span><strong>Years employed:</strong> ${tenure||'—'}</span>
+      <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+      ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
     </div>
+    ${showAssessActions?`<div class="tech-tenure-actions">
+      <div class="tech-tenure-action" id="home-preboot-action" style="display:none">
+        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">📋 Pre-Bootcamp</button>
+        <div class="tech-tenure-action-date" id="home-preboot-date"></div>
+      </div>
+      <div class="tech-tenure-action" id="home-assess-action" style="display:none">
+        <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">📝 Take Assessment</button>
+        <div class="tech-tenure-action-date" id="home-assess-date"></div>
+      </div>
+    </div>`:''}
   </div>`;
+  const trainingFocusHtml=renderTrainingFocusHtml(t);
 
   const banner=embedInPm?'':(adminEdit
     ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">✏️ Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`
     :readOnly?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">👁 Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">👷 Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">← Back</button></span></div>`:'');
-  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys,tech:t}):"";
+  // Home checklist is Orientation only (read task list). Pre-Bootcamp + skill categories are edited only via assessment screens.
+  const checklistHtml=CHECKLIST_SECTIONS.length?renderChecklistHtml(t.checklist_completed||{},{readOnly,homeOnly:true,bootcampStartDate:t.bootcamp_start_date,openKeys:openModKeys,tech:t}):"";
   const emptyScoresMsg=embedInPm
     ?'No scores yet — this technician has not submitted an assessment.'
-    :'No scores yet — complete your first assessment using the button in the sidebar.';
+    :'No scores yet — take your first assessment using Take Assessment above.';
 
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div class="detail-av">${initials(t.name)}</div>
-        <div><div class="detail-name">${adminEsc(t.name)}</div><div class="detail-sub">${techStatusSummaryText(t)}${t.lead_tech?' · Lead: '+adminEsc(t.lead_tech):''}</div></div>
-      </div>
+      ${techHomeNameLineHtml(t)}
       ${tenureHtml}
       ${trainingFocusHtml}
-      ${requiredHtml}
+    </div>
+    ${notesHtml}
+    <div id="tech-ata-home-card"></div>
+    <div class="my-scores" style="margin-top:14px">
       <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       ${overallHtml}
       <div class="my-cat-grid">${myBlocks||`<div style="font-size:13px;color:#999;grid-column:1/-1">${emptyScoresMsg}</div>`}</div>
     </div>
-    ${embedInPm?'':`<div id="tech-ata-home-card"></div>`}
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
-    ${notesHtml}
     ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}`;
   if(!embedInPm){
     updateTechAssessNav(t,readOnly);
     renderTechSidebarNav();
     updateTechViewAdminChrome();
-    updateTechAtaAccess(ataTechSelfData);
-    if(ataIsActiveLearner(ataTechSelfData))renderTechAtaHomeCard(ataTechSelfData);
-    prefetchTechAtaHomeCard();
   }
+  updateTechAtaAccess(ataTechSelfData);
+  if(ataTechSelfData)renderTechAtaHomeCard(ataTechSelfData);
+  prefetchTechAtaHomeCard();
 }
 
 function showTechHome(){
@@ -8080,7 +8303,6 @@ function showTechHome(){
   closeTechResultsView({keepView:true});
   setTechMainView('tech-view-home');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
-  const home=document.getElementById('sb-nav-home');if(home)home.classList.add('active');
   if(currentTechData){
     updateTechAssessNav(currentTechData,techViewMode==='readonly');
     if(document.getElementById('tech-home-body')){
