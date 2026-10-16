@@ -1374,6 +1374,7 @@ body.mobile-nav-open{overflow:hidden}
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div id="tech-admin-switch" class="sb-admin-switch">
+        <button type="button" class="btn" style="background:#E87722" id="tech-admin-edit-btn" onclick="editTechCardFromView()">Edit Tech</button>
         <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change technician</button>
         <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
       </div>
@@ -6572,21 +6573,19 @@ function renderPeople(el,rows,opts){
 
 async function editTechCardFromView(){
   const techId=currentTechData&&currentTechData.id;
-  if(!techId||techViewBackPage!=='pg-admin')return;
+  if(!techId||!userIsAdmin)return;
   try{
     if(!(adminPeople||[]).some(x=>String(x.tech_id)===String(techId))){
       await loadAdminLists();
     }
     const p=(adminPeople||[]).find(x=>String(x.tech_id)===String(techId));
     if(!p){
-      const err=document.getElementById('admin-err');
-      if(err){err.textContent='Could not find this technician in User Management.';err.style.display='block';}
+      alert('Could not find this technician in User Management.');
       return;
     }
     editPerson(p.id);
   }catch(e){
-    const err=document.getElementById('admin-err');
-    if(err){err.textContent='Could not open Edit Tech: '+(e.message||'try again');err.style.display='block';}
+    alert('Could not open Edit Tech: '+(e.message||'try again'));
   }
 }
 function editPerson(id){
@@ -7725,26 +7724,38 @@ async function editTechFromAdmin(techId,region,name){
   }
 }
 
+function adminTechViewChromeHtml(){
+  // Buttons on the admin Viewing/Editing banner (Edit Tech is admin-only).
+  const editBtn=userIsAdmin
+    ?`<button type="button" class="btn" style="padding:6px 12px;background:#E87722;flex-shrink:0" onclick="editTechCardFromView()">Edit Tech</button>`
+    :'';
+  const changeBtn=techViewBackPage==='pg-admin'
+    ?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9;flex-shrink:0" onclick="switchAdminTechView()">Change technician</button>`
+    :'';
+  return`${editBtn}${changeBtn}<button type="button" class="btn" style="padding:6px 12px;flex-shrink:0" onclick="exitTechView()">Back</button>`;
+}
 function updateTechViewAdminChrome(){
   const on=!!techViewMode;
-  const fromAdmin=on&&techViewBackPage==='pg-admin';
+  const fromAdmin=on&&(techViewBackPage==='pg-admin'||!!userIsAdmin);
   const fromPm=on&&techViewBackPage==='pg-pm';
   const pgTech=document.getElementById('pg-tech');
   if(pgTech)pgTech.classList.toggle('tech-pm-embed',fromPm);
   const box=document.getElementById('tech-admin-switch');
   // Sidebar chrome is for Admin edit/view only; PM uses topbar Back to PM.
-  if(box)box.classList.toggle('visible',fromAdmin);
+  if(box)box.classList.toggle('visible',fromAdmin&&!fromPm);
+  const editBtn=document.getElementById('tech-admin-edit-btn');
+  if(editBtn)editBtn.style.display=(fromAdmin&&!fromPm&&userIsAdmin)?'':'none';
   const change=document.getElementById('tech-admin-change-btn');
-  if(change)change.style.display=fromAdmin?'':'none';
+  if(change)change.style.display=(fromAdmin&&techViewBackPage==='pg-admin')?'':'none';
   const ataBack=document.getElementById('ata-admin-back-btn');
   if(ataBack){
     ataBack.style.display=on?'':'none';
-    ataBack.textContent=fromPm?'Back to PM':(fromAdmin?'Back to admin':'Back');
+    ataBack.textContent=fromPm?'Back to PM':(techViewBackPage==='pg-admin'?'Back to admin':'Back');
   }
   const ataSwitch=document.getElementById('ata-admin-switch-btn');
-  if(ataSwitch)ataSwitch.style.display=fromAdmin?'':'none';
+  if(ataSwitch)ataSwitch.style.display=(fromAdmin&&techViewBackPage==='pg-admin')?'':'none';
   const backBtn=document.getElementById('tech-admin-back-btn');
-  if(backBtn)backBtn.textContent=fromAdmin?'Back to admin':'Back';
+  if(backBtn)backBtn.textContent=techViewBackPage==='pg-admin'?'Back to admin':'Back';
 }
 function switchAdminTechView(){
   const reopen=techViewBackPage==='pg-admin';
@@ -8498,10 +8509,12 @@ function renderTechHome(t,opts){
   const trainingFocusHtml=renderTrainingFocusHtml(t);
 
   const fromPm=techViewBackPage==='pg-pm';
-  const banner=embedInPm?'':(adminEdit
-    ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
-    :readOnly&&!fromPm?`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap">${techViewBackPage==='pg-admin'?`<button type="button" class="btn" style="padding:6px 12px;background:#E87722" onclick="editTechCardFromView()">Edit Tech</button><button type="button" class="btn" style="padding:6px 12px;background:#4A90D9" onclick="switchAdminTechView()">Change technician</button>`:''}<button type="button" class="btn" style="padding:6px 12px" onclick="exitTechView()">Back</button></span></div>`
-    :'');
+  const showAdminBanner=!embedInPm&&!fromPm&&(adminEdit||readOnly)&&(techViewBackPage==='pg-admin'||userIsAdmin);
+  const banner=showAdminBanner
+    ?(adminEdit
+      ?`<div style="background:#FFF8E6;border:1px solid #e6c200;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#7a5d00;font-weight:700">Editing ${adminEsc(t.name)} — changes save to their account</span><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${adminTechViewChromeHtml()}</span></div>`
+      :`<div style="background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:#1B3A6B;font-weight:700">Viewing ${adminEsc(t.name)} — read only</span><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${adminTechViewChromeHtml()}</span></div>`)
+    :'';
   // Home no longer shows checklist sections; Pre-Bootcamp is edited only via its assessment screen.
   const checklistHtml='';
   const emptyScoresMsg=embedInPm
