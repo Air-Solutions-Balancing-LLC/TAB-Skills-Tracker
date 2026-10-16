@@ -1410,6 +1410,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
+          <button type="button" class="btn btn-outline" style="padding:7px 12px;font-size:12px" onclick="showTechHome()">Close</button>
           <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
           <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">Change Technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
@@ -2227,9 +2228,22 @@ function hasNotStartedBootcamp(t){
   return isBeforeBootcamp(t);
 }
 function shouldShowPreBootcampCta(t){
+  // Show whenever Pre-Bootcamp is a required category (not only before bootcamp start).
   if(!ratedChecklistSectionExists())return false;
-  if(!isPreBootcampRequired(t))return false;
-  return hasNotStartedBootcamp(t);
+  return isPreBootcampRequired(t);
+}
+function bootcampDateLabel(t){
+  const d=t&&t.bootcamp_start_date;
+  if(!d)return'Bootcamp date: Not set';
+  return'Bootcamp: '+fmtDateFull(d);
+}
+async function beginPreBootcampFromHome(){
+  if(techViewMode==='readonly'&&techViewBackPage==='pg-admin'&&currentTechData){
+    const t=currentTechData;
+    await editTechFromAdmin(t.id,t.region,t.name);
+    if(techViewMode!=='edit')return;
+  }
+  openPreBootcampAssessment();
 }
 function updateTechPreBootcampNav(t,readOnly){
   const nav=document.getElementById('tech-preboot-nav');
@@ -2240,26 +2254,32 @@ function updateTechPreBootcampNav(t,readOnly){
   if(nav)nav.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
   if(homeWrap)homeWrap.style.display='none';
-  if(readOnly||!shouldShowPreBootcampCta(t))return;
+  if(!shouldShowPreBootcampCta(t))return;
+  const canEdit=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
   const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
   const prog=checklistProgress(completed);
   const continuing=preBootcampHasAnyRating(completed)&&prog.ratedPct<100;
-  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
+  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Take Pre-Bootcamp Assessment';
   const mobileLabel=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
+  const dateBits=[bootcampDateLabel(t)];
+  const lastPb=lastPreBootcampDateLabel(t);
+  if(lastPb&&lastPb!=='Not taken yet')dateBits.push(lastPb);
   if(homeBtn&&homeWrap){
-    homeWrap.style.display='';
+    homeWrap.style.display='flex';
     homeBtn.textContent=label;
-    homeBtn.onclick=openPreBootcampAssessment;
-    if(homeDate)homeDate.textContent=lastPreBootcampDateLabel(t);
-  }else if(nav){
+    homeBtn.disabled=!canEdit;
+    homeBtn.style.opacity=canEdit?'':'0.55';
+    homeBtn.onclick=canEdit?beginPreBootcampFromHome:null;
+    if(homeDate)homeDate.textContent=dateBits.join(' · ');
+  }else if(nav&&canEdit){
     nav.classList.add('visible');
     nav.textContent=label;
-    nav.onclick=openPreBootcampAssessment;
+    nav.onclick=beginPreBootcampFromHome;
   }
-  if(mobile){
+  if(mobile&&canEdit){
     mobile.classList.add('visible');
     mobile.textContent=mobileLabel;
-    mobile.onclick=openPreBootcampAssessment;
+    mobile.onclick=beginPreBootcampFromHome;
   }
 }
 function setTechMainView(viewId){
@@ -8501,17 +8521,19 @@ function renderTechHome(t,opts){
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
-  // Take Assessment + last date always sit on the tenure row (sidebar removed).
+  // Take Assessment + Pre-Bootcamp (when required) sit on the tenure row.
+  const showPreBoot=shouldShowPreBootcampCta(t);
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta">
       <span><strong>Years employed:</strong> ${tenure||'—'}</span>
       <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+      ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
       ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
     </div>
     <div class="tech-tenure-actions">
-      <div class="tech-tenure-action" id="home-preboot-action" style="display:none">
-        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">📋 Pre-Bootcamp</button>
-        <div class="tech-tenure-action-date" id="home-preboot-date"></div>
+      <div class="tech-tenure-action" id="home-preboot-action" style="${showPreBoot?'':'display:none'}">
+        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">📋 Take Pre-Bootcamp Assessment</button>
+        <div class="tech-tenure-action-date" id="home-preboot-date">${showPreBoot?adminEsc(bootcampDateLabel(t)):''}</div>
       </div>
       <div class="tech-tenure-action" id="home-assess-action">
         <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">📝 Take Assessment</button>
