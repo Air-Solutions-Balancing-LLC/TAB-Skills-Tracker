@@ -3976,6 +3976,7 @@ function ataStatusDisplayHtml(entity){
 function trainingFocusInlineHtml(t,opts){
   opts=opts||{};
   const focus=(t&&t.training_focus||'').trim();
+  const showDates=opts.showDates!==false;
   const start=t&&t.training_goal_start?fmtDate(t.training_goal_start):'';
   const end=t&&t.training_goal_end?fmtDate(t.training_goal_end):'';
   const maxLen=opts.maxLen!=null?opts.maxLen:80;
@@ -3983,16 +3984,18 @@ function trainingFocusInlineHtml(t,opts){
   const bits=[];
   if(focusLbl)bits.push(`<span class="sp-focus" title="${adminEsc(focus)}">Focus: ${adminEsc(focusLbl)}</span>`);
   else bits.push(`<span class="sp-ata-muted">No current focus</span>`);
-  if(start||end){
-    bits.push(`<span class="sp-focus-dates">${start?('Start '+adminEsc(start)):'Start —'}${end?(' · End '+adminEsc(end)):' · End —'}</span>`);
-  }else{
-    bits.push(`<span class="sp-focus-dates">Start — · End —</span>`);
+  if(showDates){
+    if(start||end){
+      bits.push(`<span class="sp-focus-dates">${start?('Start '+adminEsc(start)):'Start —'}${end?(' · End '+adminEsc(end)):' · End —'}</span>`);
+    }else{
+      bits.push(`<span class="sp-focus-dates">Start — · End —</span>`);
+    }
   }
   return bits.join('');
 }
-/** ATA status + current focus / dates on one line (PM list + Tech home). */
-function techStatusFocusRowHtml(t){
-  return ataStatusDisplayHtml(t)+trainingFocusInlineHtml(t);
+/** ATA status + current focus on one line (PM list + Tech home). */
+function techStatusFocusRowHtml(t,opts){
+  return ataStatusDisplayHtml(t)+trainingFocusInlineHtml(t,opts);
 }
 function refreshAtaStatusDisplays(){
   if(regionTechs&&regionTechs.length&&document.getElementById('tech-grid')){
@@ -7483,7 +7486,7 @@ function renderTechGrid(techs){
         <div class="trow-top">
           <div class="trow-meta">${pmTechNameLineHtml(t)}</div>
         </div>
-        <div class="score-row">${techStatusFocusRowHtml(t)}</div>
+        <div class="score-row">${techStatusFocusRowHtml(t,{showDates:false})}</div>
       </div>
       <div class="trow-right">
         ${last?`<span class="date-chip last">Last Updated: ${fmtDate(last.date)}</span>`:''}
