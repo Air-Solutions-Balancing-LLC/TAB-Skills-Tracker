@@ -2416,10 +2416,16 @@ async function initAuth(){
         sbAccessToken=null;
         currentToken=null;
         currentRole=null;
+        clearSessionPref();
         showPage('pg-login');
         return;
       }
       if(session&&(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')){
+        // Token refresh on app resume must not bounce an in-session user to the role picker.
+        if(event==='TOKEN_REFRESHED'||event==='USER_UPDATED'){
+          sbAccessToken=session.access_token||null;
+          if(isAlreadyInApp())return;
+        }
         // Defer out of the auth lock so we don't deadlock supabase-js internals.
         setTimeout(()=>{handleSession(session);},0);
       }
@@ -2461,6 +2467,81 @@ async function doAzureLogin(){
   }
 }
 
+const SESSION_PREF_KEY='tabSkillsSessionPref';
+function saveSessionPref(){
+  try{
+    if(!currentRole||currentRole==='login')return;
+    localStorage.setItem(SESSION_PREF_KEY,JSON.stringify({
+      role:currentRole,
+      region:currentRegion||null,
+      at:Date.now()
+    }));
+  }catch(e){}
+}
+function loadSessionPref(){
+  try{
+    const raw=localStorage.getItem(SESSION_PREF_KEY);
+    if(!raw)return null;
+    const pref=JSON.parse(raw);
+    if(!pref||!pref.role)return null;
+    return pref;
+  }catch(e){return null;}
+}
+function clearSessionPref(){
+  try{localStorage.removeItem(SESSION_PREF_KEY);}catch(e){}
+}
+function isAlreadyInApp(){
+  if(currentRole==='admin'||currentRole==='pm'||currentRole==='tech')return true;
+  if(currentToken)return true;
+  const active=document.querySelector('.page.active');
+  return !!(active&&(active.id==='pg-admin'||active.id==='pg-pm'||active.id==='pg-tech'));
+}
+async function tryRestoreSession(pref,registryRole){
+  if(!pref||!pref.role)return false;
+  const isAdmin=registryRole==='admin';
+  const isPm=registryRole==='pm';
+  if(pref.role==='admin'){
+    if(!isAdmin)return false;
+    openAdmin();
+    return true;
+  }
+  if(pref.role==='pm'){
+    if(!(isAdmin||isPm)||!pref.region)return false;
+    const sel=document.getElementById('region-sel');
+    if(sel)sel.value=pref.region;
+    // Reuse PM login without flashing the region picker.
+    try{
+      const token=await rpc('app_pm_azure_login',{p_region:pref.region});
+      if(!token)return false;
+      currentRole='pm';currentRegion=pref.region;currentToken=token;
+      setPmRegionLabels(pref.region);
+      await loadPMDashboard();
+      showPage('pg-pm');
+      saveSessionPref();
+      return true;
+    }catch(e){
+      console.warn('restore pm session',e);
+      return false;
+    }
+  }
+  if(pref.role==='tech'){
+    if(isAdmin||isPm)return false;
+    try{
+      const token=await rpc('app_tech_azure_login',{});
+      if(!token)return false;
+      currentRole='tech';currentToken=token;techViewMode=null;techViewBackPage=null;
+      showPage('pg-tech');
+      await loadTechHome();
+      saveSessionPref();
+      return true;
+    }catch(e){
+      console.warn('restore tech session',e);
+      return false;
+    }
+  }
+  return false;
+}
+
 // Microsoft sign-in succeeded — the email comes from the signed token, not the browser.
 async function handleSession(session){
   const err=document.getElementById('login-err');
@@ -2473,8 +2554,9 @@ async function handleSession(session){
     try{await sbClient.auth.signOut();}catch(e){console.warn(e);}
     return;
   }
-  // Already past the login screen? Don't bounce the user back to the role picker.
-  if(currentToken)return;
+  // Already in Admin / PM / Tech? Token refresh or app resume must not bounce to the role picker.
+  // (Admin never sets currentToken — it uses the Microsoft JWT — so checking role/page matters.)
+  if(isAlreadyInApp())return;
   err.style.display='none';
   azureEmailAddr=email;
   document.getElementById('role-email').textContent=email;
@@ -2494,14 +2576,16 @@ async function handleSession(session){
       showPage('pg-no-access');
       return;
     }
-    showPage('pg-role');
     applyRoleButtons(access.registry_role);
+    if(await tryRestoreSession(loadSessionPref(),access.registry_role))return;
+    showPage('pg-role');
   }catch(e){
     console.warn('access check',e);
     try{
       const role=await rpc('app_my_role',{});
-      showPage('pg-role');
       applyRoleButtons(role);
+      if(await tryRestoreSession(loadSessionPref(),role))return;
+      showPage('pg-role');
     }catch(e2){
       console.warn('role check',e2);
       document.getElementById('no-access-email').textContent=email;
@@ -2557,6 +2641,7 @@ async function chooseRole(role){
       return;
     }
     currentRole='tech';currentToken=token;techViewMode=null;techViewBackPage=null;
+    saveSessionPref();
     showPage('pg-tech');
     await loadTechHome();
   }catch(e){
@@ -2577,6 +2662,7 @@ async function submitRegion(){
     if(!token){err.textContent='No access for this region. Contact your admin.';err.style.display='block';return;}
     currentRole='pm';currentRegion=region;currentToken=token;
     setPmRegionLabels(region);
+    saveSessionPref();
     await loadPMDashboard();
     showPage('pg-pm');
   }catch(e){
@@ -2603,6 +2689,7 @@ async function switchRegion(region){
     if(!token){alert('No access for this region. Contact your admin.');if(sw)sw.value=currentRegion;return;}
     currentRole='pm';currentRegion=region;currentToken=token;
     setPmRegionLabels(region);
+    saveSessionPref();
     await loadPMDashboard();
     setPMView('dashboard',document.getElementById('nav-dashboard'));
   }catch(e){
@@ -2621,6 +2708,7 @@ function azureSetupError(e){
 
 async function doLogout(){
   currentRole=null;currentRegion=null;currentTechId=null;currentToken=null;azureEmailAddr=null;techViewMode=null;
+  clearSessionPref();
   document.getElementById('login-err').style.display='none';
   try{if(sbClient)await sbClient.auth.signOut();}catch(e){console.warn('sign out',e);}
   showPage('pg-login');
@@ -5515,6 +5603,7 @@ async function previewAdminNebbReportPdf(){
 
 function openAdmin(){
   currentRole='admin';
+  saveSessionPref();
   cancelEdit();
   const searchEl=document.getElementById('admin-tech-search');
   if(searchEl)searchEl.value='';
