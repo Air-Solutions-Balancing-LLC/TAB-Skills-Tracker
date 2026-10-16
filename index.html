@@ -810,8 +810,8 @@ body.mobile-nav-open{overflow:hidden}
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
         <div class="login-logo">User Management</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">📊 PM Login</button>
-          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">👷 Pick Technician</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">PM Login</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">Pick Technician</button>
           <button type="button" class="btn" style="padding:8px 14px" onclick="doLogout()">Sign out</button>
         </div>
       </div>
@@ -2632,6 +2632,13 @@ function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&a
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
+const ADMIN_POSITION_OPTIONS=[
+  ['','Not set'],
+  ['TAB Survey Tech','TAB Survey Tech'],
+  ['TAB National Tech','TAB National Tech'],
+  ['TAB Regional Tech','TAB Regional Tech'],
+  ['KES Install Tech','KES Install Tech']
+];
 const adminSecOpen={reports:false,ata:false,admins:false,pms:false,techs:false,deleted:false};
 const reportTableOpen={activity:false,preboot:false,nebb:false};
 
@@ -5629,6 +5636,11 @@ function nebbOptionsHtml(sel){
   }
   return ADMIN_NEBB_OPTIONS.map(([v,l])=>`<option value="${adminEsc(v)}"${v===normalized?' selected':''}>${adminEsc(l)}</option>`).join('');
 }
+function positionOptionsHtml(sel){
+  const values=ADMIN_POSITION_OPTIONS.map(([v])=>v);
+  const normalized=values.includes(sel||'')?(sel||''):'';
+  return ADMIN_POSITION_OPTIONS.map(([v,l])=>`<option value="${adminEsc(v)}"${v===normalized?' selected':''}>${adminEsc(l)}</option>`).join('');
+}
 
 function adminDateInputValue(d){if(!d)return '';const s=String(d);return s.length>=10?s.slice(0,10):'';}
 
@@ -5670,7 +5682,7 @@ function editDeckBodyHtml(p){
       <label class="admin-start-wrap"><span class="admin-start-lbl">Full name</span><input id="edit-name-${p.id}" class="admin-edit-field" value="${name}" placeholder="Full name"></label>
       <label class="admin-start-wrap"><span class="admin-start-lbl">Email</span><input id="edit-email-${p.id}" type="email" class="admin-edit-field" value="${email}" placeholder="name@airadigmsolutions.com"></label>
       ${isTech
-        ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label>`
+        ?`<label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsHtml(p.region)}</select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Position</span><select id="edit-position-${p.id}" class="admin-edit-field">${positionOptionsHtml(p.job_position||'')}</select></label>`
         :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`}
     </div>
   </div>`;
@@ -5773,7 +5785,7 @@ async function saveEdit(id,role){
   if(err){err.style.display='none';err.textContent='';}
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null,p_job_position:null};
   const nebb=document.getElementById('edit-nebb-'+id);
   const certExp=document.getElementById('edit-cert-exp-'+id);
   const cecs=document.getElementById('edit-cecs-'+id);
@@ -5785,6 +5797,8 @@ async function saveEdit(id,role){
   if(role==='technician'){
     const r=document.getElementById('edit-region-'+id);
     args.p_region=r?r.value:null;
+    const pos=document.getElementById('edit-position-'+id);
+    args.p_job_position=pos?pos.value:'';
     const sd=document.getElementById('edit-start-'+id);
     args.p_start_date=sd?sd.value:null;
     const bsd=document.getElementById('edit-bootcamp-start-'+id);
