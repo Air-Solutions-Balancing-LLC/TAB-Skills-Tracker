@@ -87,8 +87,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-row .nm-line,.tech-home-name-line,.trow-name-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0;margin:0 0 14px}
 .admin-row .nm-meta,.tech-home-name-line .nm-meta,.trow-name-line .nm-meta{font-size:12px;font-weight:500;color:#555;white-space:nowrap}
 .admin-row .nm-sep,.tech-home-name-line .nm-sep,.trow-name-line .nm-sep{color:#b0b6c0;font-weight:400}
-.tech-home-name-line .nm{font-size:17px;font-weight:800;letter-spacing:-.3px;color:#1B3A6B}
+.tech-home-name-line .nm{font-size:17px;font-weight:800;letter-spacing:-.3px;color:#E87722}
 .tech-home-name-line .nm-meta{font-size:13px;color:#555}
+.tech-home-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px;flex-wrap:wrap}
+.tech-home-header-row .tech-home-name-line{margin:0;flex:1;min-width:0}
+.tech-home-back-btn{padding:7px 14px;font-size:12px;white-space:nowrap;flex-shrink:0}
 .trow-name-line{margin:0}
 .trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-name-line .nm-meta{font-size:12px;color:#555}
@@ -310,14 +313,13 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 #pg-tech .topbar{border-radius:12px;margin-bottom:4px}
 #pg-tech .page-body{padding:16px 8px 8px}
 #pg-tech .q-wrap{padding:16px 8px 20px}
-/* PM viewing a technician: no sidebar — full-width content + Back on My Progress topbar */
+/* PM viewing a technician: no sidebar — full-width content; Back sits by the tech name */
 #pg-tech.tech-pm-embed #tech-sidebar,
 #pg-tech.tech-pm-embed .sidebar-overlay{display:none!important}
 #pg-tech.tech-pm-embed .main-content{margin-left:0;width:100%}
 #pg-tech.tech-pm-embed .mobile-menu-btn{display:none!important}
 #pg-tech.tech-pm-embed .mobile-assess-actions{display:none!important}
-#tech-topbar-back-btn{display:none;padding:7px 14px;font-size:12px;white-space:nowrap;flex-shrink:0}
-#pg-tech.tech-pm-embed #tech-topbar-back-btn{display:inline-flex}
+#pg-tech.tech-pm-embed #tech-view-home > .topbar{display:none!important}
 .view{display:none}.view.active{display:block}
 
 /* TOPBAR */
@@ -325,6 +327,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .topbar-title{font-size:18px;font-weight:800;color:#1B3A6B;letter-spacing:-.3px}
 .topbar-sub{font-size:12px;color:#999;margin-top:2px}
 .topbar-badge{font-size:11px;padding:5px 14px;border-radius:20px;background:#1B3A6B;color:#fff;font-weight:700;letter-spacing:.3px}
+.pm-region-switch{flex-shrink:0;min-width:150px;max-width:220px;padding:8px 12px;border-radius:10px;border:1.5px solid #1B3A6B;font-size:13px;font-weight:700;color:#1B3A6B;background:#fff;cursor:pointer;outline:none}
+.pm-region-switch:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.12)}
 
 /* METRICS */
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:20px 24px 0}
@@ -1173,9 +1177,28 @@ body.mobile-nav-open{overflow:hidden}
           <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
-        <div class="pm-search-wrap">
-          <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-          <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+        <div class="report-filters" style="margin-bottom:10px">
+          <div class="pm-search-wrap">
+            <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+            <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+          </div>
+          <div class="report-filter-field">
+            <label for="admin-tech-region">Region</label>
+            <select id="admin-tech-region" onchange="onAdminTechSearch()">
+              <option value="">All regions</option>
+              <option value="IM">Intermountain</option>
+              <option value="KES">KES</option>
+              <option value="MA">Mid-Atlantic</option>
+              <option value="MW">Midwest</option>
+              <option value="National">National</option>
+              <option value="National-TAB Survey">National-TAB Survey</option>
+              <option value="NE">New England</option>
+              <option value="PC">Pacific Coast</option>
+              <option value="RM">Rocky Mountain</option>
+              <option value="SE">Southeast</option>
+              <option value="SW">Southwest</option>
+            </select>
+          </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
           <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
@@ -1246,21 +1269,6 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-logo-fallback">Airadigm <span>Skills</span></div>
       </div>
       <div class="sb-region-info">🗺️ <strong id="sb-region-label">Region</strong></div>
-      <div style="padding:8px 12px;background:#16305c">
-        <select id="pm-region-switch" onchange="switchRegion(this.value)" style="width:100%;padding:7px 9px;border-radius:8px;border:none;font-size:12px;font-weight:700;color:#1B3A6B;background:#fff;cursor:pointer" title="Switch region">
-          <option value="IM">Intermountain</option>
-          <option value="KES">KES</option>
-          <option value="MA">Mid-Atlantic</option>
-          <option value="MW">Midwest</option>
-          <option value="National">National</option>
-          <option value="National-TAB Survey">National-TAB Survey</option>
-          <option value="NE">New England</option>
-          <option value="PC">Pacific Coast</option>
-          <option value="RM">Rocky Mountain</option>
-          <option value="SE">Southeast</option>
-          <option value="SW">Southwest</option>
-        </select>
-      </div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
         <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">📊 Dashboard</div>
@@ -1277,7 +1285,19 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title" id="pm-dash-title">Team Dashboard</div><div class="topbar-sub">Project Manager</div></div>
-          <div class="topbar-badge" id="pm-region-badge">Region</div>
+          <select id="pm-region-switch" class="pm-region-switch" onchange="switchRegion(this.value)" title="Switch region" aria-label="Switch region">
+            <option value="IM">Intermountain</option>
+            <option value="KES">KES</option>
+            <option value="MA">Mid-Atlantic</option>
+            <option value="MW">Midwest</option>
+            <option value="National">National</option>
+            <option value="National-TAB Survey">National-TAB Survey</option>
+            <option value="NE">New England</option>
+            <option value="PC">Pacific Coast</option>
+            <option value="RM">Rocky Mountain</option>
+            <option value="SE">Southeast</option>
+            <option value="SW">Southwest</option>
+          </select>
         </div>
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
         <div id="pm-alert-box"></div>
@@ -1376,7 +1396,6 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">My Progress</div><div class="topbar-sub" id="tech-region-label">TAB Skills Self-Assessment</div></div>
-          <button type="button" class="btn btn-outline" id="tech-topbar-back-btn" onclick="exitTechView()">Back to PM</button>
           <div class="mobile-assess-actions">
             <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">📋 Pre-Bootcamp</button>
             <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
@@ -2371,42 +2390,57 @@ function jumpToTechSection(key){
   openTechCategoryResults(key);
 }
 function renderTechNotesHtml(t,opts){
-  const readOnly=!!opts.readOnly;
-  const adminEdit=!!opts.adminEdit;
   const notesToTech=t.notes_to_tech||'';
   const techComments=t.tech_comments||'';
-  const notesEditable=adminEdit;
-  const commentsEditable=!readOnly;
-  const notesBody=notesEditable
-    ?`<textarea class="tech-notes-input" id="notes-to-tech-input" placeholder="Notes from your lead or admin…">${adminEsc(notesToTech)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveNotesToTech()">Save notes</button>`
-    :`<div class="tech-notes-body">${notesToTech?adminEsc(notesToTech):'<span class="no-comment">No notes yet.</span>'}</div>`;
-  const commentsBody=commentsEditable
-    ?`<textarea class="tech-notes-input" id="tech-comments-input" placeholder="Your comments or questions…">${adminEsc(techComments)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveTechComments()">Save comments</button>`
-    :`<div class="tech-notes-body">${techComments?adminEsc(techComments):'<span class="no-comment">No comments yet.</span>'}</div>`;
+  // Editable for tech, PM, and admin wherever this block is shown.
+  const notesBody=`<textarea class="tech-notes-input" id="notes-to-tech-input" placeholder="Notes from your lead or admin…">${adminEsc(notesToTech)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveNotesToTech()">Save notes</button>`;
+  const commentsBody=`<textarea class="tech-notes-input" id="tech-comments-input" placeholder="Your comments or questions…">${adminEsc(techComments)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveTechComments()">Save comments</button>`;
   return`<div class="tech-notes-grid">
     <div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div>${notesBody}</div>
     <div class="tech-notes-box comments"><div class="tech-notes-title">💬 Tech Comments</div>${commentsBody}</div>
   </div>`;
 }
 async function saveTechComments(){
-  if(!currentTechData||!currentToken)return;
+  if(!currentTechData)return;
   const el=document.getElementById('tech-comments-input');
   if(!el)return;
   try{
-    const saved=await rpc('app_save_tech_comments',{p_token:currentToken,p_comments:el.value});
+    const saved=await rpc('app_save_tech_comments_for',{
+      p_tech_id:currentTechData.id,
+      p_comments:el.value,
+      p_token:currentToken||null
+    });
     currentTechData.tech_comments=saved||'';
+    if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]&&String(regionTechs[currentDetailIdx].id)===String(currentTechData.id)){
+      regionTechs[currentDetailIdx].tech_comments=currentTechData.tech_comments;
+    }
     alert('Comments saved.');
-  }catch(e){alert('Could not save comments. Please try again.');console.error(e);}
+  }catch(e){
+    const msg=e&&e.message||'';
+    alert('Could not save comments. '+(msg.includes('app_save_tech_comments')?'Run supabase/tech-notes-all-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    console.error(e);
+  }
 }
 async function saveNotesToTech(){
   if(!currentTechData)return;
   const el=document.getElementById('notes-to-tech-input');
   if(!el)return;
   try{
-    const saved=await rpc('app_save_notes_to_tech',{p_tech_id:currentTechData.id,p_notes:el.value});
+    const saved=await rpc('app_save_notes_to_tech',{
+      p_tech_id:currentTechData.id,
+      p_notes:el.value,
+      p_token:currentToken||null
+    });
     currentTechData.notes_to_tech=saved||'';
+    if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]&&String(regionTechs[currentDetailIdx].id)===String(currentTechData.id)){
+      regionTechs[currentDetailIdx].notes_to_tech=currentTechData.notes_to_tech;
+    }
     alert('Notes saved.');
-  }catch(e){alert('Could not save notes. Please try again.');console.error(e);}
+  }catch(e){
+    const msg=e&&e.message||'';
+    alert('Could not save notes. '+(msg.includes('app_save_notes_to_tech')||msg.includes('Not authorized')?'Run supabase/tech-notes-all-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    console.error(e);
+  }
 }
 function canEditTrainingFocus(){
   // PM/Admin viewing a tech (readonly or edit). Actual technicians cannot edit.
@@ -2784,11 +2818,14 @@ async function submitRegion(){
 }
 
 function setPmRegionLabels(region){
-  document.getElementById('sb-region-label').textContent=REGION_LABELS[region]||region;
-  document.getElementById('pm-region-badge').textContent=region;
-  document.getElementById('pm-dash-title').textContent=(REGION_LABELS[region]||region)+' — Dashboard';
-  document.getElementById('compare-sub').textContent='Latest scores — '+(REGION_LABELS[region]||region);
-  const sw=document.getElementById('pm-region-switch');if(sw)sw.value=region;
+  const sb=document.getElementById('sb-region-label');
+  if(sb)sb.textContent=REGION_LABELS[region]||region;
+  const title=document.getElementById('pm-dash-title');
+  if(title)title.textContent=(REGION_LABELS[region]||region)+' — Dashboard';
+  const cmp=document.getElementById('compare-sub');
+  if(cmp)cmp.textContent='Latest scores — '+(REGION_LABELS[region]||region);
+  const sw=document.getElementById('pm-region-switch');
+  if(sw)sw.value=region;
 }
 
 // Switch regions without leaving the PM dashboard.
@@ -6014,15 +6051,28 @@ function filterPeopleBySearch(people,query){
   return people.filter(p=>((p.full_name||'')+' '+(p.email||'')).toLowerCase().includes(q));
 }
 
-function updateAdminTechSearchHint(query,shown,total){
+function updateAdminTechSearchHint(query,region,shown,total){
   const hint=document.getElementById('admin-tech-search-hint');
   if(!hint)return;
   const q=(query||'').trim();
-  if(!q){hint.textContent='';return;}
-  hint.textContent=shown===total?`${shown} match${shown===1?'':'es'}`:`Showing ${shown} of ${total}`;
+  const r=(region||'').trim();
+  if(!q&&!r){hint.textContent='';return;}
+  const bits=[];
+  if(r)bits.push(regionLabel(r)||r);
+  if(q)bits.push('“'+q+'”');
+  hint.textContent=shown===total
+    ?`${shown} match${shown===1?'':'es'}${bits.length?' · '+bits.join(' · '):''}`
+    :`Showing ${shown} of ${total}${bits.length?' · '+bits.join(' · '):''}`;
 }
 
 function onAdminTechSearch(){renderAdminLists();}
+function filterAdminTechs(techs){
+  const query=document.getElementById('admin-tech-search')?document.getElementById('admin-tech-search').value:'';
+  const region=document.getElementById('admin-tech-region')?document.getElementById('admin-tech-region').value:'';
+  let rows=filterPeopleBySearch(techs,query);
+  if(region)rows=rows.filter(p=>String(p.region||'')===region);
+  return {rows,query,region};
+}
 
 let adminTechTableRows=[];
 let adminTechViewMode='list';
@@ -6346,22 +6396,30 @@ function renderAdminLists(){
   renderPeople(document.getElementById('list-admins'),admins,{showRegion:false,action:'delete'});
   renderPeople(document.getElementById('list-pms'),pms,{showRegion:false,action:'delete'});
   const techListEl=document.getElementById('list-techs');
-  const query=document.getElementById('admin-tech-search')?document.getElementById('admin-tech-search').value:'';
-  const filteredTechs=filterPeopleBySearch(techs,query);
+  const filtered=filterAdminTechs(techs);
+  const filteredTechs=filtered.rows;
+  const query=filtered.query;
+  const regionFilter=filtered.region;
   adminTechTableRows=filteredTechs;
-  updateAdminTechSearchHint(query,filteredTechs.length,techs.length);
+  updateAdminTechSearchHint(query,regionFilter,filteredTechs.length,techs.length);
   const btn=document.getElementById('admin-tech-table-btn');
   if(btn)btn.textContent=adminTechViewMode==='table'?'List view':'Table view';
   const hint=document.getElementById('admin-tech-table-hint');
   if(hint)hint.style.display=adminTechViewMode==='table'?'':'none';
+  const emptyFilterMsg=()=>{
+    const bits=[];
+    if(regionFilter)bits.push(regionLabel(regionFilter)||regionFilter);
+    if((query||'').trim())bits.push('“'+adminEsc(query.trim())+'”');
+    return bits.length?'No technicians match '+bits.join(' · ')+'.':'No technicians match.';
+  };
   if(adminTechViewMode==='table'){
     if(!techs.length){if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';techListEl.innerHTML='<div class="admin-empty">None yet.</div>';}}
-    else if(!filteredTechs.length){if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}}
+    else if(!filteredTechs.length){if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';techListEl.innerHTML='<div class="admin-empty">'+emptyFilterMsg()+'</div>';}}
     else renderAdminTechTable(filteredTechs);
   }else{
     if(techListEl){techListEl.className='admin-list';techListEl.style.overflowX='';}
     if(!techs.length)renderPeople(techListEl,[],{showRegion:true,action:'delete',canView:true});
-    else if(!filteredTechs.length){if(techListEl)techListEl.innerHTML='<div class="admin-empty">No technicians match “'+adminEsc(query.trim())+'”.</div>';}
+    else if(!filteredTechs.length){if(techListEl)techListEl.innerHTML='<div class="admin-empty">'+emptyFilterMsg()+'</div>';}
     else renderPeople(techListEl,filteredTechs,{showRegion:true,action:'delete',canView:true});
   }
   renderPeople(document.getElementById('list-deleted'),deleted,{showRegion:false,action:'restore'});
@@ -7662,8 +7720,6 @@ function updateTechViewAdminChrome(){
   if(ataSwitch)ataSwitch.style.display=fromAdmin?'':'none';
   const backBtn=document.getElementById('tech-admin-back-btn');
   if(backBtn)backBtn.textContent=fromAdmin?'Back to admin':'Back';
-  const topBack=document.getElementById('tech-topbar-back-btn');
-  if(topBack)topBack.textContent='Back to PM';
 }
 function switchAdminTechView(){
   const reopen=techViewBackPage==='pg-admin';
@@ -8430,10 +8486,11 @@ function renderTechHome(t,opts){
     ?'No scores yet — this technician has not submitted an assessment.'
     :'No scores yet — take your first assessment using Take Assessment above.';
 
+  const nameHeader=`<div class="tech-home-header-row">${techHomeNameLineHtml(t)}${fromPm?`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>`:''}</div>`;
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
-      ${techHomeNameLineHtml(t)}
+      ${nameHeader}
       <div class="score-row" id="tech-home-ata-status" style="margin:10px 0 0">${techStatusFocusRowHtml(t)}</div>
       ${tenureHtml}
       ${trainingFocusHtml}
