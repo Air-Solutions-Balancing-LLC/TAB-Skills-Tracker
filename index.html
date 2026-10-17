@@ -7630,11 +7630,13 @@ function requiredSectionLabels(t){
   return labels;
 }
 function requiredSectionsListHtml(t){
-  const labels=requiredSectionLabels(t);
+  // Assessment start modal: only sections the tech still needs (not already 100%).
+  const pending=visibleQuestionnaireSections(t);
+  const labels=pending.map(sec=>sec.section||proficiencyCategoryLabel(sec.key));
   if(!labels.length){
-    return`<div class="assess-req-title">Required Sections</div><div class="assess-req-empty">None selected</div>`;
+    return`<div class="assess-req-title">Sections to complete</div><div class="assess-req-empty">No sections left — everything required is already at 100%.</div>`;
   }
-  return`<div class="assess-req-title">Required Sections</div><ul class="assess-req-list">${labels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
+  return`<div class="assess-req-title">Sections to complete</div><ul class="assess-req-list">${labels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
 }
 function lastAssessmentWithRawScores(t){
   const assessments=t&&t.assessments;
@@ -7644,17 +7646,28 @@ function lastAssessmentWithRawScores(t){
   }
   return null;
 }
+function lastAssessmentForCompletion(t){
+  const assessments=t&&t.assessments;
+  if(!assessments||!assessments.length)return null;
+  return assessments[assessments.length-1]||null;
+}
+/** True when the category is 100% on the home screen and every current catalog skill is scored. */
 function sectionIsComplete100(assessment,sec){
   if(!assessment||!sec||!(sec.skills||[]).length)return false;
+  const cat=SKILL_CATS.find(c=>c.skey===sec.key)||{
+    skey:sec.key,key:sec.avg_field||null,codes:sec.skills.map(sk=>sk.id),section_type:sec.section_type||'rated'
+  };
+  if(categoryCombinedPct(assessment,cat)!==100)return false;
   const raw=rawOf(assessment)||{};
+  // Legacy assessments may only have section averages — trust the 100% combined %.
+  if(!assessmentHasRawScores(assessment))return true;
   if(isProjectsSection(sec)){
     return sec.skills.every(sk=>Number(raw[sk.id])===1||raw[sk.id]===true);
   }
-  const max=sectionScaleMax(sec);
+  // New catalog skills without a score keep the section incomplete.
   return sec.skills.every(sk=>{
     const v=raw[sk.id];
-    if(v===undefined||v===null||typeof v==='object')return false;
-    return ratingPct(Number(v),max)>=100;
+    return v!==undefined&&v!==null&&typeof v!=='object';
   });
 }
 function requiredQuestionnaireSections(t){
@@ -7664,14 +7677,14 @@ function requiredQuestionnaireSections(t){
   return QUESTIONNAIRE.filter(sec=>keys.has(sec.key));
 }
 function complete100QuestionnaireSections(t){
-  const last=lastAssessmentWithRawScores(t||currentTechData);
+  const last=lastAssessmentForCompletion(t||currentTechData);
   if(!last)return[];
   return requiredQuestionnaireSections(t).filter(sec=>sectionIsComplete100(last,sec));
 }
 function visibleQuestionnaireSections(t){
   const secs=requiredQuestionnaireSections(t);
   if(qForceRerateComplete)return secs;
-  const last=lastAssessmentWithRawScores(t||currentTechData);
+  const last=lastAssessmentForCompletion(t||currentTechData);
   if(!last)return secs;
   return secs.filter(sec=>!sectionIsComplete100(last,sec));
 }
@@ -7722,11 +7735,11 @@ function showAssessmentStartModal(message,onContinue,opts){
   const rerateWrap=document.getElementById('assess-start-rerate-wrap');
   const rerate=document.getElementById('assess-start-rerate');
   if(!overlay||!msgEl||!btn){onContinue();return;}
-  if(opts.html)msgEl.innerHTML=message;
-  else msgEl.textContent=message;
   qForceRerateComplete=false;
   const doneSecs=complete100QuestionnaireSections(currentTechData);
   const pending=visibleQuestionnaireSections(currentTechData);
+  // Live list of sections they still need (100% categories omitted).
+  msgEl.innerHTML=requiredSectionsListHtml(currentTechData);
   if(skipNote){
     if(doneSecs.length){
       skipNote.style.display='block';
@@ -7754,9 +7767,33 @@ function hideAssessmentStartModal(){
 (function initAssessmentStartModal(){
   const btn=document.getElementById('assess-start-continue');
   const overlay=document.getElementById('assess-start-modal');
+  const rerate=document.getElementById('assess-start-rerate');
+  const msgEl=document.getElementById('assess-start-msg');
+  const skipNote=document.getElementById('assess-start-skip-note');
+  if(rerate){
+    rerate.addEventListener('change',()=>{
+      qForceRerateComplete=!!rerate.checked;
+      if(msgEl)msgEl.innerHTML=requiredSectionsListHtml(currentTechData);
+      const doneSecs=complete100QuestionnaireSections(currentTechData);
+      const pending=visibleQuestionnaireSections(currentTechData);
+      if(skipNote){
+        if(!qForceRerateComplete&&doneSecs.length){
+          skipNote.style.display='block';
+          skipNote.innerHTML=pending.length
+            ?`<strong>${doneSecs.length}</strong> section${doneSecs.length===1?'':'s'} already at 100% will be skipped and carried forward: ${doneSecs.map(s=>adminEsc(s.section)).join(', ')}.`
+            :`All required sections are already at 100%. Check the box below if you need to re-rate them.`;
+        }else if(qForceRerateComplete&&doneSecs.length){
+          skipNote.style.display='block';
+          skipNote.innerHTML=`Re-rating enabled — 100% sections will be included again.`;
+        }else{
+          skipNote.style.display='none';
+          skipNote.textContent='';
+        }
+      }
+    });
+  }
   if(btn){
     btn.addEventListener('click',()=>{
-      const rerate=document.getElementById('assess-start-rerate');
       qForceRerateComplete=!!(rerate&&rerate.checked);
       const fn=assessStartContinue;
       hideAssessmentStartModal();
