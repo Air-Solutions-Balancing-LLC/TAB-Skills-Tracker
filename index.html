@@ -101,11 +101,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .trow-name-line{margin:0!important}
 .trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-name-line .nm-meta{font-size:12px;color:#555}
-.trow-name-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
-.trow-ata-text{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap}
-.trow-focus-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
-.trow-focus{font-size:12px;font-weight:700;color:#1a1a2e;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.trow-focus-goal{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-shrink:0}
+.trow-status-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;font-size:12px;font-weight:500;color:#555;line-height:1.4}
+.trow-status-line .nm-sep{color:#b0b6c0;margin:0}
+.trow-focus-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;width:100%;min-width:0}
+.trow-focus{flex:1;min-width:0;font-size:12px;font-weight:700;color:#1a1a2e;line-height:1.4;white-space:normal;overflow:visible}
+.trow-focus-goal{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-shrink:0;padding-top:0}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
 .edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
@@ -427,8 +427,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .trow-chevron{color:#9aa8bc;font-size:18px;font-weight:700;line-height:1}
 .score-row{display:flex;gap:5px;flex-wrap:wrap}
 @media(max-width:700px){
-  .trow{flex-wrap:wrap;align-items:flex-start}
-  .trow-right{width:100%;justify-content:space-between;padding-left:50px}
+  .trow{align-items:flex-start}
+  .trow-focus-row{flex-wrap:wrap}
 }
 .tcard-name{font-size:13px;font-weight:700;color:#1a1a2e}
 .tcard-sub{font-size:11px;color:#999;margin-top:2px}
@@ -7471,14 +7471,12 @@ function techHomeNameLineHtml(t){
   return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
 }
 function pmTechNameLineHtml(t){
-  // PM list: name + NEBB status (no Position / Region). ATA status is rendered beside it.
-  const nebb=nebbStatusLabel(t&&t.nebb_status);
-  const nebbBit=nebb?`<span class="nm-sep">·</span><span class="nm-meta">${adminEsc(nebb)}</span>`:'';
-  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span>${nebbBit}</div>`;
+  // PM list: name only on line 1.
+  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span></div>`;
 }
-function pmAtaStatusTextHtml(t){
+function pmAtaStatusPlain(t){
   const tech=ataTechForStatusDisplay(t);
-  if(!tech)return`<span class="trow-ata-text" style="color:#999">ATA —</span>`;
+  if(!tech)return'ATA —';
   const cat=ataCategory(tech);
   const m=ataCategoryMeta(cat);
   const bits=[`ATA ${m.label}`];
@@ -7488,12 +7486,21 @@ function pmAtaStatusTextHtml(t){
       bits.push(`${ATA_PROGRAM_LABEL[p]} ${s.pcts[p]||0}%`);
     });
   }
-  return`<span class="trow-ata-text">${bits.map(adminEsc).join(' · ')}</span>`;
+  return bits.join(' · ');
+}
+function pmTechStatusLineHtml(t,last){
+  const nebb=nebbStatusLabel(t&&t.nebb_status)||'In Training';
+  const ata=pmAtaStatusPlain(t);
+  const assess=last?fmtDate(last.date):'—';
+  return`<div class="trow-status-line">
+    <span>${adminEsc(nebb)}</span><span class="nm-sep">·</span>
+    <span>${adminEsc(ata)}</span><span class="nm-sep">·</span>
+    <span>Last Assessment date: ${adminEsc(assess)}</span>
+  </div>`;
 }
 function pmTechFocusLineHtml(t){
   const focus=(t&&t.training_focus||'').trim();
-  const maxLen=70;
-  const lbl=focus?(focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus):'No current focus';
+  const lbl=focus||'No current focus';
   const start=t&&t.training_goal_start?fmtDate(t.training_goal_start):'';
   const end=t&&t.training_goal_end?fmtDate(t.training_goal_end):'';
   let goal='Goal date: —';
@@ -8621,18 +8628,9 @@ function renderTechGrid(techs){
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
-        <div class="trow-top">
-          <div class="trow-meta">
-            <div class="trow-name-row">${pmTechNameLineHtml(t)}${pmAtaStatusTextHtml(t)}</div>
-          </div>
-        </div>
+        ${pmTechNameLineHtml(t)}
+        ${pmTechStatusLineHtml(t,last)}
         ${pmTechFocusLineHtml(t)}
-      </div>
-      <div class="trow-right">
-        <span class="date-chip last trow-assess-date">
-          <span class="trow-assess-lbl">Last Assessment date</span>
-          <span class="trow-assess-val">${last?adminEsc(fmtDate(last.date)):'—'}</span>
-        </span>
       </div>
     </div>`;
   }).join('');
