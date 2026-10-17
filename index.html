@@ -103,8 +103,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .trow-name-line .nm-meta{font-size:12px;color:#555}
 .trow-name-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
 .trow-ata-text{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap}
-.trow-focus{font-size:12px;font-weight:700;color:#1a1a2e;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.trow-focus.empty{color:#999;font-weight:600}
+.trow-focus-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
+.trow-focus{font-size:12px;font-weight:700;color:#1a1a2e;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.trow-focus-goal{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-shrink:0}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
 .edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
@@ -442,6 +443,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .date-chip{font-size:10px;padding:3px 8px;border-radius:0 6px 6px 0;background:#f5f5f5;color:#888}
 .date-chip.first{border-left:3px solid #1B3A6B;color:#1B3A6B;background:#EEF4FF}
 .date-chip.last{border-left:3px solid #1D9E75;color:#1D9E75;background:#E1F5EE}
+.date-chip.last.trow-assess-date{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 10px;border-radius:8px;line-height:1.25;text-align:left}
+.date-chip.last.trow-assess-date .trow-assess-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.9}
+.date-chip.last.trow-assess-date .trow-assess-val{font-size:12px;font-weight:800}
 .trend-up{color:#1D9E75;font-size:11px;font-weight:700}
 .trend-dn{color:#e74c3c;font-size:11px}
 .trend-eq{color:#ccc;font-size:11px}
@@ -7467,21 +7471,39 @@ function techHomeNameLineHtml(t){
   return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
 }
 function pmTechNameLineHtml(t){
-  // PM list: name only (no Position / Region). ATA status is rendered beside it.
-  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span></div>`;
+  // PM list: name + NEBB status (no Position / Region). ATA status is rendered beside it.
+  const nebb=nebbStatusLabel(t&&t.nebb_status);
+  const nebbBit=nebb?`<span class="nm-sep">·</span><span class="nm-meta">${adminEsc(nebb)}</span>`:'';
+  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span>${nebbBit}</div>`;
 }
 function pmAtaStatusTextHtml(t){
   const tech=ataTechForStatusDisplay(t);
   if(!tech)return`<span class="trow-ata-text" style="color:#999">ATA —</span>`;
-  const m=ataCategoryMeta(ataCategory(tech));
-  return`<span class="trow-ata-text">ATA ${adminEsc(m.label)}</span>`;
+  const cat=ataCategory(tech);
+  const m=ataCategoryMeta(cat);
+  const bits=[`ATA ${m.label}`];
+  if(cat==='active'&&ataCurriculum&&ataCurriculum.length){
+    const s=ataTechSummary(tech);
+    ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).forEach(p=>{
+      bits.push(`${ATA_PROGRAM_LABEL[p]} ${s.pcts[p]||0}%`);
+    });
+  }
+  return`<span class="trow-ata-text">${bits.map(adminEsc).join(' · ')}</span>`;
 }
 function pmTechFocusLineHtml(t){
   const focus=(t&&t.training_focus||'').trim();
-  if(!focus)return`<div class="trow-focus empty">No current focus</div>`;
-  const maxLen=90;
-  const lbl=focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus;
-  return`<div class="trow-focus" title="${adminEsc(focus)}">${adminEsc(lbl)}</div>`;
+  const maxLen=70;
+  const lbl=focus?(focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus):'No current focus';
+  const start=t&&t.training_goal_start?fmtDate(t.training_goal_start):'';
+  const end=t&&t.training_goal_end?fmtDate(t.training_goal_end):'';
+  let goal='Goal date: —';
+  if(start&&end)goal='Goal: '+start+' – '+end;
+  else if(end)goal='Goal date: '+end;
+  else if(start)goal='Goal date: '+start;
+  return`<div class="trow-focus-row">
+    <div class="trow-focus" title="${adminEsc(focus||'No current focus')}">Training Focus: ${adminEsc(lbl)}</div>
+    <div class="trow-focus-goal">${adminEsc(goal)}</div>
+  </div>`;
 }
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
@@ -8607,8 +8629,10 @@ function renderTechGrid(techs){
         ${pmTechFocusLineHtml(t)}
       </div>
       <div class="trow-right">
-        ${last?`<span class="date-chip last">Last Assessment date: ${fmtDate(last.date)}</span>`:`<span class="date-chip last">Last Assessment date: —</span>`}
-        <span class="trow-chevron" aria-hidden="true">›</span>
+        <span class="date-chip last trow-assess-date">
+          <span class="trow-assess-lbl">Last Assessment date</span>
+          <span class="trow-assess-val">${last?adminEsc(fmtDate(last.date)):'—'}</span>
+        </span>
       </div>
     </div>`;
   }).join('');
