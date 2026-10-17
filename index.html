@@ -136,6 +136,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-tech-table textarea.admin-edit-field{min-height:56px;resize:vertical;line-height:1.35}
 .admin-tech-table .admin-tech-cat-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#555;cursor:pointer}
 .admin-tech-table .admin-tech-cat-label input{margin:0}
+.admin-tech-table th.admin-tech-actions-h{position:sticky;top:0;z-index:2;background:#EEF4FF;white-space:nowrap}
+.admin-tech-table th.admin-tech-actions-h .admin-tech-save-all{background:#0F6E56;color:#fff;border-color:#0F6E56;padding:6px 12px;font-size:11px}
+.admin-tech-table th.admin-tech-actions-h .admin-tech-save-all:disabled{opacity:.55;cursor:default}
 .admin-tech-actions{display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap}
 .admin-tech-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-tech-edit:hover{background:#e0ebff}
@@ -6319,7 +6322,7 @@ function renderAdminTechTable(rows){
   const head=cols.map(c=>{
     const cls=c.colClass||(c.catKey?'admin-tech-cat':'');
     return`<th${cls?` class="${cls}"`:''} title="${adminEsc(c.label)}">${adminEsc(c.catKey?adminTechCatShort(c.label):c.label)}</th>`;
-  }).join('')+'<th>Actions</th>';
+  }).join('')+`<th class="admin-tech-actions-h"><button type="button" class="admin-edit admin-tech-save-all" id="admin-tech-save-all" onclick="saveAdminTechTableAll()">Save All</button></th>`;
   const body=rows.map(p=>{
     const d=adminTechRowData(p);
     const id=p.id;
@@ -6355,11 +6358,9 @@ function renderAdminTechTable(rows){
   el.style.overflowX='auto';
   el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
-async function saveAdminTechTableRow(id){
-  const err=document.getElementById('admin-err');
-  if(err){err.style.display='none';err.textContent='';}
+function collectAdminTechTableRowArgs(id){
   const p=(adminPeople||[]).find(x=>x.id===id);
-  if(!p)return;
+  if(!p)return null;
   const nameEl=document.getElementById('tbl-name-'+id);
   const posEl=document.getElementById('tbl-position-'+id);
   const regionEl=document.getElementById('tbl-region-'+id);
@@ -6369,7 +6370,7 @@ async function saveAdminTechTableRow(id){
   const gsEl=document.getElementById('tbl-goal-start-'+id);
   const geEl=document.getElementById('tbl-goal-end-'+id);
   const boxes=[...document.querySelectorAll(`.tbl-req-cat[data-person="${id}"]`)];
-  const args={
+  return{
     p_id:id,
     p_name:(nameEl?nameEl.value:'').trim()||null,
     p_email:p.email||null,
@@ -6388,17 +6389,70 @@ async function saveAdminTechTableRow(id){
     p_job_position:posEl?posEl.value:'',
     p_lead_tech:null
   };
+}
+async function saveAdminTechTableRow(id,opts){
+  opts=opts||{};
+  const err=document.getElementById('admin-err');
+  if(!opts.skipReload&&err){err.style.display='none';err.textContent='';}
+  const args=collectAdminTechTableRowArgs(id);
+  if(!args){
+    if(opts.skipReload)throw new Error('Technician not found');
+    return;
+  }
   try{
     await rpc('app_admin_update_person',args);
+    if(opts.skipReload)return;
     await loadAdminLists();
     try{await ataLoadAdmin();}catch(_){}
   }catch(e){
+    if(opts.skipReload)throw e;
     if(err){
       err.textContent='Could not save technician: '+(e.message||'try again');
       err.style.display='block';
     }else{
       alert('Could not save technician: '+(e.message||'try again'));
     }
+  }
+}
+async function saveAdminTechTableAll(){
+  const err=document.getElementById('admin-err');
+  const status=document.getElementById('admin-tech-import-status');
+  const btn=document.getElementById('admin-tech-save-all');
+  const ids=[...document.querySelectorAll('#list-techs tr[data-person-id]')]
+    .map(tr=>Number(tr.getAttribute('data-person-id')))
+    .filter(id=>Number.isFinite(id));
+  if(!ids.length){
+    if(status){status.textContent='No technicians to save.';status.style.color='#888';}
+    return;
+  }
+  if(err){err.style.display='none';err.textContent='';}
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  if(status){status.textContent='Saving '+ids.length+' technician'+(ids.length===1?'':'s')+'…';status.style.color='#1B3A6B';}
+  let saved=0;
+  const failures=[];
+  for(const id of ids){
+    try{
+      await saveAdminTechTableRow(id,{skipReload:true});
+      saved++;
+      if(btn)btn.textContent='Saving '+saved+'/'+ids.length+'…';
+    }catch(e){
+      const p=(adminPeople||[]).find(x=>x.id===id);
+      failures.push(((p&&(p.full_name||p.email))||('id '+id))+': '+(e.message||'error'));
+    }
+  }
+  try{
+    await loadAdminLists();
+    try{await ataLoadAdmin();}catch(_){}
+  }catch(_){}
+  if(btn){btn.disabled=false;btn.textContent='Save All';}
+  let msg='Saved '+saved+' of '+ids.length+' technician'+(ids.length===1?'':'s')+'.';
+  if(failures.length){
+    msg+=' '+failures.length+' failed. '+failures.slice(0,3).join('; ')+(failures.length>3?'…':'');
+    if(err){err.textContent=msg;err.style.display='block';}
+    if(status){status.textContent=msg;status.style.color='#C0392B';}
+  }else if(status){
+    status.textContent=msg;
+    status.style.color='#0F6E56';
   }
 }
 function adminTechExcelHeaders(){
