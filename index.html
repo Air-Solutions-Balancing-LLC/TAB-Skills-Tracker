@@ -1024,6 +1024,48 @@ body.mobile-nav-open{overflow:hidden}
               </div>
             </div>
           </div>
+          <div class="report-item" id="report-preboot-tasks">
+            <div class="report-head">
+              <button type="button" class="report-toggle" id="report-toggle-prebootTasks" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('prebootTasks')"><span class="admin-sec-chevron">▼</span></button>
+              <div class="report-head-main">
+                <div class="report-title">Pre-Bootcamp Tasks Report</div>
+                <div class="report-meta">All regions · Techs with Pre-Bootcamp selected · Tasks and mastery level (needed = not yet Can Perform Independently)</div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-tasks-filter-btn" onclick="toggleAdminPreBootTasksFilter()">Show All Tasks</button>
+                <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootTasksReport()">Refresh</button>
+              </div>
+            </div>
+            <div class="report-table-body collapsed" id="report-table-prebootTasks">
+              <div class="err" id="admin-preboot-tasks-err" style="display:none"></div>
+              <div class="report-filters">
+                <div class="pm-search-wrap">
+                  <input type="search" id="admin-preboot-tasks-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminPreBootTasksFilterChange()">
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-preboot-tasks-region">Region</label>
+                  <select id="admin-preboot-tasks-region" onchange="onAdminPreBootTasksFilterChange()">
+                    <option value="">All regions</option>
+                    <option value="IM">Intermountain</option>
+                    <option value="KES">KES</option>
+                    <option value="MA">Mid-Atlantic</option>
+                    <option value="MW">Midwest</option>
+                    <option value="National">National</option>
+                    <option value="National-TAB Survey">National-TAB Survey</option>
+                    <option value="NE">New England</option>
+                    <option value="PC">Pacific Coast</option>
+                    <option value="RM">Rocky Mountain</option>
+                    <option value="SE">Southeast</option>
+                    <option value="SW">Southwest</option>
+                  </select>
+                </div>
+              </div>
+              <div class="report-filter-hint" id="admin-preboot-tasks-hint"></div>
+              <div id="admin-preboot-tasks-wrap">
+                <div class="admin-empty" style="padding:12px">Open to load…</div>
+              </div>
+            </div>
+          </div>
           <div class="report-item" id="report-nebb">
             <div class="report-head">
               <button type="button" class="report-toggle" id="report-toggle-nebb" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('nebb')"><span class="admin-sec-chevron">▼</span></button>
@@ -1411,6 +1453,7 @@ body.mobile-nav-open{overflow:hidden}
             <div class="topbar-title">🎒 Pre-Bootcamp Report</div>
             <div class="topbar-sub">Technicians with Pre-Bootcamp selected — tasks and mastery level</div>
           </div>
+          <button type="button" class="admin-chrome-btn" id="pm-preboot-filter-btn" style="padding:7px 12px;font-size:12px" onclick="togglePmPreBootTaskFilter()">Show All Tasks</button>
           <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmPreBootReport()">Refresh</button>
         </div>
         <div class="page-body">
@@ -3043,7 +3086,7 @@ const ADMIN_POSITION_OPTIONS=[
   ['KES Install Technician','KES Install Technician']
 ];
 const adminSecOpen={reports:false,ata:false,admins:false,pms:false,techs:false,deleted:false};
-const reportTableOpen={activity:false,preboot:false,nebb:false};
+const reportTableOpen={activity:false,preboot:false,prebootTasks:false,nebb:false};
 
 function toggleReportTable(key){
   if(!(key in reportTableOpen))return;
@@ -6177,6 +6220,9 @@ function openAdmin(){
   adminReportRegion='';
   adminPreBootSearch='';
   adminPreBootRegion='';
+  adminPreBootTasksSearch='';
+  adminPreBootTasksRegion='';
+  adminPreBootTasksShowNeededOnly=true;
   adminNebbSearch='';
   adminNebbRegion='';
   adminNebbDeadlineFilter='all';
@@ -6184,6 +6230,8 @@ function openAdmin(){
   const reportRegion=document.getElementById('admin-report-region');
   const prebootSearch=document.getElementById('admin-preboot-search');
   const prebootRegion=document.getElementById('admin-preboot-region');
+  const prebootTasksSearch=document.getElementById('admin-preboot-tasks-search');
+  const prebootTasksRegion=document.getElementById('admin-preboot-tasks-region');
   const nebbSearch=document.getElementById('admin-nebb-search');
   const nebbRegion=document.getElementById('admin-nebb-region');
   const nebbDeadline=document.getElementById('admin-nebb-deadline');
@@ -6191,11 +6239,15 @@ function openAdmin(){
   if(reportRegion)reportRegion.value='';
   if(prebootSearch)prebootSearch.value='';
   if(prebootRegion)prebootRegion.value='';
+  if(prebootTasksSearch)prebootTasksSearch.value='';
+  if(prebootTasksRegion)prebootTasksRegion.value='';
   if(nebbSearch)nebbSearch.value='';
   if(nebbRegion)nebbRegion.value='';
   if(nebbDeadline)nebbDeadline.value='all';
+  syncPreBootTaskFilterBtn('admin-preboot-tasks-filter-btn',true);
   reportTableOpen.activity=false;
   reportTableOpen.preboot=false;
+  reportTableOpen.prebootTasks=false;
   reportTableOpen.nebb=false;
   ataAdminSearch='';ataAdminRegion='';ataAdminStatusFilter='';ataAdminRosterFilter='active';ataSelected={};
   const ataSearchEl=document.getElementById('ata-search');
@@ -6213,7 +6265,7 @@ function openAdmin(){
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminNebbReport(),ataLoadAdmin()]);
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminPreBootTasksReport(),loadAdminNebbReport(),ataLoadAdmin()]);
 }
 
 async function loadAdminLists(){
@@ -8020,6 +8072,13 @@ function setPMView(v,el){
   if(el){document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
 }
 let pmPreBootRows=[];
+let pmPreBootShowNeededOnly=true;
+let adminPreBootTasksRows=[];
+let adminPreBootTasksShowNeededOnly=true;
+let adminPreBootTasksSearch='';
+let adminPreBootTasksRegion='';
+/** Pre-Bootcamp mastery scale is 0–3; level 3 = Can Perform Independently (4th / top level). Needed = not yet at 3. */
+function isPreBootTaskNeeded(level){return Number(level||0)<3;}
 function pmPreBootSkillRows(completed){
   const sec=(CHECKLIST_SECTIONS||[]).find(isRatedChecklistSection);
   if(!sec||!(sec.skills||[]).length)return[];
@@ -8028,14 +8087,23 @@ function pmPreBootSkillRows(completed){
     return{code:sk.id,cat:sk.cat||'General',name:sk.name,level,label:preBootcampRatingLabel(level)};
   });
 }
-function buildPmPreBootReportHtml(rows){
-  if(!rows.length){
-    return'<div class="admin-empty" style="padding:16px">No technicians in this region have Pre-Bootcamp selected.</div>';
-  }
+function syncPreBootTaskFilterBtn(btnId,neededOnly){
+  const btn=document.getElementById(btnId);
+  if(!btn)return;
+  btn.textContent=neededOnly?'Show All Tasks':'Show Tasks Needed';
+}
+function buildPreBootTasksReportHtml(rows,opts){
+  opts=opts||{};
+  const neededOnly=!!opts.neededOnly;
+  const showRegion=!!opts.showRegion;
+  const emptyMsg=opts.emptyMsg||'No technicians have Pre-Bootcamp selected.';
+  if(!rows.length)return'<div class="admin-empty" style="padding:16px">'+adminEsc(emptyMsg)+'</div>';
   return rows.map((r,idx)=>{
     const completed=parseChecklistCompleted(r.checklist_completed);
-    const tasks=pmPreBootSkillRows(completed);
-    const pct=tasks.length?Math.round(tasks.reduce((s,t)=>s+checklistItemPct(t.level),0)/tasks.length):0;
+    const allTasks=pmPreBootSkillRows(completed);
+    const needCount=allTasks.filter(t=>isPreBootTaskNeeded(t.level)).length;
+    const tasks=neededOnly?allTasks.filter(t=>isPreBootTaskNeeded(t.level)):allTasks;
+    const pct=allTasks.length?Math.round(allTasks.reduce((s,t)=>s+checklistItemPct(t.level),0)/allTasks.length):0;
     const open=idx===0?' is-open':'';
     const taskRows=tasks.map(t=>`<tr>
       <td style="color:#888;white-space:nowrap">${adminEsc(t.cat)}</td>
@@ -8044,19 +8112,22 @@ function buildPmPreBootReportHtml(rows){
     </tr>`).join('');
     const boot=r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set';
     const last=r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet';
-    const need=tasks.filter(t=>t.level<3).length;
+    const regionBit=showRegion?(adminEsc(regionLabel(r.region)||r.region||'—')+' · '):'';
+    const emptyTasks=neededOnly
+      ?'<tr><td colspan="3" style="color:#0F6E56;font-weight:600">All tasks mastered (Can Perform Independently).</td></tr>'
+      :'<tr><td colspan="3" style="color:#999">No Pre-Bootcamp tasks available.</td></tr>';
     return`<div class="pm-preboot-card${open}" data-tech="${r.tech_id}">
       <div class="pm-preboot-card-h" role="button" tabindex="0" onclick="togglePmPreBootCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePmPreBootCard(this);}">
         <div>
           <div class="pm-preboot-card-name"><span class="pm-preboot-chev">▶</span>${adminEsc(r.name)}</div>
-          <div class="pm-preboot-card-meta">${adminEsc(boot)} · ${adminEsc(last)} · ${need} task${need===1?'':'s'} still to master</div>
+          <div class="pm-preboot-card-meta">${regionBit}${adminEsc(boot)} · ${adminEsc(last)} · ${needCount} task${needCount===1?'':'s'} still to master</div>
         </div>
         <div class="pm-preboot-card-pct">${pct}%</div>
       </div>
       <div class="pm-preboot-card-body">
         <table class="pm-preboot-table">
           <thead><tr><th>Category</th><th>Task</th><th>Level</th></tr></thead>
-          <tbody>${taskRows||'<tr><td colspan="3" style="color:#999">No Pre-Bootcamp tasks available.</td></tr>'}</tbody>
+          <tbody>${taskRows||emptyTasks}</tbody>
         </table>
       </div>
     </div>`;
@@ -8066,28 +8137,101 @@ function togglePmPreBootCard(el){
   const card=el&&el.closest('.pm-preboot-card');
   if(card)card.classList.toggle('is-open');
 }
+function renderPmPreBootReport(){
+  const wrap=document.getElementById('pm-preboot-wrap');
+  const hint=document.getElementById('pm-preboot-hint');
+  if(!wrap)return;
+  syncPreBootTaskFilterBtn('pm-preboot-filter-btn',pmPreBootShowNeededOnly);
+  if(hint){
+    const mode=pmPreBootShowNeededOnly?'Showing tasks still needed (not yet Can Perform Independently). ':'Showing all tasks. ';
+    hint.textContent=pmPreBootRows.length
+      ? (mode+pmPreBootRows.length+' technician'+(pmPreBootRows.length===1?'':'s')+' with Pre-Bootcamp selected in '+(regionLabel(currentRegion)||currentRegion||'this region'))
+      :'';
+  }
+  wrap.innerHTML=buildPreBootTasksReportHtml(pmPreBootRows,{
+    neededOnly:pmPreBootShowNeededOnly,
+    emptyMsg:'No technicians in this region have Pre-Bootcamp selected.'
+  });
+}
+function togglePmPreBootTaskFilter(){
+  pmPreBootShowNeededOnly=!pmPreBootShowNeededOnly;
+  renderPmPreBootReport();
+}
 async function loadPmPreBootReport(){
   const wrap=document.getElementById('pm-preboot-wrap');
   const err=document.getElementById('pm-preboot-err');
-  const hint=document.getElementById('pm-preboot-hint');
   if(!wrap)return;
   if(err){err.style.display='none';err.textContent='';}
   wrap.innerHTML='<div class="loading">Loading Pre-Bootcamp report…</div>';
-  if(hint)hint.textContent='';
   try{
     await ensureSkills();
     pmPreBootRows=await rpc('app_pm_pre_bootcamp_report',{p_token:currentToken})||[];
     if(!Array.isArray(pmPreBootRows))pmPreBootRows=[];
-    if(hint){
-      hint.textContent=pmPreBootRows.length
-        ? (pmPreBootRows.length+' technician'+(pmPreBootRows.length===1?'':'s')+' with Pre-Bootcamp selected in '+(regionLabel(currentRegion)||currentRegion||'this region'))
-        :'';
-    }
-    wrap.innerHTML=buildPmPreBootReportHtml(pmPreBootRows);
+    renderPmPreBootReport();
   }catch(e){
     wrap.innerHTML='';
     if(err){
       err.textContent='Could not load report. Run supabase/pm-pre-bootcamp-report.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
+      err.style.display='block';
+    }
+  }
+}
+function filteredAdminPreBootTasksRows(){
+  const q=adminPreBootTasksSearch.trim().toLowerCase();
+  const region=adminPreBootTasksRegion;
+  return (adminPreBootTasksRows||[]).filter(r=>{
+    if(region&&r.region!==region)return false;
+    if(q&&!String(r.name||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+function renderAdminPreBootTasksReport(){
+  const wrap=document.getElementById('admin-preboot-tasks-wrap');
+  const hint=document.getElementById('admin-preboot-tasks-hint');
+  if(!wrap)return;
+  syncPreBootTaskFilterBtn('admin-preboot-tasks-filter-btn',adminPreBootTasksShowNeededOnly);
+  const filtered=filteredAdminPreBootTasksRows();
+  if(hint){
+    const mode=adminPreBootTasksShowNeededOnly?'Showing tasks still needed. ':'Showing all tasks. ';
+    if(!adminPreBootTasksRows.length)hint.textContent='';
+    else if(filtered.length===adminPreBootTasksRows.length&&!adminPreBootTasksSearch.trim()&&!adminPreBootTasksRegion){
+      hint.textContent=mode+adminPreBootTasksRows.length+' technician'+(adminPreBootTasksRows.length===1?'':'s')+' with Pre-Bootcamp selected (all regions)';
+    }else{
+      hint.textContent=mode+'Showing '+filtered.length+' of '+adminPreBootTasksRows.length;
+    }
+  }
+  wrap.innerHTML=buildPreBootTasksReportHtml(filtered,{
+    neededOnly:adminPreBootTasksShowNeededOnly,
+    showRegion:true,
+    emptyMsg:adminPreBootTasksRows.length?'No technicians match the current filters.':'No technicians have Pre-Bootcamp selected.'
+  });
+}
+function toggleAdminPreBootTasksFilter(){
+  adminPreBootTasksShowNeededOnly=!adminPreBootTasksShowNeededOnly;
+  renderAdminPreBootTasksReport();
+}
+function onAdminPreBootTasksFilterChange(){
+  const searchEl=document.getElementById('admin-preboot-tasks-search');
+  const regionEl=document.getElementById('admin-preboot-tasks-region');
+  adminPreBootTasksSearch=searchEl?searchEl.value:'';
+  adminPreBootTasksRegion=regionEl?regionEl.value:'';
+  renderAdminPreBootTasksReport();
+}
+async function loadAdminPreBootTasksReport(){
+  const wrap=document.getElementById('admin-preboot-tasks-wrap');
+  const err=document.getElementById('admin-preboot-tasks-err');
+  if(!wrap)return;
+  if(err){err.style.display='none';err.textContent='';}
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  try{
+    await ensureSkills();
+    adminPreBootTasksRows=await rpc('app_admin_pre_bootcamp_tasks_report',{})||[];
+    if(!Array.isArray(adminPreBootTasksRows))adminPreBootTasksRows=[];
+    renderAdminPreBootTasksReport();
+  }catch(e){
+    wrap.innerHTML='';
+    if(err){
+      err.textContent='Could not load report. Run supabase/admin-pre-bootcamp-tasks-report.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
       err.style.display='block';
     }
   }
