@@ -1,7 +1,7 @@
--- NEBB CT/CP status question on monthly assessment
+-- NEBB status lives on the technician profile (Admin Edit Tech).
+-- Assessment submit no longer requires a NEBB questionnaire answer.
 -- Run in Supabase -> SQL Editor (safe to re-run).
 
--- Save nebb_status on the technician when they submit an assessment.
 CREATE OR REPLACE FUNCTION public.app_submit_assessment(p_token text, p_payload jsonb)
 RETURNS void
 LANGUAGE plpgsql
@@ -25,10 +25,6 @@ BEGIN
     RAISE EXCEPTION 'INVALID_SESSION';
   END IF;
 
-  IF v_nebb IS NULL THEN
-    RAISE EXCEPTION 'NEBB_STATUS_REQUIRED';
-  END IF;
-
   PERFORM app_upsert_assessment_for_tech(
     v_tech_id,
     v_date,
@@ -43,7 +39,7 @@ BEGIN
   );
 
   UPDATE public.technicians
-  SET nebb_status = v_nebb,
+  SET nebb_status = COALESCE(v_nebb, nebb_status),
       assessment_draft = NULL
   WHERE id = v_tech_id;
 END;

@@ -106,13 +106,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
-.admin-tech-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+.admin-tech-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1400px}
 .admin-tech-table th{text-align:left;padding:8px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1}
-.admin-tech-table td{padding:8px 8px;border-bottom:1px solid #eef1f6;vertical-align:middle;color:#333;max-width:180px}
+.admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333;max-width:160px}
+.admin-tech-table th.admin-tech-focus,.admin-tech-table td.admin-tech-focus{min-width:270px;max-width:320px;width:270px}
+.admin-tech-table th.admin-tech-cat,.admin-tech-table td.admin-tech-cat{max-width:72px;text-align:center;white-space:nowrap}
 .admin-tech-table tr:hover td{background:#f8faff}
 .admin-tech-table .admin-miss{color:#C0392B;font-weight:700}
 .admin-tech-table .admin-miss-list{color:#C0392B;font-size:11px;font-weight:600;line-height:1.35}
 .admin-tech-table .admin-ok{color:#0F6E56;font-weight:600}
+.admin-tech-table .admin-edit-field{width:100%;min-width:0;padding:6px 8px;font-size:12px}
+.admin-tech-table textarea.admin-edit-field{min-height:56px;resize:vertical;line-height:1.35}
+.admin-tech-table .admin-tech-cat-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#555;cursor:pointer}
+.admin-tech-table .admin-tech-cat-label input{margin:0}
 .admin-tech-actions{display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap}
 .admin-tech-edit{font-size:12px;color:#1B3A6B;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-tech-edit:hover{background:#e0ebff}
@@ -344,6 +350,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .alert-pills{display:flex;flex-wrap:wrap;gap:6px}
 .alert-pill{font-size:11px;background:#fff;border:1.5px solid #b8d0f5;border-radius:20px;padding:4px 12px;color:#1B3A6B;font-weight:500}
 .sp-ata{font-size:11px;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:20px;padding:4px 10px;color:#1B3A6B;font-weight:700;white-space:nowrap}
+.ata-report-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.2;color:#fff;background:#4A90D9;border:none;cursor:pointer;white-space:nowrap;font-family:inherit}
+.ata-report-chip:hover{background:#3a7bc0}
 .sp-ata-muted{font-size:11px;color:#bbb;font-weight:600}
 .sp-focus{font-size:11px;background:#FFF8E6;border:1px solid #e6c200;border-radius:20px;padding:4px 10px;color:#7a5d00;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sp-focus-dates{font-size:11px;color:#888;font-weight:600;white-space:nowrap}
@@ -586,6 +594,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .assess-modal h3{margin:0 0 8px;font-size:18px;color:#1B3A6B}
 .assess-modal p{margin:0 0 18px;font-size:14px;line-height:1.55;color:#444}
 .assess-modal-msg{font-size:15px;font-weight:700;color:#1B3A6B;background:#EEF4FF;border-radius:10px;padding:12px 14px;margin-bottom:18px;line-height:1.45}
+.assess-modal-msg .assess-req-title{margin:0 0 8px;font-size:14px;font-weight:800;letter-spacing:.2px}
+.assess-modal-msg .assess-req-list{margin:0;padding:0 0 0 1.25em;font-size:14px;font-weight:600;line-height:1.45}
+.assess-modal-msg .assess-req-list li{margin:5px 0}
+.assess-modal-msg .assess-req-empty{font-size:14px;font-weight:600;color:#666}
 .assess-modal-actions{display:flex;justify-content:flex-end}
 .tech-results-overlay{display:none;position:fixed;inset:0;background:#f0f2f5;z-index:110;flex-direction:column}
 .tech-results-overlay.visible{display:flex}
@@ -854,12 +866,6 @@ body.mobile-nav-open{overflow:hidden}
       <div class="login-sub" style="color:#666">Add or remove Admins, PMs/APMs, and Technicians</div>
       <div class="err" id="admin-err"></div>
 
-      <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" aria-expanded="false" onclick="openSkills()">
-          <span class="admin-sec-chevron">▼</span> Manage Skills &amp; Categories
-        </button>
-      </div>
-
       <div class="admin-sec" id="admin-reports-sec">
         <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-reports" aria-expanded="false" onclick="toggleAdminSection('reports')">
           <span class="admin-sec-chevron">▼</span> Reports
@@ -1041,6 +1047,64 @@ body.mobile-nav-open{overflow:hidden}
       </div>
 
       <div class="admin-sec">
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-techs" aria-expanded="false" onclick="toggleAdminSection('techs')">
+          <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
+        </button>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
+        <div class="report-filters" style="margin-bottom:10px">
+          <div class="pm-search-wrap">
+            <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
+            <div class="pm-search-hint" id="admin-tech-search-hint"></div>
+          </div>
+          <div class="report-filter-field">
+            <label for="admin-tech-region">Region</label>
+            <select id="admin-tech-region" onchange="onAdminTechSearch()">
+              <option value="">All regions</option>
+              <option value="IM">Intermountain</option>
+              <option value="KES">KES</option>
+              <option value="MA">Mid-Atlantic</option>
+              <option value="MW">Midwest</option>
+              <option value="National">National</option>
+              <option value="National-TAB Survey">National-TAB Survey</option>
+              <option value="NE">New England</option>
+              <option value="PC">Pacific Coast</option>
+              <option value="RM">Rocky Mountain</option>
+              <option value="SE">Southeast</option>
+              <option value="SW">Southwest</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
+          <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
+          <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
+          <button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px;font-size:12px" onclick="document.getElementById('admin-tech-import-file').click()">Import from Excel</button>
+          <input type="file" id="admin-tech-import-file" accept=".xlsx,.xls,.csv,text/csv" style="display:none" onchange="importAdminTechsExcel(this)">
+          <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Edit cells inline and click Save. Category columns are required-category checkboxes. Export/Import still use email to match technicians.</span>
+        </div>
+        <div id="admin-tech-import-status" style="font-size:12px;margin:0 0 8px;min-height:0"></div>
+        <div class="admin-add">
+          <input id="add-tech-name" placeholder="Full name">
+          <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
+          <select id="add-tech-region">
+            <option value="IM">Intermountain</option>
+            <option value="KES">KES</option>
+            <option value="MA">Mid-Atlantic</option>
+            <option value="MW">Midwest</option>
+            <option value="National">National</option>
+            <option value="National-TAB Survey">National-TAB Survey</option>
+            <option value="NE">New England</option>
+            <option value="PC">Pacific Coast</option>
+            <option value="RM">Rocky Mountain</option>
+            <option value="SE">Southeast</option>
+            <option value="SW">Southwest</option>
+          </select>
+          <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
+        </div>
+        <div class="admin-list" id="list-techs"></div>
+        </div>
+      </div>
+
+      <div class="admin-sec">
         <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-ata" aria-expanded="false" onclick="toggleAdminSection('ata')">
           <span class="admin-sec-chevron">▼</span> ATA Tracking
         </button>
@@ -1119,31 +1183,9 @@ body.mobile-nav-open{overflow:hidden}
       </div>
 
       <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="false" onclick="toggleAdminSection('admins')">
-          <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
+        <button type="button" class="admin-sec-h admin-sec-toggle" aria-expanded="false" onclick="openSkills()">
+          <span class="admin-sec-chevron">▼</span> Manage Skills &amp; Categories
         </button>
-        <div class="admin-sec-body collapsed" id="admin-sec-body-admins">
-        <div class="admin-add">
-          <input id="add-admin-name" placeholder="Full name">
-          <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
-          <select id="add-admin-region">
-            <option value="">Region (optional)</option>
-            <option value="IM">Intermountain</option>
-            <option value="KES">KES</option>
-            <option value="MA">Mid-Atlantic</option>
-            <option value="MW">Midwest</option>
-            <option value="National">National</option>
-            <option value="National-TAB Survey">National-TAB Survey</option>
-            <option value="NE">New England</option>
-            <option value="PC">Pacific Coast</option>
-            <option value="RM">Rocky Mountain</option>
-            <option value="SE">Southeast</option>
-            <option value="SW">Southwest</option>
-          </select>
-          <button type="button" class="btn" onclick="addPerson('admin')">Add</button>
-        </div>
-        <div class="admin-list" id="list-admins"></div>
-        </div>
       </div>
 
       <div class="admin-sec">
@@ -1175,45 +1217,15 @@ body.mobile-nav-open{overflow:hidden}
       </div>
 
       <div class="admin-sec">
-        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-techs" aria-expanded="false" onclick="toggleAdminSection('techs')">
-          <span class="admin-sec-chevron">▼</span> Technicians <span class="ct" id="ct-techs">0</span>
+        <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-admins" aria-expanded="false" onclick="toggleAdminSection('admins')">
+          <span class="admin-sec-chevron">▼</span> Admins <span class="ct" id="ct-admins">0</span>
         </button>
-        <div class="admin-sec-body collapsed" id="admin-sec-body-techs">
-        <div class="report-filters" style="margin-bottom:10px">
-          <div class="pm-search-wrap">
-            <input type="search" id="admin-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onAdminTechSearch()">
-            <div class="pm-search-hint" id="admin-tech-search-hint"></div>
-          </div>
-          <div class="report-filter-field">
-            <label for="admin-tech-region">Region</label>
-            <select id="admin-tech-region" onchange="onAdminTechSearch()">
-              <option value="">All regions</option>
-              <option value="IM">Intermountain</option>
-              <option value="KES">KES</option>
-              <option value="MA">Mid-Atlantic</option>
-              <option value="MW">Midwest</option>
-              <option value="National">National</option>
-              <option value="National-TAB Survey">National-TAB Survey</option>
-              <option value="NE">New England</option>
-              <option value="PC">Pacific Coast</option>
-              <option value="RM">Rocky Mountain</option>
-              <option value="SE">Southeast</option>
-              <option value="SW">Southwest</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px">
-          <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
-          <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
-          <button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px;font-size:12px" onclick="document.getElementById('admin-tech-import-file').click()">Import from Excel</button>
-          <input type="file" id="admin-tech-import-file" accept=".xlsx,.xls,.csv,text/csv" style="display:none" onchange="importAdminTechsExcel(this)">
-          <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Red — marks missing profile fields. Category columns are Yes/No. Export/Import use email to match technicians.</span>
-        </div>
-        <div id="admin-tech-import-status" style="font-size:12px;margin:0 0 8px;min-height:0"></div>
+        <div class="admin-sec-body collapsed" id="admin-sec-body-admins">
         <div class="admin-add">
-          <input id="add-tech-name" placeholder="Full name">
-          <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
-          <select id="add-tech-region">
+          <input id="add-admin-name" placeholder="Full name">
+          <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
+          <select id="add-admin-region">
+            <option value="">Region (optional)</option>
             <option value="IM">Intermountain</option>
             <option value="KES">KES</option>
             <option value="MA">Mid-Atlantic</option>
@@ -1226,9 +1238,9 @@ body.mobile-nav-open{overflow:hidden}
             <option value="SE">Southeast</option>
             <option value="SW">Southwest</option>
           </select>
-          <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
+          <button type="button" class="btn" onclick="addPerson('admin')">Add</button>
         </div>
-        <div class="admin-list" id="list-techs"></div>
+        <div class="admin-list" id="list-admins"></div>
         </div>
       </div>
 
@@ -1378,8 +1390,8 @@ body.mobile-nav-open{overflow:hidden}
         <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
       </div>
       <div class="sb-assess-wrap">
-        <button type="button" class="sb-assess-btn sb-preboot-btn" id="tech-preboot-nav" onclick="openPreBootcampAssessment()">📋 Take Pre-Bootcamp assessment</button>
-        <button type="button" class="sb-assess-btn" id="tech-assess-nav" onclick="startQuestionnaire()">📝 Take this month's assessment</button>
+        <button type="button" class="sb-assess-btn sb-preboot-btn" id="tech-preboot-nav" onclick="openPreBootcampAssessment()">Take Pre-Bootcamp assessment</button>
+        <button type="button" class="sb-assess-btn" id="tech-assess-nav" onclick="startQuestionnaire()">Take this month's assessment</button>
         <div class="sb-assess-done" id="tech-assess-done"></div>
       </div>
       <div class="sb-nav-wrap">
@@ -1388,7 +1400,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="sb-sidebar-close" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
         </div>
         <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
-        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">📚 ATA Tracking</button>
+        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">ATA Tracking</button>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -1400,8 +1412,8 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"></div>
           <div class="mobile-assess-actions">
-            <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">📋 Pre-Bootcamp</button>
-            <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">📝 Assess</button>
+            <button type="button" class="mobile-assess-btn mobile-preboot-btn" id="tech-preboot-mobile" onclick="openPreBootcampAssessment()">Pre-Bootcamp</button>
+            <button type="button" class="mobile-assess-btn" id="tech-assess-mobile" onclick="startQuestionnaire()">Assess</button>
           </div>
         </div>
         <div class="page-body" id="tech-home-body"><div class="loading">Loading...</div></div>
@@ -2192,7 +2204,7 @@ function updateTechAssessNav(t,readOnly){
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
   const canAssess=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
-  const btnLabel=draft?'▶ Continue assessment':(submittedThisMonth?'📝 Update assessment':'📝 Take Assessment');
+  const btnLabel=draft?'Continue assessment':(submittedThisMonth?'Update assessment':'Take Assessment');
   const clickFn=beginAssessmentFromHome;
   // Always show home Take Assessment + last date (sidebar is gone).
   if(homeBtn&&homeWrap){
@@ -2209,7 +2221,7 @@ function updateTechAssessNav(t,readOnly){
   }
   if(mobile&&canAssess){
     mobile.classList.add('visible');
-    mobile.textContent=draft?'▶ Continue':(submittedThisMonth?'📝 Update':'📝 Assess');
+    mobile.textContent=draft?'Continue':(submittedThisMonth?'Update':'Assess');
     mobile.onclick=clickFn;
   }
   if(submittedThisMonth&&done&&!(homeBtn&&homeWrap)&&canAssess){
@@ -2259,8 +2271,8 @@ function updateTechPreBootcampNav(t,readOnly){
   const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
   const prog=checklistProgress(completed);
   const continuing=preBootcampHasAnyRating(completed)&&prog.ratedPct<100;
-  const label=continuing?'▶ Continue Pre-Bootcamp':'📋 Take Pre-Bootcamp Assessment';
-  const mobileLabel=continuing?'▶ Continue Pre-Bootcamp':'📋 Pre-Bootcamp';
+  const label=continuing?'Continue Pre-Bootcamp':'Take Pre-Bootcamp Assessment';
+  const mobileLabel=continuing?'Continue Pre-Bootcamp':'Pre-Bootcamp';
   const dateBits=[bootcampDateLabel(t)];
   const lastPb=lastPreBootcampDateLabel(t);
   if(lastPb&&lastPb!=='Not taken yet')dateBits.push(lastPb);
@@ -5402,7 +5414,7 @@ function renderTechAtaHomeCard(tech){
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
         ${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}
-        ${clickable?`<button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#4A90D9" onclick="event.stopPropagation();showTechAta()">📚 ATA Tracking</button>`:''}
+        ${clickable?`<button type="button" class="ata-report-chip" onclick="event.stopPropagation();showTechAta()">ATA Report</button>`:''}
       </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${programCells}</div>
@@ -6134,8 +6146,22 @@ const ADMIN_TECH_BASE_COLS=[
   {key:'goal_start',label:'Goal start'},
   {key:'goal_end',label:'Goal end'}
 ];
+/** Columns shown in Technician Table view (editable). */
+const ADMIN_TECH_TABLE_COLS=[
+  {key:'name',label:'Name'},
+  {key:'position',label:'Position'},
+  {key:'region',label:'Region'},
+  {key:'start',label:'Start Date'},
+  {key:'bootcamp',label:'Bootcamp Date'},
+  {key:'focus',label:'Focus',wide:true},
+  {key:'goal_start',label:'Goal Start'},
+  {key:'goal_end',label:'Goal End'}
+];
 function adminTechCategoryCols(){
   return PROFICIENCY_CATEGORY_OPTIONS.map(o=>({key:'cat_'+o.key,label:o.label,catKey:o.key}));
+}
+function adminTechTableCols(){
+  return ADMIN_TECH_TABLE_COLS.concat(adminTechCategoryCols());
 }
 function adminTechAllCols(){
   return ADMIN_TECH_BASE_COLS.concat(adminTechCategoryCols()).concat([{key:'missing',label:'Missing'}]);
@@ -6202,44 +6228,100 @@ function toggleAdminTechTableView(){
   if(hint)hint.style.display=adminTechViewMode==='table'?'':'none';
   renderAdminLists();
 }
+function adminTechCatShort(label){
+  const s=String(label||'');
+  if(s.length<=14)return s;
+  return s.replace(/\s*\([^)]*\)\s*/g,'').trim().slice(0,14);
+}
 function renderAdminTechTable(rows){
   const el=document.getElementById('list-techs');
   if(!el)return;
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
-  const cols=adminTechAllCols();
-  const head=cols.map(c=>`<th title="${adminEsc(c.label)}">${adminEsc(c.label)}</th>`).join('')+'<th>Actions</th>';
+  const cols=adminTechTableCols();
+  const head=cols.map(c=>{
+    const cls=c.wide?' class="admin-tech-focus"':(c.catKey?' class="admin-tech-cat"':'');
+    return`<th${cls} title="${adminEsc(c.label)}">${adminEsc(c.catKey?adminTechCatShort(c.label):c.label)}</th>`;
+  }).join('')+'<th>Actions</th>';
   const body=rows.map(p=>{
     const d=adminTechRowData(p);
+    const id=p.id;
+    const nameCell=`<input id="tbl-name-${id}" class="admin-edit-field" value="${adminEsc(d.name)}" placeholder="Full name">`;
+    const posCell=`<select id="tbl-position-${id}" class="admin-edit-field">${positionOptionsHtml(p.job_position||'')}</select>`;
+    const regionCell=`<select id="tbl-region-${id}" class="admin-edit-field">${regionOptionsHtml(p.region||'')}</select>`;
+    const startCell=`<input type="date" id="tbl-start-${id}" class="admin-edit-field" value="${adminEsc(d.start)}">`;
+    const bootCell=`<input type="date" id="tbl-bootcamp-${id}" class="admin-edit-field" value="${adminEsc(d.bootcamp)}">`;
+    const focusCell=`<textarea id="tbl-focus-${id}" class="admin-edit-field" placeholder="Training focus" maxlength="2000">${adminEsc(d.focus)}</textarea>`;
+    const goalStartCell=`<input type="date" id="tbl-goal-start-${id}" class="admin-edit-field" value="${adminEsc(d.goal_start)}">`;
+    const goalEndCell=`<input type="date" id="tbl-goal-end-${id}" class="admin-edit-field" value="${adminEsc(d.goal_end)}">`;
     const baseCells=[
-      adminTechCellHtml(d.name,d.missSet.has('Name')),
-      adminTechCellHtml(d.email,d.missSet.has('Email')),
-      adminTechCellHtml(d.position,d.missSet.has('Position')),
-      adminTechCellHtml(d.regionCode||d.region,d.missSet.has('Region')),
-      adminTechCellHtml(d.nebb,d.missSet.has('NEBB')),
-      adminTechCellHtml(d.cert_exp,d.missSet.has('Cert expiration')),
-      adminEsc(d.cecs||'—'),
-      adminEsc(d.site||'—'),
-      adminTechCellHtml(d.start,d.missSet.has('Employee start')),
-      adminTechCellHtml(d.bootcamp,d.missSet.has('Bootcamp start')),
-      adminTechCellHtml(d.focus,false),
-      adminTechCellHtml(d.goal_start,false),
-      adminTechCellHtml(d.goal_end,false)
+      `<td>${nameCell}</td>`,
+      `<td>${posCell}</td>`,
+      `<td>${regionCell}</td>`,
+      `<td>${startCell}</td>`,
+      `<td>${bootCell}</td>`,
+      `<td class="admin-tech-focus">${focusCell}</td>`,
+      `<td>${goalStartCell}</td>`,
+      `<td>${goalEndCell}</td>`
     ];
     const catCells=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
       const on=d.cats[o.key]==='Yes';
-      return on?'<span class="admin-ok">Yes</span>':'<span style="color:#999">No</span>';
+      return`<td class="admin-tech-cat"><label class="admin-tech-cat-label" title="${adminEsc(o.label)}"><input type="checkbox" class="tbl-req-cat" data-person="${id}" data-key="${o.key}" ${on?'checked':''}></label></td>`;
     });
-    const missCell=d.missing.length?`<span class="admin-miss-list">${adminEsc(d.missing.join(', '))}</span>`:`<span class="admin-ok">Complete</span>`;
-    const cells=baseCells.concat(catCells).concat([missCell]).map(html=>`<td>${html}</td>`).join('');
     const viewBtn=p.tech_id&&p.region
       ?`<button type="button" class="admin-view" onclick="viewTechFromAdmin(${p.tech_id},'${adminEsc(p.region)}','${adminEsc((p.full_name||p.email)).replace(/'/g,'')}')">View</button>`
       :'';
-    const actions=`<td><div class="admin-tech-actions">${viewBtn}<button type="button" class="admin-edit" onclick="editPerson(${p.id})">Edit</button></div></td>`;
-    return`<tr>${cells}${actions}</tr>`;
+    const actions=`<td><div class="admin-tech-actions">${viewBtn}<button type="button" class="admin-edit" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="saveAdminTechTableRow(${id})">Save</button></div></td>`;
+    return`<tr data-person-id="${id}">${baseCells.join('')}${catCells.join('')}${actions}</tr>`;
   }).join('');
   el.className='report-wrap';
   el.style.overflowX='auto';
   el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+async function saveAdminTechTableRow(id){
+  const err=document.getElementById('admin-err');
+  if(err){err.style.display='none';err.textContent='';}
+  const p=(adminPeople||[]).find(x=>x.id===id);
+  if(!p)return;
+  const nameEl=document.getElementById('tbl-name-'+id);
+  const posEl=document.getElementById('tbl-position-'+id);
+  const regionEl=document.getElementById('tbl-region-'+id);
+  const startEl=document.getElementById('tbl-start-'+id);
+  const bootEl=document.getElementById('tbl-bootcamp-'+id);
+  const focusEl=document.getElementById('tbl-focus-'+id);
+  const gsEl=document.getElementById('tbl-goal-start-'+id);
+  const geEl=document.getElementById('tbl-goal-end-'+id);
+  const boxes=[...document.querySelectorAll(`.tbl-req-cat[data-person="${id}"]`)];
+  const args={
+    p_id:id,
+    p_name:(nameEl?nameEl.value:'').trim()||null,
+    p_email:p.email||null,
+    p_role:null,
+    p_region:regionEl?regionEl.value:null,
+    p_start_date:startEl?startEl.value:null,
+    p_bootcamp_start_date:bootEl?bootEl.value:null,
+    p_nebb_status:null,
+    p_cert_expires_on:null,
+    p_cecs_complete:null,
+    p_nebb_site_updated:null,
+    p_required_categories:boxes.filter(el=>el.checked).map(el=>el.getAttribute('data-key')).filter(Boolean),
+    p_training_focus:focusEl?focusEl.value:'',
+    p_training_goal_start:gsEl?gsEl.value:'',
+    p_training_goal_end:geEl?geEl.value:'',
+    p_job_position:posEl?posEl.value:'',
+    p_lead_tech:null
+  };
+  try{
+    await rpc('app_admin_update_person',args);
+    await loadAdminLists();
+    try{await ataLoadAdmin();}catch(_){}
+  }catch(e){
+    if(err){
+      err.textContent='Could not save technician: '+(e.message||'try again');
+      err.style.display='block';
+    }else{
+      alert('Could not save technician: '+(e.message||'try again'));
+    }
+  }
 }
 function adminTechExcelHeaders(){
   return ADMIN_TECH_BASE_COLS.map(c=>c.label)
@@ -7240,6 +7322,25 @@ function requiredAssessmentSections(t){
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
+function requiredSectionLabels(t){
+  const req=requiredAssessmentSections(t);
+  const keys=[...(req.checklist||[]),...(req.rated||[])];
+  const seen=new Set();
+  const labels=[];
+  keys.forEach(k=>{
+    if(!k||seen.has(k))return;
+    seen.add(k);
+    labels.push(proficiencyCategoryLabel(k));
+  });
+  return labels;
+}
+function requiredSectionsListHtml(t){
+  const labels=requiredSectionLabels(t);
+  if(!labels.length){
+    return`<div class="assess-req-title">Required Sections</div><div class="assess-req-empty">None selected</div>`;
+  }
+  return`<div class="assess-req-title">Required Sections</div><ul class="assess-req-list">${labels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
+}
 function lastAssessmentWithRawScores(t){
   const assessments=t&&t.assessments;
   if(!assessments||!assessments.length)return null;
@@ -7317,7 +7418,8 @@ function filterProjectJobsFromRaw(raw,t){
   return jobs;
 }
 let assessStartContinue=null;
-function showAssessmentStartModal(message,onContinue){
+function showAssessmentStartModal(message,onContinue,opts){
+  opts=opts||{};
   const overlay=document.getElementById('assess-start-modal');
   const msgEl=document.getElementById('assess-start-msg');
   const btn=document.getElementById('assess-start-continue');
@@ -7325,7 +7427,8 @@ function showAssessmentStartModal(message,onContinue){
   const rerateWrap=document.getElementById('assess-start-rerate-wrap');
   const rerate=document.getElementById('assess-start-rerate');
   if(!overlay||!msgEl||!btn){onContinue();return;}
-  msgEl.textContent=message;
+  if(opts.html)msgEl.innerHTML=message;
+  else msgEl.textContent=message;
   qForceRerateComplete=false;
   const doneSecs=complete100QuestionnaireSections(currentTechData);
   const pending=visibleQuestionnaireSections(currentTechData);
@@ -8551,11 +8654,11 @@ function renderTechHome(t,opts){
     </div>
     <div class="tech-tenure-actions">
       <div class="tech-tenure-action" id="home-preboot-action" style="${showPreBoot?'':'display:none'}">
-        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">📋 Take Pre-Bootcamp Assessment</button>
+        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">Take Pre-Bootcamp Assessment</button>
         <div class="tech-tenure-action-date" id="home-preboot-date">${showPreBoot?adminEsc(bootcampDateLabel(t)):''}</div>
       </div>
       <div class="tech-tenure-action" id="home-assess-action">
-        <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">📝 Take Assessment</button>
+        <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">Take Assessment</button>
         <div class="tech-tenure-action-date" id="home-assess-date">${adminEsc(lastAssessmentDateLabel(t))}</div>
       </div>
     </div>
@@ -8797,7 +8900,7 @@ async function startQuestionnaire(opts){
     window.scrollTo(0,0);
   };
   // Always show the start-date rules before opening (including continue).
-  showAssessmentStartModal(requiredSectionsMessage(currentTechData),openQuestionnaire);
+  showAssessmentStartModal(requiredSectionsListHtml(currentTechData),openQuestionnaire,{html:true});
 }
 function continueQuestionnaire(){startQuestionnaire({resume:true});}
 async function saveAssessmentDraft(){
@@ -8810,7 +8913,6 @@ async function saveAssessmentDraft(){
   const draft={
     month:currentAssessmentMonth(),
     raw_scores:draftScores,
-    nebb_status:qNebbStatus||null,
     comment:comment,
     saved_at:new Date().toISOString()
   };
@@ -8892,7 +8994,6 @@ function renderQuestionnaire(){
       <div class="q-progress"><div class="q-progress-fill" id="q-fill" style="width:0%"></div></div>
       <div class="q-progress-label" id="q-label">0 of ${total} skills rated (0%)</div>
     </div>
-    ${nebbQuestionHtml()}
     ${emptyNote}
     ${sections}
     <div class="q-section">
@@ -8933,17 +9034,11 @@ function updateProgress(){
 }
 
 async function submitAssessment(){
-  if(!qNebbStatus){
-    alert('Please select your NEBB CT/CP status before submitting.');
-    document.getElementById('q-sec-nebb')?.scrollIntoView({behavior:'smooth',block:'start'});
-    return;
-  }
   const comment=document.getElementById('q-comment').value.trim();
   const payload={
     date:new Date().toISOString().split('T')[0],
     ...sectionAvgPayload(),
     comment:comment||null,
-    nebb_status:qNebbStatus,
     raw_scores:submitRawScoresPayload()
   };
   try{
@@ -8965,8 +9060,6 @@ async function submitAssessment(){
     const raw=(e.message||'');
     const msg=raw.includes('ALREADY_SUBMITTED')
       ?'You have already submitted an assessment this month.'
-      :raw.includes('NEBB_STATUS_REQUIRED')
-      ?'Please select your NEBB CT/CP status before submitting.'
       :raw.includes('PGRST203')
       ?'Submit failed (server config). Contact your admin.'
       :'Error submitting. Please try again.';

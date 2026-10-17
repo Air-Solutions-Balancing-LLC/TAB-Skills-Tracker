@@ -360,10 +360,6 @@ BEGIN
     RAISE EXCEPTION 'INVALID_SESSION';
   END IF;
 
-  IF v_nebb IS NULL THEN
-    RAISE EXCEPTION 'NEBB_STATUS_REQUIRED';
-  END IF;
-
   PERFORM app_upsert_assessment_for_tech(
     v_tech_id,
     v_date,
@@ -377,8 +373,9 @@ BEGIN
     coalesce(p_payload->'raw_scores', '{}'::jsonb)
   );
 
+  -- NEBB is profile-managed; only overwrite when explicitly provided.
   UPDATE public.technicians
-  SET nebb_status = v_nebb,
+  SET nebb_status = COALESCE(v_nebb, nebb_status),
       assessment_draft = NULL
   WHERE id = v_tech_id;
 END;
