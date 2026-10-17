@@ -411,10 +411,22 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 /* SECTION */
 .section-label{font-size:11px;font-weight:700;color:#999;padding:20px 24px 10px;text-transform:uppercase;letter-spacing:.6px}
 .pm-search-wrap{padding:0 24px 12px}
-.pm-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.pm-filter-bar{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 10px}
+.pm-filter-stack{display:flex;flex-direction:column;gap:6px;min-width:200px;max-width:360px;flex:1}
+.pm-multi-task{position:relative;min-width:220px;max-width:360px;flex:1}
+.pm-multi-task-btn{width:100%;text-align:left;cursor:pointer}
+.pm-multi-task-menu{display:none;position:absolute;z-index:40;top:calc(100% + 4px);left:0;right:0;min-width:280px;max-height:320px;overflow:auto;background:#fff;border:1.5px solid #d8e0ec;border-radius:10px;box-shadow:0 8px 24px rgba(27,58,107,0.14);padding:6px 0}
+.pm-multi-task.is-open .pm-multi-task-menu{display:block}
+.pm-multi-task-group{padding:6px 0 4px}
+.pm-multi-task-group+.pm-multi-task-group{border-top:1px solid #eef1f6}
+.pm-multi-task-group-lbl{padding:4px 12px 6px;font-size:10px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.35px}
+.pm-multi-task-opt{display:flex;align-items:flex-start;gap:8px;padding:5px 12px;font-size:12px;font-weight:600;color:#333;cursor:pointer}
+.pm-multi-task-opt:hover{background:#f4f7fc}
+.pm-multi-task-opt input{margin-top:2px;flex-shrink:0;accent-color:#1B3A6B}
+.pm-multi-task-clear{display:block;width:calc(100% - 16px);margin:6px 8px 4px;padding:6px 8px;border:1px solid #d8e0ec;border-radius:8px;background:#f8faff;font-size:11px;font-weight:700;color:#1B3A6B;cursor:pointer;font-family:inherit}
 .pm-search-wrap input{width:100%;max-width:280px;padding:10px 14px 10px 36px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.006a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 12px center;outline:none}
 .pm-search-wrap input:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
-.pm-filter-select{max-width:320px;min-width:160px;flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-weight:600;color:#1B3A6B;background:#fff;outline:none;font-family:inherit;cursor:pointer}
+.pm-filter-select{width:100%;max-width:360px;min-width:0;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-weight:600;color:#1B3A6B;background:#fff;outline:none;font-family:inherit;cursor:pointer;box-sizing:border-box}
 .pm-filter-select:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .pm-filter-select:disabled{opacity:.45;cursor:default}
 .pm-search-hint{font-size:11px;color:#888;margin-top:6px;min-height:14px}
@@ -858,7 +870,8 @@ body.mobile-nav-open{overflow:hidden}
   .metric{padding:7px 9px}
   .metric-val{font-size:15px}
   .section-label,.pm-search-wrap{padding-left:14px;padding-right:14px}
-  .pm-search-wrap input,.pm-filter-select{max-width:none;min-width:0;flex:1 1 100%}
+  .pm-search-wrap input,.pm-filter-stack,.pm-multi-task{max-width:none;min-width:0;flex:1 1 100%}
+  .pm-filter-select,.pm-multi-task-menu{max-width:none}
   .tech-grid{padding:0 14px 20px}
   .dates-cards{grid-template-columns:1fr}
   .comp-row{flex-direction:column;align-items:stretch;gap:6px}
@@ -1559,12 +1572,18 @@ body.mobile-nav-open{overflow:hidden}
         <div class="pm-search-wrap">
           <div class="pm-filter-bar">
             <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
-            <select id="pm-cat-filter" class="pm-filter-select" aria-label="Filter by category 90%+" onchange="onPmCatFilterChange()">
-              <option value="">Category (90%+)</option>
-            </select>
-            <select id="pm-task-filter" class="pm-filter-select" aria-label="Filter by task scored 4" onchange="onPmTaskFilterChange()" disabled>
-              <option value="">Task scored 4</option>
-            </select>
+            <div class="pm-filter-stack">
+              <select id="pm-cat-filter" class="pm-filter-select" aria-label="Filter by category 90%+" onchange="onPmCatFilterChange()">
+                <option value="">Category (90%+)</option>
+              </select>
+              <select id="pm-task-filter" class="pm-filter-select" aria-label="Filter by task scored 4" onchange="onPmTaskFilterChange()" disabled>
+                <option value="">Task scored 4</option>
+              </select>
+            </div>
+            <div class="pm-multi-task" id="pm-multi-task">
+              <button type="button" class="pm-filter-select pm-multi-task-btn" id="pm-multi-task-btn" aria-haspopup="listbox" aria-expanded="false" onclick="togglePmMultiTaskMenu(event)">Filter by Tasks</button>
+              <div class="pm-multi-task-menu" id="pm-multi-task-menu" role="listbox" aria-label="Filter by Tasks" aria-multiselectable="true"></div>
+            </div>
           </div>
           <div class="pm-search-hint" id="pm-search-hint"></div>
         </div>
@@ -8585,7 +8604,52 @@ async function rpc(fn,args={}){
   const t=await res.text();return t?JSON.parse(t):null;
 }
 
-const PM_CAT_FILTER_EXCLUDE=new Set(['safety','safety_instruments']);
+const PM_CAT_FILTER_EXCLUDE=new Set(['safety','safety_instruments','basic_solo_projects','basic_survey_projects']);
+/** Curated task sub-filters (by category). Names match assessment skill labels. */
+const PM_TASK_FILTER_ALLOW={
+  intermediate:[
+    'Shows Flexibility with Project Demands',
+    'VAVs',
+    'Parallel Fan Powered Boxes',
+    'Troubleshooting VAVs',
+    'Troubleshooting Low Airflow',
+    'Balance Valve Measurement'
+  ],
+  intermediate_7_12:[
+    'Energy Recovery Units',
+    'Motor Sheave Calculations',
+    'Total Unit CFM — VAV Systems',
+    'Total Unit CFM - VAV Systems',
+    'Establishing Final SP Setpoint',
+    'Series Fan Powered Boxes',
+    'Air Changes per Hour',
+    'Fume Hoods',
+    'Stairwell Pressures Testing',
+    'Stairwell Pressures'
+  ],
+  advanced:[
+    'Balance Pumps',
+    'Pump Balancing',
+    'Coil Balancing',
+    'Primary / Secondary Piping Balancing',
+    'Ultrasonic Flow Meter',
+    'Troubleshooting Hydronics',
+    'Solving Humidity Issues',
+    'Chilled Beams'
+  ],
+  special_testing_complex:[
+    'Duct Air Leakage Testing',
+    'Sound Testing',
+    'Vibration Testing',
+    'Temperature Differential Analysis / BTU Calculations',
+    'Handles all types of Complex Projects - Prisons, Hospitals, Labs, Military',
+    'Manage Large Projects, extending over several weeks to months.'
+  ]
+};
+/** Synthetic sub-filter options (not real skill ids). */
+const PM_TASK_FILTER_SYNTHETIC={
+  basic:[{id:'__proficient_basic__',name:'Proficient at Basic Projects'}]
+};
 
 function pmFilterableCategories(){
   return (SKILL_CATS||[]).filter(c=>c&&c.skey&&!PM_CAT_FILTER_EXCLUDE.has(c.skey));
@@ -8597,9 +8661,23 @@ function pmFilterCategoryLabel(cat){
   if(cat.skey==='advanced')label+=' — Hydronics';
   return label;
 }
+function pmNormalizeTaskName(name){
+  return String(name||'').toLowerCase().replace(/\s+/g,' ').trim();
+}
 function pmCategoryTasks(skey){
-  const sec=(QUESTIONNAIRE||[]).find(s=>s.key===skey);
-  return sec&&sec.skills?sec.skills.slice():[];
+  let skills;
+  if(PM_TASK_FILTER_SYNTHETIC[skey]){
+    skills=PM_TASK_FILTER_SYNTHETIC[skey].slice();
+  }else{
+    const sec=(QUESTIONNAIRE||[]).find(s=>s.key===skey);
+    skills=sec&&sec.skills?sec.skills.slice():[];
+    const allow=PM_TASK_FILTER_ALLOW[skey];
+    if(allow&&allow.length){
+      const allowSet=new Set(allow.map(pmNormalizeTaskName));
+      skills=skills.filter(sk=>allowSet.has(pmNormalizeTaskName(sk.name)));
+    }
+  }
+  return skills.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),undefined,{sensitivity:'base'}));
 }
 function techLatestAssessment(t){
   return t&&t.assessments&&t.assessments.length?t.assessments[t.assessments.length-1]:null;
@@ -8613,8 +8691,10 @@ function techCategoryPctAtLeast(t,skey,minPct){
   return pct!==null&&pct!==undefined&&pct>=minPct;
 }
 function techHasTaskScore4(t,skillId){
+  if(!skillId)return false;
+  if(skillId==='__proficient_basic__')return techCategoryPctAtLeast(t,'basic',90);
   const last=techLatestAssessment(t);
-  if(!last||!skillId)return false;
+  if(!last)return false;
   const raw=rawOf(last)||{};
   const v=raw[skillId];
   if(v===undefined||v===null||typeof v==='object')return false;
@@ -8623,6 +8703,76 @@ function techHasTaskScore4(t,skillId){
   const n=normalizeSkillScore(v,sec);
   return n!==null&&Number(n)>=4;
 }
+function pmMultiTaskFilterGroups(){
+  // Same curated subcategory tasks, grouped by category, tasks A–Z within each group.
+  const keys=Object.keys(PM_TASK_FILTER_SYNTHETIC||{}).concat(Object.keys(PM_TASK_FILTER_ALLOW||{}));
+  const seen=new Set();
+  const order=pmFilterableCategories().map(c=>c.skey);
+  const ordered=[];
+  order.forEach(k=>{if(keys.includes(k)&&!seen.has(k)){seen.add(k);ordered.push(k);}});
+  keys.forEach(k=>{if(!seen.has(k)){seen.add(k);ordered.push(k);}});
+  return ordered.map(skey=>{
+    const cat=(SKILL_CATS||[]).find(c=>c.skey===skey)||{skey,label:skey};
+    const tasks=pmCategoryTasks(skey);
+    return{skey,label:pmFilterCategoryLabel(cat),tasks};
+  }).filter(g=>g.tasks&&g.tasks.length);
+}
+function selectedPmMultiTaskIds(){
+  return Array.from(document.querySelectorAll('#pm-multi-task-menu input[type="checkbox"][data-task-id]:checked'))
+    .map(el=>el.getAttribute('data-task-id')).filter(Boolean);
+}
+function updatePmMultiTaskBtnLabel(){
+  const btn=document.getElementById('pm-multi-task-btn');
+  if(!btn)return;
+  const n=selectedPmMultiTaskIds().length;
+  btn.textContent=n?('Filter by Tasks ('+n+')'):'Filter by Tasks';
+}
+function populatePmMultiTaskFilter(){
+  const menu=document.getElementById('pm-multi-task-menu');
+  if(!menu)return;
+  const prev=new Set(selectedPmMultiTaskIds());
+  const groups=pmMultiTaskFilterGroups();
+  menu.innerHTML=groups.map(g=>`<div class="pm-multi-task-group">
+    <div class="pm-multi-task-group-lbl">${adminEsc(g.label)}</div>
+    ${g.tasks.map(sk=>`<label class="pm-multi-task-opt">
+      <input type="checkbox" data-task-id="${adminEsc(sk.id)}" ${prev.has(sk.id)?'checked':''} onchange="onPmMultiTaskFilterChange()">
+      <span>${adminEsc(sk.name)}</span>
+    </label>`).join('')}
+  </div>`).join('')+(groups.length
+    ?`<button type="button" class="pm-multi-task-clear" onclick="clearPmMultiTaskFilter()">Clear tasks</button>`
+    :'<div class="pm-multi-task-group-lbl" style="padding:10px 12px">No tasks available</div>');
+  updatePmMultiTaskBtnLabel();
+}
+function togglePmMultiTaskMenu(ev){
+  if(ev)ev.stopPropagation();
+  const wrap=document.getElementById('pm-multi-task');
+  const btn=document.getElementById('pm-multi-task-btn');
+  if(!wrap)return;
+  const open=wrap.classList.toggle('is-open');
+  if(btn)btn.setAttribute('aria-expanded',open?'true':'false');
+}
+function closePmMultiTaskMenu(){
+  const wrap=document.getElementById('pm-multi-task');
+  const btn=document.getElementById('pm-multi-task-btn');
+  if(wrap)wrap.classList.remove('is-open');
+  if(btn)btn.setAttribute('aria-expanded','false');
+}
+function clearPmMultiTaskFilter(){
+  document.querySelectorAll('#pm-multi-task-menu input[type="checkbox"][data-task-id]').forEach(el=>{el.checked=false;});
+  updatePmMultiTaskBtnLabel();
+  renderTechGrid(regionTechs);
+}
+function onPmMultiTaskFilterChange(){
+  updatePmMultiTaskBtnLabel();
+  renderTechGrid(regionTechs);
+}
+document.addEventListener('click',e=>{
+  const wrap=document.getElementById('pm-multi-task');
+  if(!wrap||!wrap.classList.contains('is-open'))return;
+  if(wrap.contains(e.target))return;
+  closePmMultiTaskMenu();
+});
+
 function populatePmCategoryFilter(){
   const sel=document.getElementById('pm-cat-filter');
   if(!sel)return;
@@ -8634,6 +8784,7 @@ function populatePmCategoryFilter(){
   if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
   else sel.value='';
   populatePmTaskFilter(sel.value);
+  populatePmMultiTaskFilter();
 }
 function populatePmTaskFilter(skey){
   const sel=document.getElementById('pm-task-filter');
@@ -8655,6 +8806,9 @@ function resetPmTechFilters(){
   const catEl=document.getElementById('pm-cat-filter');
   if(catEl)catEl.value='';
   populatePmTaskFilter('');
+  closePmMultiTaskMenu();
+  document.querySelectorAll('#pm-multi-task-menu input[type="checkbox"][data-task-id]').forEach(el=>{el.checked=false;});
+  updatePmMultiTaskBtnLabel();
   updatePmSearchHint('',0,0);
 }
 function onPmCatFilterChange(){
@@ -8688,11 +8842,14 @@ function filterTechsBySearch(techs,query){
   const q=(query||'').trim().toLowerCase();
   const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
   const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
+  const multiIds=selectedPmMultiTaskIds();
   const indexed=techs.map((t,i)=>({t,idx:i}));
   return indexed.filter(({t})=>{
     if(q&&!(t.name||'').toLowerCase().includes(q))return false;
     if(catKey&&!techCategoryPctAtLeast(t,catKey,90))return false;
     if(taskId&&!techHasTaskScore4(t,taskId))return false;
+    // Multi-task filter: tech must have scored 4 (or proficient) on every selected task.
+    if(multiIds.length&&!multiIds.every(id=>techHasTaskScore4(t,id)))return false;
     return true;
   });
 }
@@ -8703,10 +8860,12 @@ function updatePmSearchHint(query,shown,total){
   const q=(query||'').trim();
   const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
   const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
+  const multiN=selectedPmMultiTaskIds().length;
   const bits=[];
   if(q)bits.push('name');
   if(catKey)bits.push('90%+ category');
   if(taskId)bits.push('task score 4');
+  if(multiN)bits.push(multiN+' task'+(multiN===1?'':'s'));
   if(!bits.length){hint.textContent='';return;}
   hint.textContent=shown===total
     ?`${shown} match${shown===1?'':'es'} (${bits.join(' · ')})`
@@ -8746,11 +8905,13 @@ function renderTechGrid(techs){
   const query=document.getElementById('pm-tech-search')?document.getElementById('pm-tech-search').value:'';
   const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
   const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
+  const multiN=selectedPmMultiTaskIds().length;
   const filtered=filterTechsBySearch(techs,query);
   updatePmSearchHint(query,filtered.length,techs.length);
   if(!filtered.length){
     let emptyMsg='No technicians match the current filters.';
-    if(query.trim()&&!catKey&&!taskId)emptyMsg='No technicians match “'+adminEsc(query.trim())+'”.';
+    if(query.trim()&&!catKey&&!taskId&&!multiN)emptyMsg='No technicians match “'+adminEsc(query.trim())+'”.';
+    else if(multiN)emptyMsg='No technicians scored 4 on all selected tasks.';
     else if(catKey&&!taskId)emptyMsg='No technicians at 90%+ in that category.';
     else if(taskId)emptyMsg='No technicians scored 4 on that task (with 90%+ in the category).';
     document.getElementById('tech-grid').innerHTML='<div class="loading">'+emptyMsg+'</div>';
