@@ -98,9 +98,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .pm-tech-nav-select{min-width:160px;max-width:240px;padding:7px 10px;font-size:12px;font-weight:600;color:#1B3A6B;border:1.5px solid #1B3A6B;border-radius:9px;background:#fff;outline:none;font-family:inherit;cursor:pointer}
 .pm-tech-nav-select:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .trow-name-line{margin:0}
-.trow-name-line{margin:0!important}
-.trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow-name-line{margin:0!important;align-items:baseline;gap:10px}
+.trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .trow-name-line .nm-meta{font-size:12px;color:#555}
+.trow-overall-pct{font-size:14px;font-weight:700;white-space:nowrap;flex-shrink:0;letter-spacing:-.2px}
 .trow-status-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;font-size:12px;font-weight:500;color:#555;line-height:1.4}
 .trow-status-line .nm-sep{color:#b0b6c0;margin:0}
 .trow-focus-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;width:100%;min-width:0}
@@ -709,7 +710,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
 .tech-tenure-meta-col{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
 .tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;width:100%}
-.tech-tenure-ata{margin-left:auto;flex-shrink:0}
+.tech-tenure-ata{flex-shrink:0}
 .tech-tenure-ata:empty{display:none}
 .tech-tenure-view-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tech-tenure-view-links .admin-chrome-btn{padding:6px 12px;font-size:12px;border-radius:10px}
@@ -4782,6 +4783,13 @@ function ataStatusDisplayHtml(entity,opts){
   const pills=ataProgramPctPillsHtml(tech);
   return pills||ataCategoryChip('active');
 }
+/** Plain ATA label for Tech home tenure row (matches Employed since font). */
+function techHomeAtaStatusPlainHtml(entity){
+  const tech=ataTechForStatusDisplay(entity);
+  if(!tech)return'<strong>ATA:</strong> —';
+  const m=ataCategoryMeta(ataCategory(tech));
+  return`<strong>ATA:</strong> ${adminEsc(m.label)}`;
+}
 function trainingFocusInlineHtml(t,opts){
   opts=opts||{};
   const focus=(t&&t.training_focus||'').trim();
@@ -4814,7 +4822,7 @@ function refreshAtaStatusDisplays(){
   }
   const el=document.getElementById('tech-home-ata-status');
   if(el&&currentTechData){
-    el.innerHTML=ataStatusDisplayHtml(currentTechData,{programPcts:false})||'';
+    el.innerHTML=techHomeAtaStatusPlainHtml(currentTechData);
   }
 }
 // Tech view ATA tab: Active learners (and Complete, so they can review history).
@@ -7470,9 +7478,13 @@ function techHomeNameLineHtml(t){
   },{showRegion:true});
   return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
 }
-function pmTechNameLineHtml(t){
-  // PM list: name only on line 1.
-  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span></div>`;
+function pmTechNameLineHtml(t,last){
+  // PM list: name + Overall Proficiency % on line 1.
+  const pct=overallProficiencyPct(t,last);
+  const pctHtml=pct===null||pct===undefined
+    ?`<span class="trow-overall-pct" style="color:#c5c9d4">—</span>`
+    :`<span class="trow-overall-pct" style="color:${pctDisplayColor(pct)}">${pct}%</span>`;
+  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span>${pctHtml}</div>`;
 }
 function pmAtaStatusPlain(t){
   const tech=ataTechForStatusDisplay(t);
@@ -8628,7 +8640,7 @@ function renderTechGrid(techs){
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
-        ${pmTechNameLineHtml(t)}
+        ${pmTechNameLineHtml(t,last)}
         ${pmTechStatusLineHtml(t,last)}
         ${pmTechFocusLineHtml(t)}
       </div>
@@ -10030,14 +10042,13 @@ function renderTechHome(t,opts){
   // Take Assessment + Pre-Bootcamp on the right; View links sit under Years employed.
   const showPreBoot=shouldShowPreBootcampCta(t);
   const hasAssessments=!!(assessments&&assessments.length);
-  const ataStatusOnly=ataStatusDisplayHtml(t,{programPcts:false});
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta-col">
       <div class="tech-tenure-meta">
         <span><strong>Years employed:</strong> ${tenure||'—'}</span>
         <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+        <span class="tech-tenure-ata" id="tech-home-ata-status">${techHomeAtaStatusPlainHtml(t)}</span>
         ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
-        <span class="tech-tenure-ata" id="tech-home-ata-status">${ataStatusOnly||''}</span>
       </div>
       <div class="tech-tenure-view-links">
         <button type="button" class="admin-chrome-btn" id="home-preboot-view-btn" style="${showPreBoot?'':'display:none'}" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp</button>
@@ -10091,7 +10102,6 @@ function renderTechHome(t,opts){
     </div>
     <div id="tech-ata-home-card"></div>
     <div class="my-scores" style="margin-top:14px">
-      <div style="font-size:11px;color:#999;margin-bottom:10px">Latest scores — ${fmtDateFull(last?last.date:null)}</div>
       ${overallHtml}
       <div class="my-cat-grid">${myBlocks||`<div style="font-size:13px;color:#999;grid-column:1/-1">${emptyScoresMsg}</div>`}</div>
     </div>
