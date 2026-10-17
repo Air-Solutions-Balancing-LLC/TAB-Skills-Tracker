@@ -475,6 +475,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .skill-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
 .skill-row:last-child{border-bottom:none}
 .skill-name{font-size:12px;color:#333;flex:1;line-height:1.5;font-weight:500}
+.skill-cat{display:block;font-size:10px;color:#4A90D9;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:1px}
 .skill-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
 .skill-rating-label{font-size:11px;font-weight:700;color:#555;min-width:76px;text-align:right;flex-shrink:0;line-height:1.25}
 .q-project{border:1px solid #E6EEF8;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fafbfd}
@@ -1923,8 +1924,8 @@ function normalizeSkillScore(v,sec){
 }
 function toolsRatingRow(sk){
   return`<div class="q-skill">
-    <div class="q-skill-cat">${sk.cat||'TOOLS'}</div>
-    <div class="q-skill-name">${sk.name}</div>
+    <div class="q-skill-cat">${adminEsc(sk.cat||'TOOLS')}</div>
+    <div class="q-skill-name">${adminEsc(sk.name)}</div>
     <div class="rating-row na-rating-row">
       ${TOOLS_RATING_OPTIONS.map(o=>`<button type="button" class="rating-btn ${Number(qAnswers[sk.id])===o.v?'selected-'+o.v:''}" onclick="setRating('${sk.id}',${o.v})"><div>${o.v}</div><div class="rating-label">${o.btn}</div></button>`).join('')}
     </div>
@@ -1969,8 +1970,8 @@ function jobAccountsScaleLegendHtml(sec){
 }
 function jobAccountsRatingRow(sk){
   return`<div class="q-skill">
-    <div class="q-skill-cat">${sk.cat||'JOB TYPE'}</div>
-    <div class="q-skill-name">${sk.name}</div>
+    <div class="q-skill-cat">${adminEsc(sk.cat||'JOB TYPE')}</div>
+    <div class="q-skill-name">${adminEsc(sk.name)}</div>
     <div class="rating-row na-rating-row">
       ${JOB_ACCOUNTS_RATING_OPTIONS.map(o=>`<button type="button" class="rating-btn ${Number(qAnswers[sk.id])===o.v?'selected-'+o.v:''}" onclick="setRating('${sk.id}',${o.v})"><div>${o.v}</div><div class="rating-label">${o.btn}</div></button>`).join('')}
     </div>
@@ -8445,6 +8446,14 @@ function exitTechView(){
   closePmTechProgress();
 }
 
+function skillCatalogLabelHtml(sk){
+  const cat=sk&&sk.cat?`<span class="skill-cat">${adminEsc(sk.cat)}</span>`:'';
+  return`${cat}${adminEsc(sk&&sk.name||'')}`;
+}
+function skillCatalogLabelText(sk){
+  if(!sk)return'';
+  return sk.cat?`${sk.cat}: ${sk.name||''}`:(sk.name||'');
+}
 function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
   if(isProjectsSection(sec)){
     const done=Number(rawScores[sk.id])===1||rawScores[sk.id]===true;
@@ -8453,18 +8462,18 @@ function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
     const trend=showTrend?(done&&!prevDone?'<span class="skill-trend-icon trend-up">↑</span>':(!done&&prevDone?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>')):'';
     const label=done?'Complete':'Not complete';
     const jobHtml=job?`<span class="skill-job-name">${adminEsc(job)}</span>`:'';
-    return`<div class="skill-row"><span class="skill-name">${sk.name}${jobHtml}</span><span class="skill-rating-label">${label}</span><div class="skill-dot" style="background:${done?scoreBg(4):'#f0f0f0'};color:${done?scoreColor(4):'#999'}">${done?'✓':'—'}</div><span class="skill-prev"></span>${trend}</div>`;
+    return`<div class="skill-row"><span class="skill-name">${skillCatalogLabelHtml(sk)}${jobHtml}</span><span class="skill-rating-label">${label}</span><div class="skill-dot" style="background:${done?scoreBg(4):'#f0f0f0'};color:${done?scoreColor(4):'#999'}">${done?'✓':'—'}</div><span class="skill-prev"></span>${trend}</div>`;
   }
   const rawV=rawScores[sk.id]!==undefined?rawScores[sk.id]:null;
   const rawPv=prevRawScores&&prevRawScores[sk.id]!==undefined?prevRawScores[sk.id]:null;
   const v=rawV===null?null:normalizeSkillScore(rawV,sec);
   const pv=rawPv===null||rawPv===undefined?null:normalizeSkillScore(rawPv,sec);
-  if(v===null||Number.isNaN(Number(v)))return`<div class="skill-row"><span class="skill-name">${sk.name}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
+  if(v===null||Number.isNaN(Number(v)))return`<div class="skill-row"><span class="skill-name">${skillCatalogLabelHtml(sk)}</span><div class="skill-dot" style="background:#f0f0f0;color:#999;font-size:9px">N/R</div><span class="skill-prev"></span><span class="skill-trend-icon trend-eq"></span></div>`;
   const trend=showTrend&&pv!==null?(v>pv?'<span class="skill-trend-icon trend-up">↑</span>':v<pv?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>'):'';
   const ratingLabel=skillRatingDisplayLabel(sk,sec,v);
   const prevLabel=showTrend&&pv!==null?`was ${skillRatingDisplayLabel(sk,sec,pv)||pv}`:'';
   const labelHtml=ratingLabel?`<span class="skill-rating-label">${ratingLabel}</span>`:'';
-  return`<div class="skill-row"><span class="skill-name">${sk.name}</span>${labelHtml}<div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
+  return`<div class="skill-row"><span class="skill-name">${skillCatalogLabelHtml(sk)}</span>${labelHtml}<div class="skill-dot" style="background:${scoreBg(v)};color:${scoreColor(v)}">${v}</div><span class="skill-prev">${prevLabel}</span>${trend}</div>`;
 }
 
 let techResultsAssessment=null;
@@ -8580,7 +8589,8 @@ function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
     idPrefix:'tech-res-',
     startOpen:true,
-    sortByRating:true,
+    // Keep Manage Category catalog order (do not sort by rating).
+    sortByRating:false,
     ratingFilter:opts.ratingFilter,
     sectionFilter:focusSection,
     showTrend:!!prevAssessment
@@ -8701,9 +8711,10 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     const catKey=SKILL_CATS.find(c=>c.skey===sec.key||(c.key&&(c.key.startsWith(sec.key)||sec.key===c.key.replace('_avg',''))))||null;
     const avg=catKey?sectionScore(assessment,catKey):sectionRawAvg(raw,sec);
     const pct=sectionProficiencyPct(avg,sec);
+    // Same wording/order as Manage Category (catalog order), not sorted by score.
     const skills=isProjectsSection(sec)
       ?sec.skills.slice().filter(sk=>raw[sk.id]!==undefined||(raw[projectJobKey(sk.id)]!=null&&String(raw[projectJobKey(sk.id)]).trim()))
-      :sec.skills.slice().filter(sk=>raw[sk.id]!==undefined).sort((a,b)=>Number(raw[a.id])-Number(raw[b.id]));
+      :sec.skills.slice().filter(sk=>raw[sk.id]!==undefined);
     if(!skills.length)return;
 
     let head=pdfSafeText(sec.section);
@@ -8736,11 +8747,11 @@ function buildTechAssessmentPdfDoc(t,assessment,prevAssessment){
     y+=14;
 
     skills.forEach(sk=>{
-      let currText,prevText,nameBase=sk.name;
+      let currText,prevText,nameBase=skillCatalogLabelText(sk);
       if(isProjectsSection(sec)){
         const done=Number(raw[sk.id])===1||raw[sk.id]===true;
         const job=String(raw[projectJobKey(sk.id)]||'').trim();
-        if(job)nameBase=sk.name+' — '+job;
+        if(job)nameBase=skillCatalogLabelText(sk)+' — '+job;
         currText=done?'Complete':'Not complete';
         const prevDone=prevRaw[sk.id]!==undefined?(Number(prevRaw[sk.id])===1||prevRaw[sk.id]===true):null;
         prevText=prevDone===null?'—':(prevDone?'Complete':'Not complete');
@@ -8880,9 +8891,10 @@ function openTechCategoryResults(secKey){
   openTechResultsView(assessments[assessments.length-1],{focusSection:secKey});
 }
 
-function openTechResultsView(assessment,opts){
+async function openTechResultsView(assessment,opts){
   opts=opts||{};
   if(!assessment||!currentTechData)return;
+  await ensureSkills();
   techResultsAssessment=assessment;
   techResultsRatingFilter=null;
   techResultsFocusSection=opts.focusSection||opts.sectionFilter||null;
@@ -9467,8 +9479,8 @@ function renderQuestionnaire(){
       skillHtml=sec.skills.map(sk=>{
         if(isToolsSkill(sk))return toolsRatingRow(sk);
         return`<div class="q-skill">
-          <div class="q-skill-cat">${sk.cat}</div>
-          <div class="q-skill-name">${sk.name}</div>
+          ${sk.cat?`<div class="q-skill-cat">${adminEsc(sk.cat)}</div>`:''}
+          <div class="q-skill-name">${adminEsc(sk.name)}</div>
           <div class="rating-row">
             ${SKILL_RATING_VALUES.map(v=>`<button class="rating-btn ${Number(qAnswers[sk.id])===v?'selected-'+v:''}" onclick="setRating('${sk.id}',${v})"><div>${v}</div><div class="rating-label">${RATING_LABELS[v]}</div></button>`).join('')}
           </div>
