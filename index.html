@@ -187,6 +187,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   .edit-deck-body,.edit-deck-head,.edit-deck-foot{padding-left:14px;padding-right:14px}
 }
 .admin-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee}
+.admin-add.admin-add-below{margin:14px 0 0;padding:14px 0 0;border-bottom:none;border-top:1px solid #eee}
+.admin-add-title{font-size:12px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px}
 .admin-add input,.admin-add select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;background:#fafafa;outline:none}
 .admin-add input:focus,.admin-add select:focus{border-color:#1B3A6B;background:#fff}
 .admin-add .btn{flex:0 0 auto;padding:9px 18px}
@@ -1114,7 +1116,9 @@ body.mobile-nav-open{overflow:hidden}
           <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Edit cells inline and click Save. Category columns are required-category checkboxes. Export/Import still use email to match technicians.</span>
         </div>
         <div id="admin-tech-import-status" style="font-size:12px;margin:0 0 8px;min-height:0"></div>
-        <div class="admin-add">
+        <div class="admin-list" id="list-techs"></div>
+        <div class="admin-add-title">Add Technician</div>
+        <div class="admin-add admin-add-below">
           <input id="add-tech-name" placeholder="Full name">
           <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
           <select id="add-tech-region">
@@ -1132,7 +1136,6 @@ body.mobile-nav-open{overflow:hidden}
           </select>
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
-        <div class="admin-list" id="list-techs"></div>
         </div>
       </div>
 
