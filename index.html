@@ -300,8 +300,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .sb-brand img{max-height:40px;max-width:170px;object-fit:contain;object-position:left}
 .sb-logo-fallback{font-size:16px;font-weight:800;color:#1B3A6B;display:none;letter-spacing:-.3px}
 .sb-logo-fallback span{color:#4A90D9}
-.sb-region-info{padding:10px 16px;background:#1B3A6B;font-size:11px;color:#fff;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.sb-region-info{padding:8px 12px;background:#1B3A6B;display:flex;align-items:center;gap:6px}
 .sb-region-info strong{color:#fff}
+.sb-region-select{width:100%;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;background:#16325f;color:#fff;font-size:12px;font-weight:700;padding:8px 10px;outline:none;cursor:pointer;font-family:inherit}
+.sb-region-select:focus{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+.sb-region-select option{color:#1a1a2e;background:#fff;font-weight:600}
 .sb-nav-wrap{padding:16px 10px;flex:1;display:flex;flex-direction:column;gap:4px}
 .sb-section{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;padding:10px 8px 6px;font-weight:600}
 .sb-nav{font-size:13px;padding:11px 14px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:10px;transition:all .2s;font-weight:500}
@@ -714,8 +717,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
 .weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
-.weekly-form{display:grid;grid-template-columns:140px 1fr 1.2fr 1.2fr auto;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
-@media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
+.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr 1.2fr 1.2fr auto;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
+@media(max-width:1100px){.weekly-form{grid-template-columns:1fr 1fr}}
 .weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
 .weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
 .weekly-form textarea{min-height:70px;resize:vertical}
@@ -1433,7 +1436,21 @@ body.mobile-nav-open{overflow:hidden}
         <img src="assets/airadigm-logo.svg" alt="Airadigm Solutions" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="sb-logo-fallback">Airadigm <span>Skills</span></div>
       </div>
-      <div class="sb-region-info">🗺️ <strong id="sb-region-label">Region</strong></div>
+      <div class="sb-region-info">
+        <select id="sb-region-select" class="sb-region-select" onchange="switchRegion(this.value)" title="Switch region" aria-label="Switch region">
+          <option value="IM">Intermountain</option>
+          <option value="KES">KES</option>
+          <option value="MA">Mid-Atlantic</option>
+          <option value="MW">Midwest</option>
+          <option value="National">National</option>
+          <option value="National-TAB Survey">National-TAB Survey</option>
+          <option value="NE">New England</option>
+          <option value="PC">Pacific Coast</option>
+          <option value="RM">Rocky Mountain</option>
+          <option value="SE">Southeast</option>
+          <option value="SW">Southwest</option>
+        </select>
+      </div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
         <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">Dashboard</div>
@@ -1522,7 +1539,7 @@ body.mobile-nav-open{overflow:hidden}
             <label>Add technician
               <select id="pm-weekly-add-tech"></select>
             </label>
-            <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyAddTech()">Add to Weekly Updates</button>
+            <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyAddTech()">Add / Restore</button>
           </div>
           <div id="pm-weekly-wrap"><div class="loading">Open to load weekly updates…</div></div>
         </div>
@@ -3114,31 +3131,44 @@ async function submitRegion(){
 }
 
 function setPmRegionLabels(region){
-  const sb=document.getElementById('sb-region-label');
-  if(sb)sb.textContent=REGION_LABELS[region]||region;
   const title=document.getElementById('pm-dash-title');
   if(title)title.textContent=(REGION_LABELS[region]||region)+' — Dashboard';
   const cmp=document.getElementById('compare-sub');
   if(cmp)cmp.textContent='Latest scores — '+(REGION_LABELS[region]||region);
   const sw=document.getElementById('pm-region-switch');
   if(sw)sw.value=region;
+  const sb=document.getElementById('sb-region-select');
+  if(sb)sb.value=region;
+}
+
+function syncPmRegionControls(region){
+  const sw=document.getElementById('pm-region-switch');
+  if(sw)sw.value=region;
+  const sb=document.getElementById('sb-region-select');
+  if(sb)sb.value=region;
 }
 
 // Switch regions without leaving the PM dashboard.
 async function switchRegion(region){
   if(!region||region===currentRegion)return;
-  const sw=document.getElementById('pm-region-switch');
+  const prev=currentRegion;
   try{
     const token=await rpc('app_pm_azure_login',{p_region:region});
-    if(!token){alert('No access for this region. Contact your admin.');if(sw)sw.value=currentRegion;return;}
+    if(!token){alert('No access for this region. Contact your admin.');syncPmRegionControls(prev);return;}
     currentRole='pm';currentRegion=region;currentToken=token;
     setPmRegionLabels(region);
     saveSessionPref();
     await loadPMDashboard();
-    setPMView('dashboard',document.getElementById('nav-dashboard'));
+    const weeklyView=document.getElementById('pm-view-weekly');
+    if(weeklyView&&weeklyView.classList.contains('active')){
+      setPMView('weekly',document.getElementById('nav-weekly'));
+      await loadPmWeeklyUpdates();
+    }else{
+      setPMView('dashboard',document.getElementById('nav-dashboard'));
+    }
   }catch(e){
     alert('Could not switch region. Please try again.');
-    if(sw)sw.value=currentRegion;
+    syncPmRegionControls(prev);
     console.error(e);
   }
 }
@@ -8222,11 +8252,10 @@ async function weeklyCopyLinkForRegion(region){
 function renderWeeklyLinksBar(hostId,region){
   const host=document.getElementById(hostId);if(!host)return;
   const cur=region||currentRegion||'';
-  host.innerHTML=`<span style="font-size:12px;font-weight:700;color:#1B3A6B;margin-right:4px">Share links:</span>`+
-    ADMIN_REGIONS.map(([code,label])=>{
-      const active=code===cur;
-      return`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;${active?'border-color:#1B3A6B;color:#1B3A6B;font-weight:800':''}" onclick="weeklyCopyLinkForRegion('${code}')" title="${active?'Copy training-tech link for this region':'Copy link (PM must be switched to this region, or use admin)'}">${adminEsc(label)} · Copy Link</button>`;
-    }).join('');
+  const label=regionLabel(cur)||cur||'Region';
+  if(!cur){host.innerHTML='';return;}
+  host.innerHTML=`<span style="font-size:12px;font-weight:700;color:#1B3A6B;margin-right:4px">Share link:</span>
+    <button type="button" class="admin-chrome-btn" style="padding:6px 12px;font-size:12px;border-color:#1B3A6B;color:#1B3A6B;font-weight:800" onclick="weeklyCopyLinkForRegion(null)" title="Copy training-tech link for ${adminEsc(label)}">${adminEsc(label)} · Copy Link</button>`;
 }
 function buildWeeklyRosterHtml(data,opts){
   opts=opts||{};
@@ -8241,11 +8270,12 @@ function buildWeeklyRosterHtml(data,opts){
     const rows=updates.length?updates.map(u=>`<tr>
       <td style="white-space:nowrap;font-weight:700;color:#1B3A6B">${adminEsc(fmtDateFull(u.update_date))}</td>
       <td>${adminEsc(u.trainer_name||'—')}</td>
+      <td>${adminEsc(u.trainer_name_2||'—')}</td>
       <td class="weekly-comment">${adminEsc(u.comment||'—')}</td>
       <td class="weekly-plan">${adminEsc(u.action_plan||'—')}</td>
       <td style="white-space:nowrap"><button type="button" class="sk-mini del" onclick="weeklyDeleteUpdate(${u.id})">Delete</button></td>
     </tr>`).join('')
-      :`<tr><td colspan="5" style="color:#999">No updates yet.</td></tr>`;
+      :`<tr><td colspan="6" style="color:#999">No updates yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
     return`<div class="weekly-card" data-tech="${r.tech_id}">
       <div class="weekly-card-h">
@@ -8253,18 +8283,19 @@ function buildWeeklyRosterHtml(data,opts){
           <div class="weekly-card-name">${adminEsc(r.name)}</div>
           <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top</div>
         </div>
-        ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#C0392B;border-color:#f0c0c0" onclick="weeklyRemoveTech(${r.tech_id})">Remove</button>`:''}
+        ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
       </div>
       <div style="overflow-x:auto">
         <table class="weekly-table">
-          <thead><tr><th>Date</th><th>Training Tech</th><th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th><th>Comment</th><th>Action Plan</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
       <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
         <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
         <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
-        <label>Comment<textarea name="comment" placeholder="What happened this week?" required></textarea></label>
+        <label>Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
+        <label>Comment<textarea name="comment" placeholder="Enter comments here" required></textarea></label>
         <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
         <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add next update</button></div>
       </form>
@@ -8305,25 +8336,25 @@ async function loadPmWeeklyUpdates(){
 async function weeklyAddTech(){
   const sel=document.getElementById('pm-weekly-add-tech');
   const id=sel&&sel.value?Number(sel.value):null;
-  if(!id){alert('Select a technician to add.');return;}
+  if(!id){alert('Select a technician to add or restore.');return;}
   try{
     weeklyData=await rpc('app_weekly_add_tech',{p_token:currentToken,p_tech_id:id});
     weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
     const wrap=document.getElementById('pm-weekly-wrap');
     if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
   }catch(e){
-    alert('Could not add technician. '+(e.message||'Try again.'));
+    alert('Could not add or restore technician. '+(e.message||'Try again.'));
   }
 }
-async function weeklyRemoveTech(techId){
-  if(!confirm('Remove this technician from Weekly Updates? Past notes will stay in the database but this section will be hidden.'))return;
+async function weeklyArchiveTech(techId){
+  if(!confirm('Archive this technician on Weekly Updates? Past notes are kept. Select them under Add to Weekly Updates to restore.'))return;
   try{
     weeklyData=await rpc('app_weekly_remove_tech',{p_token:currentToken,p_tech_id:techId});
     weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
     const wrap=document.getElementById('pm-weekly-wrap');
     if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
   }catch(e){
-    alert('Could not remove technician. '+(e.message||'Try again.'));
+    alert('Could not archive technician. '+(e.message||'Try again.'));
   }
 }
 async function weeklySubmitUpdate(ev,techId){
@@ -8331,9 +8362,11 @@ async function weeklySubmitUpdate(ev,techId){
   const form=ev.target;
   const date=form.date.value;
   const trainer=form.trainer.value?Number(form.trainer.value):null;
+  const trainer2=form.trainer2&&form.trainer2.value?Number(form.trainer2.value):null;
   const comment=form.comment.value||'';
   const plan=form.plan.value||'';
   if(!trainer){alert('Select the Training Tech.');return;}
+  if(trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
   try{
     weeklyData=await rpc('app_weekly_add_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
@@ -8341,6 +8374,7 @@ async function weeklySubmitUpdate(ev,techId){
       p_tech_id:techId,
       p_update_date:date||null,
       p_trainer_tech_id:trainer,
+      p_trainer_tech_id_2:trainer2,
       p_comment:comment,
       p_action_plan:plan
     });

@@ -1,5 +1,6 @@
 -- Weekly Updates (PM roster + training-tech share links)
 -- Run in Supabase → SQL Editor (safe to re-run).
+-- Supports: soft-archive roster, second training tech on each update.
 
 CREATE TABLE IF NOT EXISTS public.weekly_update_links (
   region text PRIMARY KEY,
@@ -26,10 +27,19 @@ CREATE TABLE IF NOT EXISTS public.weekly_updates (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.weekly_update_roster
+  ADD COLUMN IF NOT EXISTS archived_at timestamptz;
+
+ALTER TABLE public.weekly_updates
+  ADD COLUMN IF NOT EXISTS trainer_tech_id_2 bigint REFERENCES public.technicians(id) ON DELETE SET NULL;
+
 CREATE INDEX IF NOT EXISTS weekly_updates_tech_date_idx
   ON public.weekly_updates (tech_id, update_date DESC, id DESC);
 CREATE INDEX IF NOT EXISTS weekly_updates_region_idx
   ON public.weekly_updates (region);
+CREATE INDEX IF NOT EXISTS weekly_update_roster_active_idx
+  ON public.weekly_update_roster (region)
+  WHERE archived_at IS NULL;
 
 CREATE OR REPLACE FUNCTION public.app_weekly_session_region(p_token text)
 RETURNS text
@@ -125,11 +135,14 @@ BEGIN
                 w.update_date,
                 w.trainer_tech_id,
                 tr.name AS trainer_name,
+                w.trainer_tech_id_2,
+                tr2.name AS trainer_name_2,
                 w.comment,
                 w.action_plan,
                 w.created_at
               FROM public.weekly_updates w
               LEFT JOIN public.technicians tr ON tr.id = w.trainer_tech_id
+              LEFT JOIN public.technicians tr2 ON tr2.id = w.trainer_tech_id_2
               WHERE w.tech_id = t.id AND w.region = p_region
               ORDER BY w.update_date DESC, w.id DESC
             ) u
@@ -137,6 +150,7 @@ BEGIN
         FROM public.weekly_update_roster roster
         JOIN public.technicians t ON t.id = roster.tech_id
         WHERE roster.region = p_region
+          AND roster.archived_at IS NULL
           AND t.deleted_at IS NULL
         ORDER BY t.name
       ) r
@@ -204,13 +218,15 @@ BEGIN
   IF v_tech_region IS NULL OR v_tech_region IS DISTINCT FROM v_region THEN
     RAISE EXCEPTION 'Technician not in this region';
   END IF;
-  INSERT INTO public.weekly_update_roster (region, tech_id)
-  VALUES (v_region, p_tech_id)
-  ON CONFLICT (region, tech_id) DO NOTHING;
+  INSERT INTO public.weekly_update_roster (region, tech_id, archived_at)
+  VALUES (v_region, p_tech_id, NULL)
+  ON CONFLICT (region, tech_id) DO UPDATE
+    SET archived_at = NULL;
   RETURN app_weekly_payload(v_region);
 END;
 $$;
 
+-- Soft-archive (was hard-delete). Keeps update history; tech can be restored via Add.
 CREATE OR REPLACE FUNCTION public.app_weekly_remove_tech(p_token text, p_tech_id bigint)
 RETURNS json
 LANGUAGE plpgsql
@@ -221,7 +237,8 @@ DECLARE
   v_region text := app_weekly_session_region(p_token);
 BEGIN
   IF v_region IS NULL THEN RAISE EXCEPTION 'Not authorized'; END IF;
-  DELETE FROM public.weekly_update_roster
+  UPDATE public.weekly_update_roster
+  SET archived_at = coalesce(archived_at, now())
   WHERE region = v_region AND tech_id = p_tech_id;
   RETURN app_weekly_payload(v_region);
 END;
@@ -250,12 +267,16 @@ BEGIN
     RAISE EXCEPTION 'Technician not in this region';
   END IF;
 
-  INSERT INTO public.weekly_update_roster (region, tech_id)
-  VALUES (v_region, p_tech_id)
-  ON CONFLICT (region, tech_id) DO NOTHING;
+  INSERT INTO public.weekly_update_roster (region, tech_id, archived_at)
+  VALUES (v_region, p_tech_id, NULL)
+  ON CONFLICT (region, tech_id) DO UPDATE
+    SET archived_at = NULL;
   RETURN app_weekly_payload(v_region);
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.app_weekly_add_update(text, text, bigint, date, bigint, text, text);
+DROP FUNCTION IF EXISTS public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint);
 
 CREATE OR REPLACE FUNCTION public.app_weekly_add_update(
   p_session_token text,
@@ -264,7 +285,8 @@ CREATE OR REPLACE FUNCTION public.app_weekly_add_update(
   p_update_date date,
   p_trainer_tech_id bigint,
   p_comment text,
-  p_action_plan text
+  p_action_plan text,
+  p_trainer_tech_id_2 bigint DEFAULT NULL
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -293,10 +315,11 @@ BEGIN
     RAISE EXCEPTION 'Technician not in this region';
   END IF;
 
-  -- Auto-enroll on first update from share link.
-  INSERT INTO public.weekly_update_roster (region, tech_id)
-  VALUES (v_region, p_tech_id)
-  ON CONFLICT (region, tech_id) DO NOTHING;
+  -- Auto-enroll / restore on first update from share link.
+  INSERT INTO public.weekly_update_roster (region, tech_id, archived_at)
+  VALUES (v_region, p_tech_id, NULL)
+  ON CONFLICT (region, tech_id) DO UPDATE
+    SET archived_at = NULL;
 
   IF p_trainer_tech_id IS NOT NULL THEN
     IF NOT EXISTS (
@@ -307,12 +330,24 @@ BEGIN
     END IF;
   END IF;
 
-  INSERT INTO public.weekly_updates (region, tech_id, update_date, trainer_tech_id, comment, action_plan)
+  IF p_trainer_tech_id_2 IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.technicians t
+      WHERE t.id = p_trainer_tech_id_2 AND t.deleted_at IS NULL AND t.region = v_region
+    ) THEN
+      RAISE EXCEPTION 'Second training tech not in this region';
+    END IF;
+  END IF;
+
+  INSERT INTO public.weekly_updates (
+    region, tech_id, update_date, trainer_tech_id, trainer_tech_id_2, comment, action_plan
+  )
   VALUES (
     v_region,
     p_tech_id,
     coalesce(p_update_date, (now() AT TIME ZONE 'America/New_York')::date),
     p_trainer_tech_id,
+    p_trainer_tech_id_2,
     nullif(trim(coalesce(p_comment, '')), ''),
     nullif(trim(coalesce(p_action_plan, '')), '')
   );
@@ -366,5 +401,5 @@ GRANT EXECUTE ON FUNCTION public.app_weekly_public_get(text) TO anon, authentica
 GRANT EXECUTE ON FUNCTION public.app_weekly_add_tech(text, bigint) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_remove_tech(text, bigint) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_public_add_tech(text, bigint) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.app_weekly_add_update(text, text, bigint, date, bigint, text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_delete_update(text, text, bigint) TO anon, authenticated;
