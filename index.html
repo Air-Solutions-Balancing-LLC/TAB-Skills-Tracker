@@ -573,6 +573,18 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-notes-input{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;min-height:88px;outline:none;background:#fafafa;color:#1a1a2e;line-height:1.5}
 .tech-notes-input:focus{border-color:#1B3A6B;background:#fff}
 .tech-notes-save{margin-top:8px;padding:7px 14px;font-size:12px}
+.tech-comments-latest{font-size:13px;color:#333;line-height:1.55;white-space:pre-wrap;background:#fafafa;border:1.5px solid #e8eef6;border-radius:10px;padding:12px;min-height:72px}
+.tech-comments-latest.empty{color:#999}
+.tech-comments-meta{font-size:11px;color:#888;margin:6px 0 10px}
+.tech-comments-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tech-comments-actions .btn,.tech-comments-actions .admin-chrome-btn{padding:7px 12px;font-size:12px}
+.tech-comments-composer{display:none;margin-top:10px}
+.tech-comments-composer.open{display:block}
+.tech-comment-hist-item{border:1px solid #e8eef6;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.tech-comment-hist-item.archived{opacity:.75;background:#f8f8f8}
+.tech-comment-hist-meta{font-size:11px;color:#888;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tech-comment-hist-body{font-size:13px;color:#333;line-height:1.5;white-space:pre-wrap}
+.tech-comment-hist-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .cl-list{display:flex;flex-direction:column;gap:6px;padding-top:8px}
 .cl-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#f8faff;border:1px solid #e6eef8;transition:background .15s}
 .cl-item.cl-done{background:#f2faf6;border-color:#d4ede2}
@@ -687,7 +699,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-tenure-info{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
 .tech-tenure-meta-col{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
-.tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;width:100%}
+.tech-tenure-ata{margin-left:auto;flex-shrink:0}
+.tech-tenure-ata:empty{display:none}
 .tech-tenure-view-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tech-tenure-view-links .admin-chrome-btn{padding:6px 12px;font-size:12px;border-radius:10px}
 .tech-tenure-view-links .admin-chrome-btn:disabled{opacity:.45;cursor:default}
@@ -1820,6 +1834,26 @@ body.mobile-nav-open{overflow:hidden}
   </div>
 </div>
 
+<div class="assess-modal-overlay" id="tech-comment-history-modal" role="dialog" aria-modal="true" aria-labelledby="tech-comment-history-title" onclick="if(event.target===this)closeTechCommentHistory()">
+  <div class="assess-modal" style="max-width:640px;width:96%;max-height:90vh;padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <h3 id="tech-comment-history-title" style="margin:0;font-size:17px;color:#1B3A6B">Comment History</h3>
+      <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="closeTechCommentHistory()">Close</button>
+    </div>
+    <div id="tech-comment-history-body" style="overflow:auto;flex:1;min-height:200px"></div>
+  </div>
+</div>
+
+<div class="assess-modal-overlay" id="tech-note-history-modal" role="dialog" aria-modal="true" aria-labelledby="tech-note-history-title" onclick="if(event.target===this)closeTechNoteHistory()">
+  <div class="assess-modal" style="max-width:640px;width:96%;max-height:90vh;padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <h3 id="tech-note-history-title" style="margin:0;font-size:17px;color:#1B3A6B">Note History</h3>
+      <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="closeTechNoteHistory()">Close</button>
+    </div>
+    <div id="tech-note-history-body" style="overflow:auto;flex:1;min-height:200px"></div>
+  </div>
+</div>
+
 <div class="assess-modal-overlay" id="admin-pdf-preview-modal" role="dialog" aria-modal="true" aria-labelledby="admin-pdf-preview-title" onclick="if(event.target===this)closeAdminPdfPreview()">
   <div class="assess-modal" style="max-width:960px;width:96%;max-height:94vh;padding:20px;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -2746,58 +2780,388 @@ function renderTechSidebarNav(){
 function jumpToTechSection(key){
   openTechCategoryResults(key);
 }
+let techCommentsData=null,techCommentsComposing=false;
+let techNotesData=null,techNotesComposing=false;
 function renderTechNotesHtml(t,opts){
-  const notesToTech=t.notes_to_tech||'';
-  const techComments=t.tech_comments||'';
   // Editable for tech, PM, and admin wherever this block is shown.
-  const notesBody=`<textarea class="tech-notes-input" id="notes-to-tech-input" placeholder="Notes from your lead or admin…">${adminEsc(notesToTech)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveNotesToTech()">Save notes</button>`;
-  const commentsBody=`<textarea class="tech-notes-input" id="tech-comments-input" placeholder="Your comments or questions…">${adminEsc(techComments)}</textarea><button type="button" class="btn tech-notes-save" onclick="saveTechComments()">Save comments</button>`;
+  const notesBody=`<div id="tech-notes-panel"><div class="tech-comments-latest empty">Loading notes…</div></div>`;
+  const commentsBody=`<div id="tech-comments-panel"><div class="tech-comments-latest empty">Loading comments…</div></div>`;
   return`<div class="tech-notes-grid">
     <div class="tech-notes-box"><div class="tech-notes-title">📌 Notes to Tech</div>${notesBody}</div>
     <div class="tech-notes-box comments"><div class="tech-notes-title">💬 Tech Comments</div>${commentsBody}</div>
   </div>`;
 }
-async function saveTechComments(){
-  if(!currentTechData)return;
-  const el=document.getElementById('tech-comments-input');
-  if(!el)return;
-  try{
-    const saved=await rpc('app_save_tech_comments_for',{
-      p_tech_id:currentTechData.id,
-      p_comments:el.value,
-      p_token:currentToken||null
-    });
-    currentTechData.tech_comments=saved||'';
+function techCommentErrMsg(e){
+  const msg=e&&e.message||'';
+  if(msg.includes('app_tech_comments')||msg.includes('app_can_edit_tech_notes')){
+    return 'Run supabase/tech-comment-history.sql in Supabase, then try again.';
+  }
+  return msg||'Try again.';
+}
+function applyTechCommentsPayload(payload){
+  techCommentsData=payload||{latest:null,history:[]};
+  const latest=techCommentsData.latest;
+  if(currentTechData){
+    currentTechData.tech_comments=latest&&latest.body?latest.body:'';
     if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]&&String(regionTechs[currentDetailIdx].id)===String(currentTechData.id)){
       regionTechs[currentDetailIdx].tech_comments=currentTechData.tech_comments;
     }
-    alert('Comments saved.');
+  }
+}
+function renderTechCommentsPanel(){
+  const panel=document.getElementById('tech-comments-panel');
+  if(!panel)return;
+  const latest=techCommentsData&&techCommentsData.latest;
+  const latestHtml=latest&&latest.body
+    ?`<div class="tech-comments-latest">${adminEsc(latest.body)}</div>
+       <div class="tech-comments-meta">Last comment · ${adminEsc(fmtDateFull(String(latest.created_at||'').slice(0,10)))}${latest.created_by?' · '+adminEsc(latest.created_by):''}</div>`
+    :`<div class="tech-comments-latest empty">No comments yet.</div>`;
+  const hasLatest=!!(latest&&latest.id);
+  panel.innerHTML=`${latestHtml}
+    <div class="tech-comments-actions">
+      <button type="button" class="btn" style="background:#E87722" onclick="startNewTechComment()">New Comment</button>
+      <button type="button" class="admin-chrome-btn" ${hasLatest?'':'disabled'} onclick="archiveLatestTechComment()">Archive</button>
+      <button type="button" class="admin-chrome-btn" style="color:#C0392B;border-color:#f0c0c0" ${hasLatest?'':'disabled'} onclick="deleteLatestTechComment()">Delete</button>
+      <button type="button" class="admin-chrome-btn" onclick="openTechCommentHistory()">Comment History</button>
+    </div>
+    <div class="tech-comments-composer${techCommentsComposing?' open':''}" id="tech-comments-composer">
+      <textarea class="tech-notes-input" id="tech-comments-input" placeholder="Your comments or questions…"></textarea>
+      <div class="tech-comments-actions">
+        <button type="button" class="btn tech-notes-save" style="background:#1B3A6B" onclick="saveNewTechComment()">Save comment</button>
+        <button type="button" class="admin-chrome-btn" onclick="cancelNewTechComment()">Cancel</button>
+      </div>
+    </div>`;
+}
+async function loadTechCommentsPanel(){
+  if(!currentTechData||!currentTechData.id)return;
+  const panel=document.getElementById('tech-comments-panel');
+  try{
+    const payload=await rpc('app_tech_comments_list',{
+      p_tech_id:currentTechData.id,
+      p_token:currentToken||null,
+      p_include_archived:true
+    });
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
   }catch(e){
-    const msg=e&&e.message||'';
-    alert('Could not save comments. '+(msg.includes('app_save_tech_comments')?'Run supabase/tech-notes-all-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    console.error(e);
+    if(panel){
+      const legacy=(currentTechData.tech_comments||'').trim();
+      panel.innerHTML=`<div class="tech-comments-latest${legacy?'':' empty'}">${legacy?adminEsc(legacy):'Could not load comment history. '+(techCommentErrMsg(e))}</div>
+        <div class="tech-comments-actions">
+          <button type="button" class="admin-chrome-btn" onclick="loadTechCommentsPanel()">Retry</button>
+        </div>`;
+    }
+  }
+}
+function startNewTechComment(){
+  techCommentsComposing=true;
+  renderTechCommentsPanel();
+  const el=document.getElementById('tech-comments-input');
+  if(el)el.focus();
+}
+function cancelNewTechComment(){
+  techCommentsComposing=false;
+  renderTechCommentsPanel();
+}
+async function saveNewTechComment(){
+  if(!currentTechData)return;
+  const el=document.getElementById('tech-comments-input');
+  const body=el&&el.value?el.value.trim():'';
+  if(!body){alert('Enter a comment before saving.');return;}
+  try{
+    const payload=await rpc('app_tech_comments_add',{
+      p_tech_id:currentTechData.id,
+      p_body:body,
+      p_token:currentToken||null
+    });
+    techCommentsComposing=false;
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
+  }catch(e){
+    alert('Could not save comment. '+techCommentErrMsg(e));
     console.error(e);
   }
 }
-async function saveNotesToTech(){
-  if(!currentTechData)return;
-  const el=document.getElementById('notes-to-tech-input');
-  if(!el)return;
+async function archiveLatestTechComment(){
+  const latest=techCommentsData&&techCommentsData.latest;
+  if(!latest||!latest.id)return;
+  if(!confirm('Archive this comment? It stays in Comment History and can be restored.'))return;
   try{
-    const saved=await rpc('app_save_notes_to_tech',{
-      p_tech_id:currentTechData.id,
-      p_notes:el.value,
+    const payload=await rpc('app_tech_comments_set_archived',{
+      p_id:latest.id,
+      p_archived:true,
       p_token:currentToken||null
     });
-    currentTechData.notes_to_tech=saved||'';
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
+  }catch(e){
+    alert('Could not archive comment. '+techCommentErrMsg(e));
+  }
+}
+async function deleteLatestTechComment(){
+  const latest=techCommentsData&&techCommentsData.latest;
+  if(!latest||!latest.id)return;
+  if(!confirm('Delete this comment? It will be removed from history.'))return;
+  try{
+    const payload=await rpc('app_tech_comments_delete',{
+      p_id:latest.id,
+      p_token:currentToken||null
+    });
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
+  }catch(e){
+    alert('Could not delete comment. '+techCommentErrMsg(e));
+  }
+}
+async function archiveTechCommentById(id,archived){
+  try{
+    const payload=await rpc('app_tech_comments_set_archived',{
+      p_id:id,
+      p_archived:!!archived,
+      p_token:currentToken||null
+    });
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
+    renderTechCommentHistoryBody();
+  }catch(e){
+    alert('Could not update comment. '+techCommentErrMsg(e));
+  }
+}
+async function deleteTechCommentById(id){
+  if(!confirm('Delete this comment? It will be removed from history.'))return;
+  try{
+    const payload=await rpc('app_tech_comments_delete',{
+      p_id:id,
+      p_token:currentToken||null
+    });
+    applyTechCommentsPayload(payload);
+    renderTechCommentsPanel();
+    renderTechCommentHistoryBody();
+  }catch(e){
+    alert('Could not delete comment. '+techCommentErrMsg(e));
+  }
+}
+function renderTechCommentHistoryBody(){
+  const body=document.getElementById('tech-comment-history-body');
+  if(!body)return;
+  const rows=(techCommentsData&&techCommentsData.history)||[];
+  if(!rows.length){
+    body.innerHTML='<div style="padding:16px;color:#888;font-size:13px">No comments yet.</div>';
+    return;
+  }
+  body.innerHTML=rows.map(c=>{
+    const archived=!!(c.archived||c.archived_at);
+    const when=fmtDateFull(String(c.created_at||'').slice(0,10));
+    return`<div class="tech-comment-hist-item${archived?' archived':''}">
+      <div class="tech-comment-hist-meta">
+        <span>${adminEsc(when)}${c.created_by?' · '+adminEsc(c.created_by):''}</span>
+        <span>${archived?'Archived':'Active'}</span>
+      </div>
+      <div class="tech-comment-hist-body">${adminEsc(c.body||'')}</div>
+      <div class="tech-comment-hist-actions">
+        ${archived
+          ?`<button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px" onclick="archiveTechCommentById(${c.id},false)">Restore</button>`
+          :`<button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px" onclick="archiveTechCommentById(${c.id},true)">Archive</button>`}
+        <button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px;color:#C0392B;border-color:#f0c0c0" onclick="deleteTechCommentById(${c.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openTechCommentHistory(){
+  renderTechCommentHistoryBody();
+  const modal=document.getElementById('tech-comment-history-modal');
+  if(modal)modal.classList.add('visible');
+}
+function closeTechCommentHistory(){
+  const modal=document.getElementById('tech-comment-history-modal');
+  if(modal)modal.classList.remove('visible');
+}
+function techNoteErrMsg(e){
+  const msg=e&&e.message||'';
+  if(msg.includes('app_tech_notes')||msg.includes('app_can_edit_tech_notes')){
+    return 'Run supabase/tech-notes-history.sql in Supabase, then try again.';
+  }
+  return msg||'Try again.';
+}
+function applyTechNotesPayload(payload){
+  techNotesData=payload||{latest:null,history:[]};
+  const latest=techNotesData.latest;
+  if(currentTechData){
+    currentTechData.notes_to_tech=latest&&latest.body?latest.body:'';
     if(currentDetailIdx!==null&&regionTechs[currentDetailIdx]&&String(regionTechs[currentDetailIdx].id)===String(currentTechData.id)){
       regionTechs[currentDetailIdx].notes_to_tech=currentTechData.notes_to_tech;
     }
-    alert('Notes saved.');
+  }
+}
+function renderTechNotesPanel(){
+  const panel=document.getElementById('tech-notes-panel');
+  if(!panel)return;
+  const latest=techNotesData&&techNotesData.latest;
+  const latestHtml=latest&&latest.body
+    ?`<div class="tech-comments-latest">${adminEsc(latest.body)}</div>
+       <div class="tech-comments-meta">Last note · ${adminEsc(fmtDateFull(String(latest.created_at||'').slice(0,10)))}${latest.created_by?' · '+adminEsc(latest.created_by):''}</div>`
+    :`<div class="tech-comments-latest empty">No notes yet.</div>`;
+  const hasLatest=!!(latest&&latest.id);
+  panel.innerHTML=`${latestHtml}
+    <div class="tech-comments-actions">
+      <button type="button" class="btn" style="background:#1B3A6B" onclick="startNewTechNote()">New Note</button>
+      <button type="button" class="admin-chrome-btn" ${hasLatest?'':'disabled'} onclick="archiveLatestTechNote()">Archive</button>
+      <button type="button" class="admin-chrome-btn" style="color:#C0392B;border-color:#f0c0c0" ${hasLatest?'':'disabled'} onclick="deleteLatestTechNote()">Delete</button>
+      <button type="button" class="admin-chrome-btn" onclick="openTechNoteHistory()">Note History</button>
+    </div>
+    <div class="tech-comments-composer${techNotesComposing?' open':''}" id="tech-notes-composer">
+      <textarea class="tech-notes-input" id="notes-to-tech-input" placeholder="Notes from your lead or admin…"></textarea>
+      <div class="tech-comments-actions">
+        <button type="button" class="btn tech-notes-save" style="background:#1B3A6B" onclick="saveNewTechNote()">Save note</button>
+        <button type="button" class="admin-chrome-btn" onclick="cancelNewTechNote()">Cancel</button>
+      </div>
+    </div>`;
+}
+async function loadTechNotesPanel(){
+  if(!currentTechData||!currentTechData.id)return;
+  const panel=document.getElementById('tech-notes-panel');
+  try{
+    const payload=await rpc('app_tech_notes_list',{
+      p_tech_id:currentTechData.id,
+      p_token:currentToken||null,
+      p_include_archived:true
+    });
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
   }catch(e){
-    const msg=e&&e.message||'';
-    alert('Could not save notes. '+(msg.includes('app_save_notes_to_tech')||msg.includes('Not authorized')?'Run supabase/tech-notes-all-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    console.error(e);
+    if(panel){
+      const legacy=(currentTechData.notes_to_tech||'').trim();
+      panel.innerHTML=`<div class="tech-comments-latest${legacy?'':' empty'}">${legacy?adminEsc(legacy):'Could not load note history. '+(techNoteErrMsg(e))}</div>
+        <div class="tech-comments-actions">
+          <button type="button" class="admin-chrome-btn" onclick="loadTechNotesPanel()">Retry</button>
+        </div>`;
+    }
+  }
+}
+function startNewTechNote(){
+  techNotesComposing=true;
+  renderTechNotesPanel();
+  const el=document.getElementById('notes-to-tech-input');
+  if(el)el.focus();
+}
+function cancelNewTechNote(){
+  techNotesComposing=false;
+  renderTechNotesPanel();
+}
+async function saveNewTechNote(){
+  if(!currentTechData)return;
+  const el=document.getElementById('notes-to-tech-input');
+  const body=el&&el.value?el.value.trim():'';
+  if(!body){alert('Enter a note before saving.');return;}
+  try{
+    const payload=await rpc('app_tech_notes_add',{
+      p_tech_id:currentTechData.id,
+      p_body:body,
+      p_token:currentToken||null
+    });
+    techNotesComposing=false;
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
+  }catch(e){
+    alert('Could not save note. '+techNoteErrMsg(e));
     console.error(e);
   }
+}
+async function archiveLatestTechNote(){
+  const latest=techNotesData&&techNotesData.latest;
+  if(!latest||!latest.id)return;
+  if(!confirm('Archive this note? It stays in Note History and can be restored.'))return;
+  try{
+    const payload=await rpc('app_tech_notes_set_archived',{
+      p_id:latest.id,
+      p_archived:true,
+      p_token:currentToken||null
+    });
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
+  }catch(e){
+    alert('Could not archive note. '+techNoteErrMsg(e));
+  }
+}
+async function deleteLatestTechNote(){
+  const latest=techNotesData&&techNotesData.latest;
+  if(!latest||!latest.id)return;
+  if(!confirm('Delete this note? It will be removed from history.'))return;
+  try{
+    const payload=await rpc('app_tech_notes_delete',{
+      p_id:latest.id,
+      p_token:currentToken||null
+    });
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
+  }catch(e){
+    alert('Could not delete note. '+techNoteErrMsg(e));
+  }
+}
+async function archiveTechNoteById(id,archived){
+  try{
+    const payload=await rpc('app_tech_notes_set_archived',{
+      p_id:id,
+      p_archived:!!archived,
+      p_token:currentToken||null
+    });
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
+    renderTechNoteHistoryBody();
+  }catch(e){
+    alert('Could not update note. '+techNoteErrMsg(e));
+  }
+}
+async function deleteTechNoteById(id){
+  if(!confirm('Delete this note? It will be removed from history.'))return;
+  try{
+    const payload=await rpc('app_tech_notes_delete',{
+      p_id:id,
+      p_token:currentToken||null
+    });
+    applyTechNotesPayload(payload);
+    renderTechNotesPanel();
+    renderTechNoteHistoryBody();
+  }catch(e){
+    alert('Could not delete note. '+techNoteErrMsg(e));
+  }
+}
+function renderTechNoteHistoryBody(){
+  const body=document.getElementById('tech-note-history-body');
+  if(!body)return;
+  const rows=(techNotesData&&techNotesData.history)||[];
+  if(!rows.length){
+    body.innerHTML='<div style="padding:16px;color:#888;font-size:13px">No notes yet.</div>';
+    return;
+  }
+  body.innerHTML=rows.map(c=>{
+    const archived=!!(c.archived||c.archived_at);
+    const when=fmtDateFull(String(c.created_at||'').slice(0,10));
+    return`<div class="tech-comment-hist-item${archived?' archived':''}">
+      <div class="tech-comment-hist-meta">
+        <span>${adminEsc(when)}${c.created_by?' · '+adminEsc(c.created_by):''}</span>
+        <span>${archived?'Archived':'Active'}</span>
+      </div>
+      <div class="tech-comment-hist-body">${adminEsc(c.body||'')}</div>
+      <div class="tech-comment-hist-actions">
+        ${archived
+          ?`<button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px" onclick="archiveTechNoteById(${c.id},false)">Restore</button>`
+          :`<button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px" onclick="archiveTechNoteById(${c.id},true)">Archive</button>`}
+        <button type="button" class="admin-chrome-btn" style="padding:5px 10px;font-size:11px;color:#C0392B;border-color:#f0c0c0" onclick="deleteTechNoteById(${c.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openTechNoteHistory(){
+  renderTechNoteHistoryBody();
+  const modal=document.getElementById('tech-note-history-modal');
+  if(modal)modal.classList.add('visible');
+}
+function closeTechNoteHistory(){
+  const modal=document.getElementById('tech-note-history-modal');
+  if(modal)modal.classList.remove('visible');
 }
 function canEditTrainingFocus(){
   // PM/Admin viewing a tech (readonly or edit). Actual technicians cannot edit.
@@ -4441,9 +4805,7 @@ function refreshAtaStatusDisplays(){
   }
   const el=document.getElementById('tech-home-ata-status');
   if(el&&currentTechData){
-    const ataOnly=ataStatusDisplayHtml(currentTechData,{programPcts:false});
-    el.innerHTML=ataOnly;
-    el.style.display=ataOnly?'':'none';
+    el.innerHTML=ataStatusDisplayHtml(currentTechData,{programPcts:false})||'';
   }
 }
 // Tech view ATA tab: Active learners (and Complete, so they can review history).
@@ -8759,7 +9121,7 @@ function pmTechNavSelectHtml(){
   return`<span class="pm-tech-nav">
     <select class="pm-tech-nav-select" id="pm-tech-nav-select" aria-label="Select technician" onchange="pmSelectTechFromNav(this.value)">${opts}</select>
     <button type="button" class="btn btn-outline pm-tech-nav-btn" ${multi?'':'disabled'} onclick="pmNavAdjacent(1)">Next</button>
-    <button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>
+    <button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Home Page</button>
   </span>`;
 }
 async function pmSelectTechFromNav(idx){
@@ -8903,7 +9265,7 @@ function updateTechViewAdminChrome(){
   const pgTech=document.getElementById('pg-tech');
   if(pgTech)pgTech.classList.toggle('tech-pm-embed',fromPm);
   const box=document.getElementById('tech-admin-switch');
-  // Sidebar chrome is for Admin edit/view only; PM uses topbar Back to PM.
+  // Sidebar chrome is for Admin edit/view only; PM uses topbar Home Page.
   if(box)box.classList.toggle('visible',fromAdmin&&!fromPm);
   const editBtn=document.getElementById('tech-admin-edit-btn');
   if(editBtn)editBtn.style.display=(fromAdmin&&!fromPm&&userIsAdmin)?'':'none';
@@ -8912,7 +9274,7 @@ function updateTechViewAdminChrome(){
   const ataBack=document.getElementById('ata-admin-back-btn');
   if(ataBack){
     ataBack.style.display=on?'':'none';
-    ataBack.textContent=fromPm?'Back to PM':(techViewBackPage==='pg-admin'?'Back to admin':'Back');
+    ataBack.textContent=fromPm?'Home Page':(techViewBackPage==='pg-admin'?'Back to admin':'Back');
   }
   const ataSwitch=document.getElementById('ata-admin-switch-btn');
   if(ataSwitch)ataSwitch.style.display=(fromAdmin&&techViewBackPage==='pg-admin')?'':'none';
@@ -9632,12 +9994,14 @@ function renderTechHome(t,opts){
   // Take Assessment + Pre-Bootcamp on the right; View links sit under Years employed.
   const showPreBoot=shouldShowPreBootcampCta(t);
   const hasAssessments=!!(assessments&&assessments.length);
+  const ataStatusOnly=ataStatusDisplayHtml(t,{programPcts:false});
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta-col">
       <div class="tech-tenure-meta">
         <span><strong>Years employed:</strong> ${tenure||'—'}</span>
         <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
         ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
+        <span class="tech-tenure-ata" id="tech-home-ata-status">${ataStatusOnly||''}</span>
       </div>
       <div class="tech-tenure-view-links">
         <button type="button" class="admin-chrome-btn" id="home-preboot-view-btn" style="${showPreBoot?'':'display:none'}" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp</button>
@@ -9682,16 +10046,10 @@ function renderTechHome(t,opts){
         </span>`
       :'');
   const nameHeader=`<div class="tech-home-header-row">${techHomeNameLineHtml(t)}${techHomeActions}</div>`;
-  // Tech home: no inline Focus row (Training Focus card is below). Keep Complete/Exempt chips only.
-  const ataStatusOnly=ataStatusDisplayHtml(t,{programPcts:false});
-  const ataStatusRow=ataStatusOnly
-    ?`<div class="score-row" id="tech-home-ata-status" style="margin:10px 0 0">${ataStatusOnly}</div>`
-    :`<div class="score-row" id="tech-home-ata-status" style="display:none;margin:10px 0 0"></div>`;
   container.innerHTML=banner+`
     ${checklistHtml}
     <div class="my-scores">
       ${nameHeader}
-      ${ataStatusRow}
       ${tenureHtml}
       ${trainingFocusHtml}
     </div>
@@ -9711,6 +10069,10 @@ function renderTechHome(t,opts){
   updateTechAtaAccess(ataTechSelfData);
   if(ataTechSelfData)renderTechAtaHomeCard(ataTechSelfData);
   prefetchTechAtaHomeCard();
+  techCommentsComposing=false;
+  techNotesComposing=false;
+  loadTechNotesPanel();
+  loadTechCommentsPanel();
 }
 
 function showTechHome(){
