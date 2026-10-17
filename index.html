@@ -680,6 +680,7 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-tenure-meta-col{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
 .tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
 .tech-tenure-view-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tech-tenure-view-links .admin-chrome-btn{padding:6px 12px;font-size:12px;border-radius:10px}
 .tech-tenure-view-links .admin-chrome-btn:disabled{opacity:.45;cursor:default}
 .pm-preboot-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:12px;overflow:hidden}
 .pm-preboot-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;user-select:none}
@@ -5549,21 +5550,20 @@ function ataHomeProgramCell(summary,program){
   const lock=ataProgramLockState(tech,program,start,hasWork);
   const locked=lock.locked,lockMsg=lock.lockMsg;
   const startLbl=start?fmtDate(start):'';
-  let prog='';
+  let detail='';
   if(ps.start){
-    prog=`<div style="font-size:12px;color:#555;margin-top:4px;font-weight:600">${ps.completed}/${ps.total} done · ${pct}%`
+    detail=`${ps.completed}/${ps.total} done · ${pct}%`
       +(ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:'')
-      +((ps.failed||0)?` · <span style="color:#C0392B;font-weight:700">${ps.failed} failed</span>`:'')
-      +`</div>`;
+      +((ps.failed||0)?` · <span style="color:#C0392B;font-weight:700">${ps.failed} failed</span>`:'');
   }else if(locked){
-    prog=`<div style="font-size:12px;color:#b58900;margin-top:4px;font-weight:600">🔒 ${lockMsg}</div>`;
+    detail=`🔒 ${lockMsg}`;
   }else{
-    prog=`<div style="font-size:12px;color:#999;margin-top:4px">Not started</div>`;
+    detail='Not started';
   }
-  return`<div style="flex:1;min-width:140px">
-    <div style="font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.3px">${ATA_PROGRAM_LABEL[program]}</div>
-    <div style="font-size:13px;font-weight:700;color:#1B3A6B;margin-top:2px">${startLbl||(locked?'—':'Not started')}</div>
-    ${prog}
+  return`<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;font-size:13px;color:#1B3A6B">
+    <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">${ATA_PROGRAM_LABEL[program]}</span>
+    <span style="font-weight:700">${startLbl||(locked?'—':'Not started')}</span>
+    <span style="font-size:12px;color:#555;font-weight:600">${detail}</span>
   </div>`;
 }
 function renderTechAtaHomeCard(tech){
@@ -5577,23 +5577,19 @@ function renderTechAtaHomeCard(tech){
   const s=ataTechSummary(tech);
   const clickable=ataIsActiveLearner(tech);
   const failBadge=s.totalFailed
-    ?` <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
+    ?`<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
     :'';
   const programCells=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).map(p=>ataHomeProgramCell(s,p)).join('');
-  const pctPills=ataProgramPctPillsHtml(tech);
-  host.innerHTML=`<div class="my-scores" style="margin:0 0 14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-      <div>
+  const statusHtml=ataStatusDisplayHtml(tech)||ataCategoryChip('active');
+  host.innerHTML=`<div class="my-scores" style="margin:0 0 14px;padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0">
         <div class="detail-name">ATA Progress</div>
-        <div class="detail-sub">Active digital ATA tracking</div>
-        ${pctPills?`<div class="score-row" style="margin:8px 0 0">${pctPills}</div>`:''}
+        <div class="score-row">${statusHtml}${failBadge}</div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        ${ataCategoryChip('active')}${ataStatusChip(s.status)}${failBadge}
-        ${clickable?`<button type="button" class="ata-report-chip" onclick="event.stopPropagation();showTechAta()">ATA Report</button>`:''}
-      </div>
+      ${clickable?`<button type="button" class="admin-chrome-btn" onclick="event.stopPropagation();showTechAta()">ATA Report</button>`:''}
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px 20px">${programCells}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${programCells}</div>
   </div>`;
 }
 function renderTechAta(tech){
@@ -9146,7 +9142,7 @@ function renderTechHome(t,opts){
         ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
       </div>
       <div class="tech-tenure-view-links">
-        <button type="button" class="admin-chrome-btn" id="home-preboot-view-btn" style="${showPreBoot?'':'display:none'}" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp Assessment</button>
+        <button type="button" class="admin-chrome-btn" id="home-preboot-view-btn" style="${showPreBoot?'':'display:none'}" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp</button>
         <button type="button" class="admin-chrome-btn" id="home-assess-view-btn" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">View Assessment</button>
       </div>
     </div>
