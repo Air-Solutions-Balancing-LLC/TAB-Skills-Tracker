@@ -717,11 +717,26 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
 .weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
-.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr 1.2fr 1.2fr auto;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
-@media(max-width:1100px){.weekly-form{grid-template-columns:1fr 1fr}}
+.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
+@media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
 .weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
 .weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
 .weekly-form textarea{min-height:70px;resize:vertical}
+.weekly-form-span{grid-column:1/-1}
+.weekly-ratings{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:10px 12px;background:#fff;border:1.5px solid #d8e0ec;border-radius:10px}
+@media(max-width:900px){.weekly-ratings{grid-template-columns:1fr 1fr}}
+.weekly-su{display:flex;flex-direction:column;gap:6px;min-width:0}
+.weekly-su-lbl{font-size:10px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.3px}
+.weekly-su-opts{display:flex;gap:6px}
+.weekly-su-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;margin:0;padding:7px 6px;border:1.5px solid #d8e0ec;border-radius:8px;background:#fafbfd;font-size:12px;font-weight:800;color:#555;cursor:pointer;user-select:none}
+.weekly-su-opt input{position:absolute;opacity:0;pointer-events:none}
+.weekly-su-opt:has(input:checked){border-color:#0F6E56;background:#e8f7f1;color:#0F6E56}
+.weekly-su-opt.u:has(input:checked){border-color:#C0392B;background:#fdecea;color:#C0392B}
+.weekly-su-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;font-size:11px;font-weight:800}
+.weekly-su-badge.s{background:#e8f7f1;color:#0F6E56}
+.weekly-su-badge.u{background:#fdecea;color:#C0392B}
+.weekly-form-bottom{grid-column:1/-1;display:grid;grid-template-columns:1.2fr 1.2fr auto;gap:8px;align-items:start}
+@media(max-width:900px){.weekly-form-bottom{grid-template-columns:1fr}}
 .weekly-empty{padding:18px;color:#888;font-size:13px}
 .tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
 .tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:160px}
@@ -1541,7 +1556,7 @@ body.mobile-nav-open{overflow:hidden}
             </label>
             <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyAddTech()">Add / Restore</button>
           </div>
-          <div id="pm-weekly-wrap"><div class="loading">Open to load weekly updates…</div></div>
+          <div id="pm-weekly-wrap"><div class="loading">Open to load Weekly Updates…</div></div>
         </div>
       </div>
       <div id="pm-view-ata" class="view">
@@ -8243,7 +8258,7 @@ async function weeklyCopyLinkForRegion(region){
       const ta=document.createElement('textarea');
       ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
     }
-    alert('Link copied for '+regionLabel(res.region)+'.\n\nShare it with training techs so they can add weekly updates.');
+    alert('Link copied for '+regionLabel(res.region)+'.\n\nShare it with training techs so they can add Weekly Updates.');
   }catch(e){
     const msg=e&&e.message||'';
     alert('Could not copy link. '+(msg.includes('app_weekly_ensure_link')?'Run supabase/weekly-updates.sql in Supabase, then try again.':(msg||'Try again.')));
@@ -8257,6 +8272,37 @@ function renderWeeklyLinksBar(hostId,region){
   host.innerHTML=`<span style="font-size:12px;font-weight:700;color:#1B3A6B;margin-right:4px">Share link:</span>
     <button type="button" class="admin-chrome-btn" style="padding:6px 12px;font-size:12px;border-color:#1B3A6B;color:#1B3A6B;font-weight:800" onclick="weeklyCopyLinkForRegion(null)" title="Copy training-tech link for ${adminEsc(label)}">${adminEsc(label)} · Copy Link</button>`;
 }
+const WEEKLY_RATING_FIELDS=[
+  {key:'punctuality',label:'Punctuality'},
+  {key:'attitude',label:'Attitude'},
+  {key:'effort',label:'Effort Level'},
+  {key:'engagement',label:'Engagement'},
+  {key:'teamwork',label:'Teamwork'}
+];
+function weeklySuBadge(val){
+  if(val==='S')return'<span class="weekly-su-badge s" title="Satisfactory">S</span>';
+  if(val==='U')return'<span class="weekly-su-badge u" title="Unsatisfactory">U</span>';
+  return'—';
+}
+function weeklyRatingsFormHtml(techId){
+  return`<div class="weekly-form-span weekly-ratings" role="group" aria-label="Weekly performance ratings">
+    ${WEEKLY_RATING_FIELDS.map(f=>`<div class="weekly-su">
+      <div class="weekly-su-lbl">${adminEsc(f.label)}</div>
+      <div class="weekly-su-opts">
+        <label class="weekly-su-opt"><input type="radio" name="${f.key}_${techId}" value="S" required> S</label>
+        <label class="weekly-su-opt u"><input type="radio" name="${f.key}_${techId}" value="U" required> U</label>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+function weeklyReadRatings(form,techId){
+  const out={};
+  for(const f of WEEKLY_RATING_FIELDS){
+    const el=form.querySelector(`input[name="${f.key}_${techId}"]:checked`);
+    out[f.key]=el?el.value:null;
+  }
+  return out;
+}
 function buildWeeklyRosterHtml(data,opts){
   opts=opts||{};
   const canManageRoster=!!opts.canManageRoster;
@@ -8265,29 +8311,35 @@ function buildWeeklyRosterHtml(data,opts){
   if(!roster.length){
     return`<div class="weekly-empty">No technicians on Weekly Updates yet. Add one above to start tracking weekly notes.</div>`;
   }
+  const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th title="${adminEsc(f.label)}">${adminEsc(f.label)}</th>`).join('');
   return roster.map(r=>{
     const updates=r.updates||[];
     const rows=updates.length?updates.map(u=>`<tr>
       <td style="white-space:nowrap;font-weight:700;color:#1B3A6B">${adminEsc(fmtDateFull(u.update_date))}</td>
       <td>${adminEsc(u.trainer_name||'—')}</td>
       <td>${adminEsc(u.trainer_name_2||'—')}</td>
+      <td style="text-align:center">${weeklySuBadge(u.rating_punctuality)}</td>
+      <td style="text-align:center">${weeklySuBadge(u.rating_attitude)}</td>
+      <td style="text-align:center">${weeklySuBadge(u.rating_effort)}</td>
+      <td style="text-align:center">${weeklySuBadge(u.rating_engagement)}</td>
+      <td style="text-align:center">${weeklySuBadge(u.rating_teamwork)}</td>
       <td class="weekly-comment">${adminEsc(u.comment||'—')}</td>
       <td class="weekly-plan">${adminEsc(u.action_plan||'—')}</td>
       <td style="white-space:nowrap"><button type="button" class="sk-mini del" onclick="weeklyDeleteUpdate(${u.id})">Delete</button></td>
     </tr>`).join('')
-      :`<tr><td colspan="6" style="color:#999">No updates yet.</td></tr>`;
+      :`<tr><td colspan="11" style="color:#999">No updates yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
     return`<div class="weekly-card" data-tech="${r.tech_id}">
       <div class="weekly-card-h">
         <div>
           <div class="weekly-card-name">${adminEsc(r.name)}</div>
-          <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top</div>
+          <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory</div>
         </div>
         ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
       </div>
       <div style="overflow-x:auto">
         <table class="weekly-table">
-          <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th><th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -8295,9 +8347,12 @@ function buildWeeklyRosterHtml(data,opts){
         <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
         <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
         <label>Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
-        <label>Comment<textarea name="comment" placeholder="Enter comments here" required></textarea></label>
-        <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
-        <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add next update</button></div>
+        ${weeklyRatingsFormHtml(r.tech_id)}
+        <div class="weekly-form-bottom">
+          <label>Comment<textarea name="comment" placeholder="Summary of Tech's performance this week." required></textarea></label>
+          <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
+          <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Updates</button></div>
+        </div>
       </form>
     </div>`;
   }).join('');
@@ -8363,10 +8418,15 @@ async function weeklySubmitUpdate(ev,techId){
   const date=form.date.value;
   const trainer=form.trainer.value?Number(form.trainer.value):null;
   const trainer2=form.trainer2&&form.trainer2.value?Number(form.trainer2.value):null;
+  const ratings=weeklyReadRatings(form,techId);
   const comment=form.comment.value||'';
   const plan=form.plan.value||'';
   if(!trainer){alert('Select the Training Tech.');return;}
   if(trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
+  if(WEEKLY_RATING_FIELDS.some(f=>!ratings[f.key])){
+    alert('Rate all five: Punctuality, Attitude, Effort Level, Engagement, and Teamwork (S or U).');
+    return;
+  }
   try{
     weeklyData=await rpc('app_weekly_add_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
@@ -8376,7 +8436,8 @@ async function weeklySubmitUpdate(ev,techId){
       p_trainer_tech_id:trainer,
       p_trainer_tech_id_2:trainer2,
       p_comment:comment,
-      p_action_plan:plan
+      p_action_plan:plan,
+      p_ratings:ratings
     });
     if(weeklyPublicMode)renderPublicWeekly();
     else{
@@ -8389,7 +8450,7 @@ async function weeklySubmitUpdate(ev,techId){
   }
 }
 async function weeklyDeleteUpdate(updateId){
-  if(!confirm('Delete this weekly update?'))return;
+  if(!confirm('Delete this Weekly Updates entry?'))return;
   try{
     weeklyData=await rpc('app_weekly_delete_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
@@ -9259,6 +9320,11 @@ function openTechCategoryResults(secKey){
   // Home category cards are view-only. Editing happens only in Take Assessment.
   if(document.getElementById('tech-view-questionnaire')?.classList.contains('active')){
     showTechHome();
+  }
+  const requiredKeys=new Set(techRequiredCategoryKeys(currentTechData||{}));
+  if(!requiredKeys.has(secKey)){
+    alert('You are currently not assigned to this Category');
+    return;
   }
   const assessments=currentTechData&&currentTechData.assessments;
   if(!assessments||!assessments.length){

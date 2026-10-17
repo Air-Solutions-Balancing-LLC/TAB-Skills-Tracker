@@ -33,6 +33,67 @@ ALTER TABLE public.weekly_update_roster
 ALTER TABLE public.weekly_updates
   ADD COLUMN IF NOT EXISTS trainer_tech_id_2 bigint REFERENCES public.technicians(id) ON DELETE SET NULL;
 
+ALTER TABLE public.weekly_updates
+  ADD COLUMN IF NOT EXISTS rating_punctuality text,
+  ADD COLUMN IF NOT EXISTS rating_attitude text,
+  ADD COLUMN IF NOT EXISTS rating_effort text,
+  ADD COLUMN IF NOT EXISTS rating_engagement text,
+  ADD COLUMN IF NOT EXISTS rating_teamwork text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'weekly_updates_rating_punctuality_chk'
+  ) THEN
+    ALTER TABLE public.weekly_updates
+      ADD CONSTRAINT weekly_updates_rating_punctuality_chk
+      CHECK (rating_punctuality IS NULL OR rating_punctuality IN ('S','U'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'weekly_updates_rating_attitude_chk'
+  ) THEN
+    ALTER TABLE public.weekly_updates
+      ADD CONSTRAINT weekly_updates_rating_attitude_chk
+      CHECK (rating_attitude IS NULL OR rating_attitude IN ('S','U'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'weekly_updates_rating_effort_chk'
+  ) THEN
+    ALTER TABLE public.weekly_updates
+      ADD CONSTRAINT weekly_updates_rating_effort_chk
+      CHECK (rating_effort IS NULL OR rating_effort IN ('S','U'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'weekly_updates_rating_engagement_chk'
+  ) THEN
+    ALTER TABLE public.weekly_updates
+      ADD CONSTRAINT weekly_updates_rating_engagement_chk
+      CHECK (rating_engagement IS NULL OR rating_engagement IN ('S','U'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'weekly_updates_rating_teamwork_chk'
+  ) THEN
+    ALTER TABLE public.weekly_updates
+      ADD CONSTRAINT weekly_updates_rating_teamwork_chk
+      CHECK (rating_teamwork IS NULL OR rating_teamwork IN ('S','U'));
+  END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.app_weekly_norm_su(p_val text)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v text := upper(nullif(trim(coalesce(p_val, '')), ''));
+BEGIN
+  IF v IS NULL THEN RETURN NULL; END IF;
+  IF v IN ('S', 'SATISFACTORY') THEN RETURN 'S'; END IF;
+  IF v IN ('U', 'UNSATISFACTORY') THEN RETURN 'U'; END IF;
+  RAISE EXCEPTION 'Rating must be S (Satisfactory) or U (Unsatisfactory)';
+END;
+$$;
+
 CREATE INDEX IF NOT EXISTS weekly_updates_tech_date_idx
   ON public.weekly_updates (tech_id, update_date DESC, id DESC);
 CREATE INDEX IF NOT EXISTS weekly_updates_region_idx
@@ -137,6 +198,11 @@ BEGIN
                 tr.name AS trainer_name,
                 w.trainer_tech_id_2,
                 tr2.name AS trainer_name_2,
+                w.rating_punctuality,
+                w.rating_attitude,
+                w.rating_effort,
+                w.rating_engagement,
+                w.rating_teamwork,
                 w.comment,
                 w.action_plan,
                 w.created_at
@@ -277,6 +343,7 @@ $$;
 
 DROP FUNCTION IF EXISTS public.app_weekly_add_update(text, text, bigint, date, bigint, text, text);
 DROP FUNCTION IF EXISTS public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint);
+DROP FUNCTION IF EXISTS public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint, jsonb);
 
 CREATE OR REPLACE FUNCTION public.app_weekly_add_update(
   p_session_token text,
@@ -286,7 +353,8 @@ CREATE OR REPLACE FUNCTION public.app_weekly_add_update(
   p_trainer_tech_id bigint,
   p_comment text,
   p_action_plan text,
-  p_trainer_tech_id_2 bigint DEFAULT NULL
+  p_trainer_tech_id_2 bigint DEFAULT NULL,
+  p_ratings jsonb DEFAULT NULL
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -296,6 +364,11 @@ AS $$
 DECLARE
   v_region text;
   v_tech_region text;
+  v_punctuality text;
+  v_attitude text;
+  v_effort text;
+  v_engagement text;
+  v_teamwork text;
 BEGIN
   IF nullif(trim(coalesce(p_session_token, '')), '') IS NOT NULL THEN
     v_region := app_weekly_session_region(p_session_token);
@@ -339,8 +412,21 @@ BEGIN
     END IF;
   END IF;
 
+  v_punctuality := app_weekly_norm_su(p_ratings->>'punctuality');
+  v_attitude := app_weekly_norm_su(p_ratings->>'attitude');
+  v_effort := app_weekly_norm_su(p_ratings->>'effort');
+  v_engagement := app_weekly_norm_su(p_ratings->>'engagement');
+  v_teamwork := app_weekly_norm_su(p_ratings->>'teamwork');
+
+  IF v_punctuality IS NULL OR v_attitude IS NULL OR v_effort IS NULL
+     OR v_engagement IS NULL OR v_teamwork IS NULL THEN
+    RAISE EXCEPTION 'Rate Punctuality, Attitude, Effort Level, Engagement, and Teamwork (S or U)';
+  END IF;
+
   INSERT INTO public.weekly_updates (
-    region, tech_id, update_date, trainer_tech_id, trainer_tech_id_2, comment, action_plan
+    region, tech_id, update_date, trainer_tech_id, trainer_tech_id_2,
+    rating_punctuality, rating_attitude, rating_effort, rating_engagement, rating_teamwork,
+    comment, action_plan
   )
   VALUES (
     v_region,
@@ -348,6 +434,11 @@ BEGIN
     coalesce(p_update_date, (now() AT TIME ZONE 'America/New_York')::date),
     p_trainer_tech_id,
     p_trainer_tech_id_2,
+    v_punctuality,
+    v_attitude,
+    v_effort,
+    v_engagement,
+    v_teamwork,
     nullif(trim(coalesce(p_comment, '')), ''),
     nullif(trim(coalesce(p_action_plan, '')), '')
   );
@@ -401,5 +492,6 @@ GRANT EXECUTE ON FUNCTION public.app_weekly_public_get(text) TO anon, authentica
 GRANT EXECUTE ON FUNCTION public.app_weekly_add_tech(text, bigint) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_remove_tech(text, bigint) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_public_add_tech(text, bigint) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_weekly_norm_su(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.app_weekly_add_update(text, text, bigint, date, bigint, text, text, bigint, jsonb) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.app_weekly_delete_update(text, text, bigint) TO anon, authenticated;
