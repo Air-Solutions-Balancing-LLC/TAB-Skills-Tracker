@@ -3266,21 +3266,21 @@ function renderTrainingFocusHtml(t){
   const focusEnd=adminDateInputValue(t.training_goal_end);
   if(!canEditTrainingFocus()){
     return`<div class="training-focus-card">
-      <div class="training-focus-label">Training Focus</div>
-      <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goal set yet.'}</div>
+      <div class="training-focus-label">Training Goals</div>
+      <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goals set yet.'}</div>
       <div class="training-focus-dates">
         <span><strong>Start:</strong> ${fmtDateFull(t.training_goal_start)||'—'}</span>
-        <span><strong>End:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
+        <span><strong>Target Date:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
       </div>
     </div>`;
   }
   return`<div class="training-focus-card">
-    <div class="training-focus-label">Training Focus</div>
-    <textarea id="home-training-focus" class="admin-edit-field textarea" style="margin-top:4px;min-height:72px" placeholder="What should this technician focus on right now?" maxlength="2000">${adminEsc(t.training_focus||'')}</textarea>
+    <div class="training-focus-label">Training Goals</div>
+    <textarea id="home-training-focus" class="admin-edit-field textarea" style="margin-top:4px;min-height:72px" placeholder="What are this technician's training goals right now?" maxlength="2000">${adminEsc(t.training_focus||'')}</textarea>
     <div class="training-focus-dates" style="align-items:flex-end">
       <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Start</span><input type="date" id="home-training-start" class="admin-edit-field" value="${focusStart}"></label>
-      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">End</span><input type="date" id="home-training-end" class="admin-edit-field" value="${focusEnd}"></label>
-      <button type="button" class="btn" style="padding:9px 14px;font-size:12px;background:#1B3A6B" onclick="saveTrainingFocus()">Save training focus</button>
+      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Target Date</span><input type="date" id="home-training-end" class="admin-edit-field" value="${focusEnd}"></label>
+      <button type="button" class="btn" style="padding:9px 14px;font-size:12px;background:#1B3A6B" onclick="saveTrainingFocus()">Save training goals</button>
     </div>
   </div>`;
 }
@@ -3307,10 +3307,10 @@ async function saveTrainingFocus(){
       regionTechs[currentDetailIdx].training_goal_end=currentTechData.training_goal_end;
     }
     refreshAtaStatusDisplays();
-    alert('Training focus saved.');
+    alert('Training goals saved.');
   }catch(e){
     const msg=e&&e.message||'';
-    alert('Could not save training focus. '+(msg.includes('app_save_training_focus')?'Run supabase/training-focus-pm-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    alert('Could not save training goals. '+(msg.includes('app_save_training_focus')?'Run supabase/training-focus-pm-edit.sql in Supabase, then try again.':(msg||'Try again.')));
     console.error(e);
   }
 }
@@ -4973,13 +4973,13 @@ function trainingFocusInlineHtml(t,opts){
   const maxLen=opts.maxLen!=null?opts.maxLen:80;
   const focusLbl=focus?(focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus):'';
   const bits=[];
-  if(focusLbl)bits.push(`<span class="sp-focus" title="${adminEsc(focus)}">Focus: ${adminEsc(focusLbl)}</span>`);
-  else bits.push(`<span class="sp-ata-muted">No current focus</span>`);
+  if(focusLbl)bits.push(`<span class="sp-focus" title="${adminEsc(focus)}">Goals: ${adminEsc(focusLbl)}</span>`);
+  else bits.push(`<span class="sp-ata-muted">No training goals</span>`);
   if(showDates){
     if(start||end){
-      bits.push(`<span class="sp-focus-dates">${start?('Start '+adminEsc(start)):'Start —'}${end?(' · End '+adminEsc(end)):' · End —'}</span>`);
+      bits.push(`<span class="sp-focus-dates">${start?('Start '+adminEsc(start)):'Start —'}${end?(' · Target Date '+adminEsc(end)):' · Target Date —'}</span>`);
     }else{
-      bits.push(`<span class="sp-focus-dates">Start — · End —</span>`);
+      bits.push(`<span class="sp-focus-dates">Start — · Target Date —</span>`);
     }
   }
   return bits.join('');
@@ -7066,9 +7066,9 @@ const ADMIN_TECH_BASE_COLS=[
   {key:'site',label:'NEBB site'},
   {key:'start',label:'Employee start'},
   {key:'bootcamp',label:'Bootcamp start'},
-  {key:'focus',label:'Training focus'},
-  {key:'goal_start',label:'Goal start'},
-  {key:'goal_end',label:'Goal end'}
+  {key:'focus',label:'Training Goals'},
+  {key:'goal_start',label:'Start'},
+  {key:'goal_end',label:'Target Date'}
 ];
 /** Columns shown in Technician Table view (editable). */
 const ADMIN_TECH_TABLE_COLS=[
@@ -7077,9 +7077,9 @@ const ADMIN_TECH_TABLE_COLS=[
   {key:'region',label:'Region',colClass:'admin-tech-region'},
   {key:'start',label:'Start Date',colClass:'admin-tech-date'},
   {key:'bootcamp',label:'Bootcamp Date',colClass:'admin-tech-date'},
-  {key:'focus',label:'Focus',colClass:'admin-tech-focus',wide:true},
-  {key:'goal_start',label:'Goal Start',colClass:'admin-tech-date'},
-  {key:'goal_end',label:'Goal End',colClass:'admin-tech-date'}
+  {key:'focus',label:'Training Goals',colClass:'admin-tech-focus',wide:true},
+  {key:'goal_start',label:'Start',colClass:'admin-tech-date'},
+  {key:'goal_end',label:'Target Date',colClass:'admin-tech-date'}
 ];
 function adminTechCategoryCols(){
   return PROFICIENCY_CATEGORY_OPTIONS.map(o=>({key:'cat_'+o.key,label:o.label,catKey:o.key}));
@@ -7169,7 +7169,7 @@ function renderAdminTechTable(rows){
     const regionCell=`<select id="tbl-region-${id}" class="admin-edit-field">${regionOptionsHtml(p.region||'')}</select>`;
     const startCell=`<input type="date" id="tbl-start-${id}" class="admin-edit-field" value="${adminEsc(d.start)}">`;
     const bootCell=`<input type="date" id="tbl-bootcamp-${id}" class="admin-edit-field" value="${adminEsc(d.bootcamp)}">`;
-    const focusCell=`<textarea id="tbl-focus-${id}" class="admin-edit-field" placeholder="Training focus" maxlength="2000">${adminEsc(d.focus)}</textarea>`;
+    const focusCell=`<textarea id="tbl-focus-${id}" class="admin-edit-field" placeholder="Training goals" maxlength="2000">${adminEsc(d.focus)}</textarea>`;
     const goalStartCell=`<input type="date" id="tbl-goal-start-${id}" class="admin-edit-field" value="${adminEsc(d.goal_start)}">`;
     const goalEndCell=`<input type="date" id="tbl-goal-end-${id}" class="admin-edit-field" value="${adminEsc(d.goal_end)}">`;
     const baseCells=[
@@ -7414,9 +7414,9 @@ async function importAdminTechsExcel(input){
     const cSite=col('NEBB site','NEBB Site Updated');
     const cStart=col('Employee start','Employee start date','Start date');
     const cBoot=col('Bootcamp start','Bootcamp start date');
-    const cFocus=col('Training focus','Training goal');
-    const cGStart=col('Goal start','Goal start date');
-    const cGEnd=col('Goal end','Goal end date');
+    const cFocus=col('Training Goals','Training goals','Training focus','Training goal');
+    const cGStart=col('Start','Goal start','Goal start date');
+    const cGEnd=col('Target Date','Target date','Goal end','Goal end date');
     const catIdx=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
       const i=col(o.label,o.key);
       return{key:o.key,i:i};
@@ -7571,11 +7571,11 @@ function requiredCategoriesEditorHtml(p){
 function trainingFocusEditorHtml(p){
   if(p.role!=='technician')return'';
   return`<div class="edit-deck-sec">
-    <div class="edit-deck-sec-title">Training Focus</div>
+    <div class="edit-deck-sec-title">Training Goals</div>
     <div class="edit-deck-grid">
-      <label class="admin-start-wrap span-2"><span class="admin-start-lbl">Training goal</span><textarea id="edit-training-focus-${p.id}" class="admin-edit-field textarea" placeholder="What should this technician focus on right now?" maxlength="2000">${adminEsc(p.training_focus||'')}</textarea></label>
-      <label class="admin-start-wrap"><span class="admin-start-lbl">Goal start date</span><input type="date" id="edit-training-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_start)}"></label>
-      <label class="admin-start-wrap"><span class="admin-start-lbl">Goal end date</span><input type="date" id="edit-training-end-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_end)}"></label>
+      <label class="admin-start-wrap span-2"><span class="admin-start-lbl">Goals</span><textarea id="edit-training-focus-${p.id}" class="admin-edit-field textarea" placeholder="What are this technician's training goals right now?" maxlength="2000">${adminEsc(p.training_focus||'')}</textarea></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Start</span><input type="date" id="edit-training-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_start)}"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Target Date</span><input type="date" id="edit-training-end-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.training_goal_end)}"></label>
     </div>
   </div>`;
 }
@@ -7688,15 +7688,15 @@ function pmTechStatusLineHtml(t,last){
 }
 function pmTechFocusLineHtml(t){
   const focus=(t&&t.training_focus||'').trim();
-  const lbl=focus||'No current focus';
+  const lbl=focus||'No training goals';
   const start=t&&t.training_goal_start?fmtDate(t.training_goal_start):'';
   const end=t&&t.training_goal_end?fmtDate(t.training_goal_end):'';
-  let goal='Goal date: —';
-  if(start&&end)goal='Goal: '+start+' – '+end;
-  else if(end)goal='Goal date: '+end;
-  else if(start)goal='Goal date: '+start;
+  let goal='Target Date: —';
+  if(start&&end)goal='Target: '+start+' – '+end;
+  else if(end)goal='Target Date: '+end;
+  else if(start)goal='Start: '+start;
   return`<div class="trow-focus-row">
-    <div class="trow-focus" title="${adminEsc(focus||'No current focus')}">Training Focus: ${adminEsc(lbl)}</div>
+    <div class="trow-focus" title="${adminEsc(focus||'No training goals')}">Training Goals: ${adminEsc(lbl)}</div>
     <div class="trow-focus-goal">${adminEsc(goal)}</div>
   </div>`;
 }
