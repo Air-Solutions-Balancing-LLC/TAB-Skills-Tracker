@@ -111,16 +111,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
-.admin-tech-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
+.admin-tech-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
 .admin-tech-table th{text-align:left;padding:8px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1}
-.admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333}
-.admin-tech-table th.admin-tech-name,.admin-tech-table td.admin-tech-name{min-width:180px;width:180px}
+.admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333;background:#fff}
+.admin-tech-table th.admin-tech-name,.admin-tech-table td.admin-tech-name{
+  min-width:180px;width:180px;max-width:180px;
+  position:sticky;left:0;
+  z-index:2;
+  background:#fff;
+  box-shadow:2px 0 6px rgba(27,58,107,0.1);
+}
+.admin-tech-table th.admin-tech-name{top:0;z-index:3;background:#EEF4FF}
 .admin-tech-table th.admin-tech-position,.admin-tech-table td.admin-tech-position{min-width:200px;width:200px}
 .admin-tech-table th.admin-tech-region,.admin-tech-table td.admin-tech-region{min-width:150px;width:150px}
 .admin-tech-table th.admin-tech-date,.admin-tech-table td.admin-tech-date{min-width:132px;width:132px}
 .admin-tech-table th.admin-tech-focus,.admin-tech-table td.admin-tech-focus{min-width:270px;max-width:320px;width:270px}
 .admin-tech-table th.admin-tech-cat,.admin-tech-table td.admin-tech-cat{width:48px;max-width:56px;text-align:center;white-space:nowrap}
 .admin-tech-table tr:hover td{background:#f8faff}
+.admin-tech-table tr:hover td.admin-tech-name{background:#f8faff}
 .admin-tech-table .admin-miss{color:#C0392B;font-weight:700}
 .admin-tech-table .admin-miss-list{color:#C0392B;font-size:11px;font-weight:600;line-height:1.35}
 .admin-tech-table .admin-ok{color:#0F6E56;font-weight:600}
@@ -341,6 +349,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 /* TOPBAR */
 .topbar{padding:16px 24px;border-bottom:none;display:flex;align-items:center;justify-content:space-between;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06);position:sticky;top:0;z-index:5}
 .topbar-title{font-size:18px;font-weight:800;color:#1B3A6B;letter-spacing:-.3px}
+.topbar-title-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+.topbar-tech-name{font-size:16px;font-weight:700;color:#E87722;letter-spacing:-.2px}
+.topbar-tech-name:empty{display:none}
 .topbar-sub{font-size:12px;color:#999;margin-top:2px}
 .topbar-badge{font-size:11px;padding:5px 14px;border-radius:20px;background:#1B3A6B;color:#fff;font-weight:700;letter-spacing:.3px}
 .pm-region-switch{flex-shrink:0;min-width:150px;max-width:220px;padding:8px 12px;border-radius:10px;border:1.5px solid #1B3A6B;font-size:13px;font-weight:700;color:#1B3A6B;background:#fff;cursor:pointer;outline:none}
@@ -467,13 +478,21 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 
 /* HISTORY */
 .hist-box{background:#fff;border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.hist-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.2px}
+.hist-title{font-size:13px;font-weight:800;color:#1B3A6B;margin-bottom:0;cursor:pointer;display:flex;align-items:center;gap:8px;letter-spacing:-.2px;user-select:none}
+.hist-title .hist-chevron{display:inline-flex;align-items:center;justify-content:center;width:18px;font-size:11px;color:#4A90D9;flex-shrink:0}
+.hist-box.is-open .hist-title{margin-bottom:10px}
+.hist-content{display:none;overflow-x:auto}
+.hist-box.is-open .hist-content{display:block}
 .hist-table{width:100%;border-collapse:collapse;font-size:12px}
 .hist-table th{text-align:left;padding:8px 10px;color:#fff;border-bottom:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;background:#1B3A6B}
 .hist-table th:first-child{border-radius:8px 0 0 0}
 .hist-table th:last-child{border-radius:0 8px 0 0}
-.hist-table td{padding:9px 10px;border-bottom:1px solid #f5f5f5;vertical-align:top;color:#333}
+.hist-table td{padding:9px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle;color:#333}
 .hist-table tr:last-child td{border-bottom:none}
+.hist-delta{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hist-delta-up{color:#0F6E56}
+.hist-delta-dn{color:#C0392B}
+.hist-delta-eq,.hist-delta-na{color:#999}
 .comment-text{background:#EEF4FF;border-radius:6px;padding:6px 10px;font-size:11px;color:#1B3A6B;font-style:italic;border-left:3px solid #1B3A6B;line-height:1.5;margin-top:4px}
 .no-comment{font-size:11px;color:#ccc;font-style:italic}
 
@@ -644,8 +663,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
 .tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;flex:1;min-width:0}
 .tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
-.tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:140px}
+.tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:160px}
 .tech-tenure-action .btn{width:100%;justify-content:center;padding:9px 12px;font-size:12px;white-space:nowrap}
+.tech-tenure-action-btns{display:flex;flex-direction:column;gap:6px}
 .tech-tenure-action-date{font-size:11px;color:#888;text-align:center;line-height:1.3}
 .tech-required-box{background:#EEF4FF;border:1px solid #b8d0f5;border-radius:10px;padding:12px 14px;margin-bottom:14px}
 .tech-required-box .tech-required-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#4A90D9;margin-bottom:4px}
@@ -1441,7 +1461,13 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-questionnaire" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📝 Self-Assessment</div><div class="topbar-sub">Rate each skill honestly</div></div>
+          <div class="topbar-grow">
+            <div class="topbar-title-row">
+              <div class="topbar-title">📝 Assessment</div>
+              <div class="topbar-tech-name" id="assess-topbar-name"></div>
+            </div>
+            <div class="topbar-sub">Rate each skill honestly</div>
+          </div>
           <div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div>
         </div>
         <div class="q-wrap" id="q-content"></div>
@@ -1449,7 +1475,13 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-prebootcamp" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📋 Pre-Bootcamp Assessment</div><div class="topbar-sub">Rate each topic — Not Yet / Observed / Performed/Assisted / Can Perform Independently</div></div>
+          <div class="topbar-grow">
+            <div class="topbar-title-row">
+              <div class="topbar-title">📋 Pre-Bootcamp Assessment</div>
+              <div class="topbar-tech-name" id="preboot-topbar-name"></div>
+            </div>
+            <div class="topbar-sub">Rate each topic — Not Yet / Observed / Performed/Assisted / Can Perform Independently</div>
+          </div>
           <div class="back-btn" onclick="showTechHome()" style="font-size:11px;color:#4A90D9;cursor:pointer;padding:8px 12px;border-radius:7px;border:1px solid rgba(27,58,107,0.5)">← Back</div>
         </div>
         <div class="q-wrap" id="preboot-content"></div>
@@ -2202,6 +2234,7 @@ function updateTechAssessNav(t,readOnly){
   const done=document.getElementById('tech-assess-done');
   const mobile=document.getElementById('tech-assess-mobile');
   const homeBtn=document.getElementById('home-assess-btn');
+  const homeViewBtn=document.getElementById('home-assess-view-btn');
   const homeWrap=document.getElementById('home-assess-action');
   const homeDate=document.getElementById('home-assess-date');
   if(nav)nav.classList.remove('visible');
@@ -2213,15 +2246,21 @@ function updateTechAssessNav(t,readOnly){
   const draft=getAssessmentDraft(t);
   const submittedThisMonth=techAlreadySubmittedThisMonth(assessments);
   const canAssess=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
+  const hasAssessments=assessments.length>0;
   const btnLabel=draft?'Continue assessment':(submittedThisMonth?'Update assessment':'Take Assessment');
   const clickFn=beginAssessmentFromHome;
-  // Always show home Take Assessment + last date (sidebar is gone).
+  // Always show home Take/View Assessment + last date (sidebar is gone).
   if(homeBtn&&homeWrap){
     homeWrap.style.display='flex';
     homeBtn.textContent=btnLabel;
     homeBtn.disabled=!canAssess;
     homeBtn.style.opacity=canAssess?'':'0.55';
     homeBtn.onclick=canAssess?clickFn:null;
+    if(homeViewBtn){
+      homeViewBtn.disabled=!hasAssessments;
+      homeViewBtn.style.opacity=hasAssessments?'':'0.55';
+      homeViewBtn.onclick=hasAssessments?viewLatestAssessment:null;
+    }
     if(homeDate)homeDate.textContent=lastAssessmentDateLabel(t);
   }else if(nav&&canAssess){
     nav.classList.add('visible');
@@ -2258,18 +2297,30 @@ function bootcampDateLabel(t){
   if(!d)return'Bootcamp date: Not set';
   return'Bootcamp: '+fmtDateFull(d);
 }
+let preBootcampViewOnly=false;
 async function beginPreBootcampFromHome(){
   if(techViewMode==='readonly'&&techViewBackPage==='pg-admin'&&currentTechData){
     const t=currentTechData;
     await editTechFromAdmin(t.id,t.region,t.name);
     if(techViewMode!=='edit')return;
   }
+  preBootcampViewOnly=false;
+  openPreBootcampAssessment();
+}
+function viewPreBootcampAssessment(){
+  closeMobileNav();
+  if(!ratedChecklistSectionExists()){
+    alert('Pre-Bootcamp assessment is not available yet.');
+    return;
+  }
+  preBootcampViewOnly=true;
   openPreBootcampAssessment();
 }
 function updateTechPreBootcampNav(t,readOnly){
   const nav=document.getElementById('tech-preboot-nav');
   const mobile=document.getElementById('tech-preboot-mobile');
   const homeBtn=document.getElementById('home-preboot-btn');
+  const homeViewBtn=document.getElementById('home-preboot-view-btn');
   const homeWrap=document.getElementById('home-preboot-action');
   const homeDate=document.getElementById('home-preboot-date');
   if(nav)nav.classList.remove('visible');
@@ -2291,6 +2342,11 @@ function updateTechPreBootcampNav(t,readOnly){
     homeBtn.disabled=!canEdit;
     homeBtn.style.opacity=canEdit?'':'0.55';
     homeBtn.onclick=canEdit?beginPreBootcampFromHome:null;
+    if(homeViewBtn){
+      homeViewBtn.disabled=false;
+      homeViewBtn.style.opacity='';
+      homeViewBtn.onclick=viewPreBootcampAssessment;
+    }
     if(homeDate)homeDate.textContent=dateBits.join(' · ');
   }else if(nav&&canEdit){
     nav.classList.add('visible');
@@ -2303,11 +2359,24 @@ function updateTechPreBootcampNav(t,readOnly){
     mobile.onclick=beginPreBootcampFromHome;
   }
 }
+function assessmentTopbarTechName(){
+  return String((currentTechData&&currentTechData.name)||currentTechName||'').trim();
+}
+function updateAssessmentTopbarNames(){
+  const name=assessmentTopbarTechName();
+  ['assess-topbar-name','preboot-topbar-name'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=name;
+  });
+}
 function setTechMainView(viewId){
   ['tech-view-home','tech-view-questionnaire','tech-view-ata','tech-view-prebootcamp'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.classList.toggle('active',id===viewId);
   });
+  if(viewId==='tech-view-questionnaire'||viewId==='tech-view-prebootcamp'){
+    updateAssessmentTopbarNames();
+  }
 }
 function isTechPreBootcampViewActive(){
   const el=document.getElementById('tech-view-prebootcamp');
@@ -2331,7 +2400,7 @@ function renderPreBootcampAssessment(){
   const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
   const t=currentTechData||{};
   const completed=parseChecklistCompleted(t.checklist_completed||currentChecklist);
-  const readOnly=techViewMode==='readonly';
+  const readOnly=techViewMode==='readonly'||!!preBootcampViewOnly;
   if(!sec||!sec.skills.length){
     wrap.innerHTML=`<div class="q-header"><div class="q-title">Pre-Bootcamp Assessment</div><div class="q-sub">No Pre-Bootcamp tasks are available yet.</div></div>
       <div class="q-nav"><button type="button" class="btn btn-outline" onclick="showTechHome()">← Back to My Progress</button></div>`;
@@ -2375,7 +2444,7 @@ function renderPreBootcampAssessment(){
     <div class="q-nav">
       <button type="button" class="btn btn-outline" onclick="showTechHome()">← Back to My Progress</button>
       <div class="q-nav-actions">
-        <button type="button" class="btn" style="background:#0F6E56" onclick="showTechHome()">${prog>=100?'Done':'Save & return'}</button>
+        <button type="button" class="btn" style="background:#0F6E56" onclick="showTechHome()">${readOnly?'Close':(prog>=100?'Done':'Save & return')}</button>
       </div>
     </div>`;
 }
@@ -7273,6 +7342,73 @@ function overallProficiencyPct(t,assessment){
   if(!pcts.length)return null;
   return Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
 }
+function historySelectedCats(t){
+  const required=new Set(techRequiredCategoryKeys(t)||[]);
+  return SKILL_CATS.filter(c=>required.has(c.skey));
+}
+function assessmentSelectedCatAvg(assessment,cats){
+  if(!assessment||!cats||!cats.length)return null;
+  const vals=cats.map(c=>catScore(assessment,c)).filter(v=>v!==null&&v!==undefined);
+  if(!vals.length)return null;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+function histDeltaHtml(currAvg,prevAvg){
+  if(currAvg===null||prevAvg===null||currAvg===undefined||prevAvg===undefined){
+    return'<span class="hist-delta hist-delta-na">—</span>';
+  }
+  const d=currAvg-prevAvg;
+  if(Math.abs(d)<0.05)return'<span class="hist-delta hist-delta-eq">0.0</span>';
+  if(d>0)return`<span class="hist-delta hist-delta-up">+${d.toFixed(1)}</span>`;
+  return`<span class="hist-delta hist-delta-dn">${d.toFixed(1)}</span>`;
+}
+function toggleTechAssessHist(){
+  const box=document.getElementById('tech-hist-box');
+  const chev=document.getElementById('tech-hist-tog');
+  if(!box)return;
+  const open=box.classList.toggle('is-open');
+  if(chev)chev.textContent=open?'▼':'▶';
+  box.setAttribute('aria-expanded',open?'true':'false');
+}
+function buildTechAssessHistoryHtml(t,assessments){
+  if(!assessments||!assessments.length)return'';
+  const histCats=historySelectedCats(t);
+  if(!histCats.length){
+    return`<div class="hist-box" id="tech-hist-box" aria-expanded="false">
+      <div class="hist-title" role="button" tabindex="0" onclick="toggleTechAssessHist()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTechAssessHist();}">
+        <span class="hist-chevron" id="tech-hist-tog">▶</span>
+        <span>Assessment history</span>
+      </div>
+      <div class="hist-content" id="tech-hist-content"><div style="font-size:12px;color:#999;padding:4px 0">No selected categories to show.</div></div>
+    </div>`;
+  }
+  const histRows=[...assessments].reverse().map((a,ri,arr)=>{
+    const prevA=arr[ri+1];
+    const currAvg=assessmentSelectedCatAvg(a,histCats);
+    const prevAvg=prevA?assessmentSelectedCatAvg(prevA,histCats):null;
+    const cells=histCats.map(c=>{
+      const v=catScore(a,c);
+      if(v===null)return'<td style="color:#ccc">—</td>';
+      return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span></td>`;
+    }).join('');
+    return`<tr>
+      <td>${histDeltaHtml(currAvg,prevAvg)}</td>
+      <td style="color:#1B3A6B;white-space:nowrap;font-weight:700">${fmtDate(a.date)}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  return`<div class="hist-box" id="tech-hist-box" aria-expanded="false">
+    <div class="hist-title" role="button" tabindex="0" onclick="toggleTechAssessHist()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTechAssessHist();}">
+      <span class="hist-chevron" id="tech-hist-tog">▶</span>
+      <span>Assessment history</span>
+    </div>
+    <div class="hist-content" id="tech-hist-content">
+      <table class="hist-table">
+        <thead><tr><th>Change</th><th>Date</th>${histCats.map(c=>`<th>${c.emoji} ${adminEsc(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>${histRows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
 function requiredAssessmentSections(t){
   const custom=parseRequiredCategories(t&&t.required_categories);
   if(custom!==null){
@@ -7804,7 +7940,6 @@ function pmTechNavSelectHtml(){
   const opts=order.map(({t,idx},i)=>`<option value="${idx}"${i===pos?' selected':''}>${adminEsc(t.name||('Technician '+(idx+1)))}</option>`).join('');
   const multi=order.length>1;
   return`<span class="pm-tech-nav">
-    <button type="button" class="btn btn-outline pm-tech-nav-btn" ${multi?'':'disabled'} onclick="pmNavAdjacent(-1)">Previous</button>
     <select class="pm-tech-nav-select" id="pm-tech-nav-select" aria-label="Select technician" onchange="pmSelectTechFromNav(this.value)">${opts}</select>
     <button type="button" class="btn btn-outline pm-tech-nav-btn" ${multi?'':'disabled'} onclick="pmNavAdjacent(1)">Next</button>
     <button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>
@@ -8678,17 +8813,7 @@ function renderTechHome(t,opts){
     }
   }
 
-  const visCats=SKILL_CATS.filter(c=>assessments.some(a=>catScore(a,c)!==null));
-  const histRows=[...assessments].reverse().map((a,ri,arr)=>{
-    const prevA=arr[ri+1];
-    const cells=visCats.map(c=>{
-      const v=catScore(a,c);if(v===null)return'<td style="color:rgba(255,255,255,0.2)">—</td>';
-      const pv=prevA?catScore(prevA,c):null;
-      const tr=pv!==null?(v>pv?`<span class="trend-up" style="font-size:10px"> ↑</span>`:v<pv?`<span class="trend-dn" style="font-size:10px"> ↓</span>`:''):'';
-      return`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span>${tr}</td>`;
-    }).join('');
-    return`<tr><td style="color:#1B3A6B;white-space:nowrap;font-weight:700">${fmtDate(a.date)}</td>${cells}<td>${a.comment?`<div class="comment-text">"${a.comment}"</div>`:`<div class="no-comment">No comment</div>`}</td></tr>`;
-  }).join('');
+  const assessHistoryHtml=buildTechAssessHistoryHtml(t,assessments);
 
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
@@ -8698,8 +8823,9 @@ function renderTechHome(t,opts){
     :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
     :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
     :null;
-  // Take Assessment + Pre-Bootcamp (when required) sit on the tenure row.
+  // Take/View Assessment + Pre-Bootcamp (when required) sit on the tenure row.
   const showPreBoot=shouldShowPreBootcampCta(t);
+  const hasAssessments=!!(assessments&&assessments.length);
   const tenureHtml=`<div class="tech-tenure-info">
     <div class="tech-tenure-meta">
       <span><strong>Years employed:</strong> ${tenure||'—'}</span>
@@ -8709,11 +8835,17 @@ function renderTechHome(t,opts){
     </div>
     <div class="tech-tenure-actions">
       <div class="tech-tenure-action" id="home-preboot-action" style="${showPreBoot?'':'display:none'}">
-        <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">Take Pre-Bootcamp Assessment</button>
+        <div class="tech-tenure-action-btns">
+          <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">Take Pre-Bootcamp Assessment</button>
+          <button type="button" class="btn" id="home-preboot-view-btn" style="background:#0F6E56" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp Assessment</button>
+        </div>
         <div class="tech-tenure-action-date" id="home-preboot-date">${showPreBoot?adminEsc(bootcampDateLabel(t)):''}</div>
       </div>
       <div class="tech-tenure-action" id="home-assess-action">
-        <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">Take Assessment</button>
+        <div class="tech-tenure-action-btns">
+          <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">Take Assessment</button>
+          <button type="button" class="btn" id="home-assess-view-btn" style="background:#E87722${!hasAssessments?';opacity:.55':''}" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">View Assessment</button>
+        </div>
         <div class="tech-tenure-action-date" id="home-assess-date">${adminEsc(lastAssessmentDateLabel(t))}</div>
       </div>
     </div>
@@ -8733,12 +8865,10 @@ function renderTechHome(t,opts){
     ?'No scores yet — this technician has not submitted an assessment.'
     :'No scores yet — take your first assessment using Take Assessment above.';
 
-  const hasAssessments=!!(assessments&&assessments.length);
   const techHomeActions=fromPm
     ?pmTechNavSelectHtml()
     :(!readOnly
       ?`<span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#1D9E75${!hasAssessments?';opacity:.45':''}" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">📄 View My Assessment</button>
           ${adminEdit?'':`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="doLogout()">Sign out</button>`}
         </span>`
       :'');
@@ -8763,7 +8893,7 @@ function renderTechHome(t,opts){
       <div class="my-cat-grid">${myBlocks||`<div style="font-size:13px;color:#999;grid-column:1/-1">${emptyScoresMsg}</div>`}</div>
     </div>
     ${stalled.length?`<div class="stalled-box"><div class="stalled-title">⚠️ Skills needing your attention</div>${stalled.map(s=>`<div class="skill-alert-row"><span style="line-height:1.5">${s.section?`<div style="font-size:10px;color:#4A90D9;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${s.section}</div>`:''}<div style="font-size:12px">${s.label}</div></span><span class="sp sp4" style="flex-shrink:0">${s.val.toFixed(1)}</span></div>`).join('')}</div>`:''}
-    ${assessments.length?`<div class="hist-box"><div class="hist-title">📅 Assessment history</div><div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Date</th>${visCats.map(c=>`<th>${c.emoji} ${c.label}</th>`).join('')}<th>💬 Comment</th></tr></thead><tbody>${histRows}</tbody></table></div></div>`:''}
+    ${assessHistoryHtml}
     ${notesHtml}`;
   updateTechAssessNav(t,readOnly);
   if(!embedInPm){
@@ -8778,6 +8908,7 @@ function renderTechHome(t,opts){
 function showTechHome(){
   closeMobileNav();
   closeTechResultsView({keepView:true});
+  preBootcampViewOnly=false;
   setTechMainView('tech-view-home');
   document.querySelectorAll('#tech-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));
   if(currentTechData){
