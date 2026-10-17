@@ -345,9 +345,15 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .sb-pct-mid{color:#7aaedd}
 .sb-pct-low{color:rgba(255,255,255,0.4)}
 .sb-collapse-tab{display:none;position:absolute;top:50%;right:-14px;transform:translateY(-50%);width:28px;height:56px;border:none;border-radius:0 10px 10px 0;background:#1a1a2e;color:#fff;font-size:20px;cursor:pointer;box-shadow:2px 0 8px rgba(0,0,0,0.25);padding:0;line-height:1;z-index:12}
+#pm-sidebar .sb-collapse-tab{display:block}
+#pm-sidebar{transition:width .2s ease,box-shadow .2s ease}
+#pm-sidebar.collapsed{width:0;min-width:0;box-shadow:none;overflow:visible}
+#pm-sidebar.collapsed > *:not(.sb-collapse-tab){visibility:hidden;pointer-events:none}
+#pm-sidebar.collapsed .sb-collapse-tab{right:-28px;visibility:visible;pointer-events:auto}
+#pg-pm.sb-collapsed .main-content{margin-left:0}
 .mobile-menu-btn.is-open{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
 .my-cat-block,.q-section{scroll-margin-top:76px}
-.main-content{margin-left:220px;flex:1;min-width:0;background:#f0f2f5}
+.main-content{margin-left:220px;flex:1;min-width:0;background:#f0f2f5;transition:margin-left .2s ease}
 #pg-tech .topbar{border-radius:12px;margin-bottom:4px}
 /* Home topbar is mobile-only (menu + assess); title bar served no purpose on desktop. */
 #pg-tech #tech-view-home > .topbar{display:none}
@@ -722,6 +728,8 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-table{width:100%;border-collapse:collapse;font-size:12px}
 .weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
+.weekly-table th.weekly-su-col,.weekly-table td.weekly-su-col{width:44px;max-width:48px;padding:8px 2px;text-align:center;white-space:nowrap}
+.weekly-table th.weekly-date-col,.weekly-table td.weekly-date-col{width:72px;white-space:nowrap;padding-left:8px;padding-right:6px}
 .weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
 .weekly-form{display:grid;grid-template-columns:140px 1fr 1fr;gap:8px;padding:12px 14px;background:#f4fbf7;border-bottom:1px solid #cfe8dc;align-items:start}
 @media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
@@ -787,6 +795,9 @@ body.mobile-nav-open{overflow:hidden}
 @media(max-width:768px){
   .sidebar{width:min(280px,88vw);transform:translateX(-100%);transition:transform .25s ease;z-index:11}
   .sidebar.mobile-open{transform:translateX(0)}
+  #pm-sidebar.collapsed{width:min(280px,88vw);overflow:visible}
+  #pm-sidebar.collapsed > *:not(.sb-collapse-tab){visibility:visible;pointer-events:auto}
+  #pg-pm.sb-collapsed .main-content{margin-left:0}
   .sb-sidebar-close{display:inline-flex}
   .sb-collapse-tab{display:block}
   .main-content{margin-left:0;width:100%}
@@ -866,7 +877,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="main-content" style="margin:0 auto;max-width:1100px;padding:20px 20px 40px">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
       <div>
-        <div style="font-size:20px;font-weight:800;color:#1B3A6B">Weekly Updates</div>
+        <div style="font-size:20px;font-weight:800;color:#1B3A6B">Weekly Evaluations</div>
         <div style="font-size:13px;color:#666;margin-top:4px" id="weekly-public-sub">Region training notes</div>
       </div>
       <a href="/" style="font-size:13px;font-weight:700;color:#1B3A6B;text-decoration:none;padding:8px 12px;border:1.5px solid #c5d4ea;border-radius:10px">Staff sign-in</a>
@@ -1453,6 +1464,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="app-shell">
     <div class="sidebar-overlay" onclick="closeMobileNav()"></div>
     <div class="sidebar" id="pm-sidebar">
+      <button type="button" class="sb-collapse-tab" onclick="togglePmSidebar()" aria-label="Collapse menu">‹</button>
       <div class="sb-brand">
         <img src="assets/airadigm-logo.svg" alt="Airadigm Solutions" style="max-height:40px;max-width:170px;object-fit:contain;object-position:left" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="sb-logo-fallback">Airadigm <span>Skills</span></div>
@@ -1478,7 +1490,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">Alerts <span class="sb-badge" id="alert-count">0</span></div>
         <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">Compare</div>
         <div class="sb-nav" id="nav-preboot" onclick="setPMView('preboot',this);loadPmPreBootReport();closeMobileNav()">Pre-Bootcamp Report</div>
-        <div class="sb-nav" id="nav-weekly" onclick="setPMView('weekly',this);loadPmWeeklyUpdates();closeMobileNav()">Weekly Updates</div>
+        <div class="sb-nav" id="nav-weekly" onclick="setPMView('weekly',this);loadPmWeeklyUpdates();closeMobileNav()">Weekly Evaluations</div>
         <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">ATA Progress</div>
       </div>
       <div class="sb-footer">
@@ -1546,7 +1558,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="topbar-grow">
-            <div class="topbar-title">Weekly Updates</div>
+            <div class="topbar-title">Weekly Evaluations</div>
             <div class="topbar-sub">Track weekly training notes by technician — share the region link with training techs</div>
           </div>
           <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmWeeklyUpdates()">Refresh</button>
@@ -1562,7 +1574,7 @@ body.mobile-nav-open{overflow:hidden}
             </label>
             <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyAddTech()">Add / Restore</button>
           </div>
-          <div id="pm-weekly-wrap"><div class="loading">Open to load Weekly Updates…</div></div>
+          <div id="pm-weekly-wrap"><div class="loading">Open to load Weekly Evaluations…</div></div>
         </div>
       </div>
       <div id="pm-view-ata" class="view">
@@ -2691,6 +2703,37 @@ function closeMobileNav(){
   document.querySelectorAll('.sidebar-overlay.visible').forEach(o=>o.classList.remove('visible'));
   document.body.classList.remove('mobile-nav-open');
   syncMobileMenuBtns(false);
+}
+function syncPmSidebarCollapsedUi(){
+  const sb=document.getElementById('pm-sidebar');
+  const page=document.getElementById('pg-pm');
+  if(!sb||!page)return;
+  const collapsed=sb.classList.contains('collapsed');
+  page.classList.toggle('sb-collapsed',collapsed);
+  const tab=sb.querySelector('.sb-collapse-tab');
+  if(tab){
+    tab.textContent=collapsed?'›':'‹';
+    tab.setAttribute('aria-label',collapsed?'Expand menu':'Collapse menu');
+  }
+}
+function togglePmSidebar(){
+  const sb=document.getElementById('pm-sidebar');
+  if(!sb)return;
+  if(window.matchMedia('(max-width:768px)').matches){
+    closeMobileNav();
+    return;
+  }
+  const collapsed=sb.classList.toggle('collapsed');
+  try{localStorage.setItem('pmSidebarCollapsed',collapsed?'1':'0');}catch(e){}
+  syncPmSidebarCollapsedUi();
+}
+function restorePmSidebarCollapsed(){
+  const sb=document.getElementById('pm-sidebar');
+  if(!sb||window.matchMedia('(max-width:768px)').matches)return;
+  let prefer=false;
+  try{prefer=localStorage.getItem('pmSidebarCollapsed')==='1';}catch(e){}
+  sb.classList.toggle('collapsed',prefer);
+  syncPmSidebarCollapsedUi();
 }
 function renderTechSidebarNav(){
   const ataEl=document.getElementById('tech-view-ata');
@@ -8084,6 +8127,7 @@ function showPage(id){
   closeMobileNav();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id==='pg-pm')restorePmSidebarCollapsed();
   if(id==='pg-tech'&&currentTechData){
     updateTechAssessNav(currentTechData,techViewMode==='readonly');
     renderTechSidebarNav();
@@ -8264,7 +8308,7 @@ async function weeklyCopyLinkForRegion(region){
       const ta=document.createElement('textarea');
       ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
     }
-    alert('Link copied for '+regionLabel(res.region)+'.\n\nShare it with training techs so they can add Weekly Updates.');
+    alert('Link copied for '+regionLabel(res.region)+'.\n\nShare it with training techs so they can add Weekly Evaluations.');
   }catch(e){
     const msg=e&&e.message||'';
     alert('Could not copy link. '+(msg.includes('app_weekly_ensure_link')?'Run supabase/weekly-updates.sql in Supabase, then try again.':(msg||'Try again.')));
@@ -8279,12 +8323,20 @@ function renderWeeklyLinksBar(hostId,region){
     <button type="button" class="admin-chrome-btn" style="padding:6px 12px;font-size:12px;border-color:#1B3A6B;color:#1B3A6B;font-weight:800" onclick="weeklyCopyLinkForRegion(null)" title="Copy training-tech link for ${adminEsc(label)}">${adminEsc(label)} · Copy Link</button>`;
 }
 const WEEKLY_RATING_FIELDS=[
-  {key:'punctuality',label:'Punctuality'},
+  {key:'punctuality',label:'Punctual'},
   {key:'attitude',label:'Attitude'},
   {key:'effort',label:'Effort Level'},
-  {key:'engagement',label:'Engagement'},
-  {key:'teamwork',label:'Teamwork'}
+  {key:'engagement',label:'Engaged'},
+  {key:'teamwork',label:'Team-work'}
 ];
+function weeklyFmtDate(d){
+  const dt=parseDateOnly(d);
+  if(!dt)return'—';
+  const m=String(dt.getMonth()+1).padStart(2,'0');
+  const day=String(dt.getDate()).padStart(2,'0');
+  const y=String(dt.getFullYear()).slice(-2);
+  return m+'/'+day+'/'+y;
+}
 function weeklySuBadge(val){
   if(val==='S')return'<span class="weekly-su-badge s" title="Satisfactory">S</span>';
   if(val==='U')return'<span class="weekly-su-badge u" title="Unsatisfactory">U</span>';
@@ -8315,31 +8367,31 @@ function buildWeeklyRosterHtml(data,opts){
   const techs=data&&data.techs||[];
   const roster=data&&data.roster||[];
   if(!roster.length){
-    return`<div class="weekly-empty">No technicians on Weekly Updates yet. Add one above to start tracking weekly notes.</div>`;
+    return`<div class="weekly-empty">No technicians on Weekly Evaluations yet. Add one above to start tracking weekly notes.</div>`;
   }
-  const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th title="${adminEsc(f.label)}">${adminEsc(f.label)}</th>`).join('');
+  const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th class="weekly-su-col" title="${adminEsc(f.label)}">${adminEsc(f.label)}</th>`).join('');
   return roster.map(r=>{
     const updates=r.updates||[];
     const rows=updates.length?updates.map(u=>`<tr>
-      <td style="white-space:nowrap;font-weight:700;color:#1B3A6B">${adminEsc(fmtDateFull(u.update_date))}</td>
+      <td class="weekly-date-col" style="font-weight:700;color:#1B3A6B">${adminEsc(weeklyFmtDate(u.update_date))}</td>
       <td>${adminEsc(u.trainer_name||'—')}</td>
       <td>${adminEsc(u.trainer_name_2||'—')}</td>
-      <td style="text-align:center">${weeklySuBadge(u.rating_punctuality)}</td>
-      <td style="text-align:center">${weeklySuBadge(u.rating_attitude)}</td>
-      <td style="text-align:center">${weeklySuBadge(u.rating_effort)}</td>
-      <td style="text-align:center">${weeklySuBadge(u.rating_engagement)}</td>
-      <td style="text-align:center">${weeklySuBadge(u.rating_teamwork)}</td>
+      <td class="weekly-su-col">${weeklySuBadge(u.rating_punctuality)}</td>
+      <td class="weekly-su-col">${weeklySuBadge(u.rating_attitude)}</td>
+      <td class="weekly-su-col">${weeklySuBadge(u.rating_effort)}</td>
+      <td class="weekly-su-col">${weeklySuBadge(u.rating_engagement)}</td>
+      <td class="weekly-su-col">${weeklySuBadge(u.rating_teamwork)}</td>
       <td class="weekly-comment">${adminEsc(u.comment||'—')}</td>
       <td class="weekly-plan">${adminEsc(u.action_plan||'—')}</td>
       <td style="white-space:nowrap"><button type="button" class="sk-mini del" onclick="weeklyDeleteUpdate(${u.id})">Delete</button></td>
     </tr>`).join('')
-      :`<tr><td colspan="11" style="color:#999">No updates yet.</td></tr>`;
+      :`<tr><td colspan="11" style="color:#999">No evaluations yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
     return`<div class="weekly-card" data-tech="${r.tech_id}">
       <div class="weekly-card-h" role="button" tabindex="0" onclick="toggleWeeklyCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeeklyCard(this);}">
         <div>
           <div class="weekly-card-name"><span class="weekly-chev">▶</span>${adminEsc(r.name)}</div>
-          <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory</div>
+          <div class="weekly-card-meta">${updates.length} evaluation${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory</div>
         </div>
         ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="event.stopPropagation();weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
       </div>
@@ -8348,7 +8400,7 @@ function buildWeeklyRosterHtml(data,opts){
           <div class="weekly-form-bottom">
             <label>Comment<textarea name="comment" placeholder="Summary of Tech's performance this week." required></textarea></label>
             <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
-            <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Updates</button></div>
+            <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
           </div>
           <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
           <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
@@ -8357,7 +8409,7 @@ function buildWeeklyRosterHtml(data,opts){
         </form>
         <div style="overflow-x:auto">
           <table class="weekly-table">
-            <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+            <thead><tr><th class="weekly-date-col">Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -8395,8 +8447,8 @@ async function loadPmWeeklyUpdates(){
   }catch(e){
     const msg=e&&e.message||'';
     weeklyShowErr('pm-weekly-err',msg.includes('app_weekly_get')
-      ?'Could not load Weekly Updates. Run supabase/weekly-updates.sql in Supabase, then Refresh.'
-      :(msg||'Could not load Weekly Updates.'));
+      ?'Could not load Weekly Evaluations. Run supabase/weekly-updates.sql in Supabase, then Refresh.'
+      :(msg||'Could not load Weekly Evaluations.'));
     if(wrap)wrap.innerHTML='';
   }
 }
@@ -8414,7 +8466,7 @@ async function weeklyAddTech(){
   }
 }
 async function weeklyArchiveTech(techId){
-  if(!confirm('Archive this technician on Weekly Updates? Past notes are kept. Select them under Add to Weekly Updates to restore.'))return;
+  if(!confirm('Archive this technician on Weekly Evaluations? Past notes are kept. Select them under Add / Restore to bring them back.'))return;
   try{
     weeklyData=await rpc('app_weekly_remove_tech',{p_token:currentToken,p_tech_id:techId});
     weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
@@ -8436,7 +8488,7 @@ async function weeklySubmitUpdate(ev,techId){
   if(!trainer){alert('Select the Training Tech.');return;}
   if(trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
   if(WEEKLY_RATING_FIELDS.some(f=>!ratings[f.key])){
-    alert('Rate all five: Punctuality, Attitude, Effort Level, Engagement, and Teamwork (S or U).');
+    alert('Rate all five: Punctual, Attitude, Effort Level, Engaged, and Team-work (S or U).');
     return;
   }
   try{
@@ -8462,7 +8514,7 @@ async function weeklySubmitUpdate(ev,techId){
   }
 }
 async function weeklyDeleteUpdate(updateId){
-  if(!confirm('Delete this Weekly Updates entry?'))return;
+  if(!confirm('Delete this Weekly Evaluation entry?'))return;
   try{
     weeklyData=await rpc('app_weekly_delete_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
@@ -8499,10 +8551,10 @@ async function loadPublicWeeklyUpdates(){
   }catch(e){
     const msg=e&&e.message||'';
     weeklyShowErr('weekly-public-err',msg.includes('Invalid')||msg.includes('expired')
-      ?'This Weekly Updates link is invalid. Ask your PM for a new Copy Link.'
+      ?'This Weekly Evaluations link is invalid. Ask your PM for a new Copy Link.'
       :(msg.includes('app_weekly_public_get')
-        ?'Weekly Updates is not set up yet. Ask an admin to run supabase/weekly-updates.sql.'
-        :(msg||'Could not load Weekly Updates.')));
+        ?'Weekly Evaluations is not set up yet. Ask an admin to run supabase/weekly-updates.sql.'
+        :(msg||'Could not load Weekly Evaluations.')));
     if(wrap)wrap.innerHTML='';
   }
 }
