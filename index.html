@@ -390,10 +390,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .admin-chrome-btn:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.12)}
 
 /* METRICS */
-.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:20px 24px 0}
-.metric{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-bottom:4px solid #1B3A6B}
-.metric-label{font-size:11px;color:#999;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.metric-val{font-size:28px;font-weight:800;color:#1B3A6B}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 24px 0}
+.metric{background:#fff;border-radius:8px;padding:8px 10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-bottom:2px solid #1B3A6B}
+.metric-label{font-size:9px;color:#999;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;line-height:1.2}
+.metric-val{font-size:16px;font-weight:800;color:#1B3A6B;line-height:1.15}
 .metric-alert{border-bottom-color:#4A90D9}
 
 /* ALERT BOX */
@@ -411,9 +411,13 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 /* SECTION */
 .section-label{font-size:11px;font-weight:700;color:#999;padding:20px 24px 10px;text-transform:uppercase;letter-spacing:.6px}
 .pm-search-wrap{padding:0 24px 12px}
-.pm-search-wrap input{width:100%;max-width:420px;padding:10px 14px 10px 36px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.006a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 12px center;outline:none}
+.pm-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.pm-search-wrap input{width:100%;max-width:280px;padding:10px 14px 10px 36px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.006a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 12px center;outline:none}
 .pm-search-wrap input:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
-.pm-search-hint{font-size:11px;color:#aaa;margin-top:6px}
+.pm-filter-select{max-width:320px;min-width:160px;flex:1;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-weight:600;color:#1B3A6B;background:#fff;outline:none;font-family:inherit;cursor:pointer}
+.pm-filter-select:focus{border-color:#1B3A6B;box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
+.pm-filter-select:disabled{opacity:.45;cursor:default}
+.pm-search-hint{font-size:11px;color:#888;margin-top:6px;min-height:14px}
 .tech-grid{display:flex;flex-direction:column;gap:8px;padding:0 24px 24px}
 @media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
 .trow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid #e8eef6;border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
@@ -752,29 +756,39 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-table{width:100%;border-collapse:collapse;font-size:12px}
 .weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
-.weekly-table th.weekly-su-col,.weekly-table td.weekly-su-col{width:44px;max-width:48px;padding:8px 2px;text-align:center;white-space:nowrap}
+.weekly-table th.weekly-su-col{width:48px;max-width:52px;padding:8px 3px;text-align:center;white-space:normal;line-height:1.15;height:2.6em;vertical-align:middle;hyphens:none}
+.weekly-table td.weekly-su-col{width:48px;max-width:52px;padding:8px 2px;text-align:center;white-space:nowrap;vertical-align:middle}
 .weekly-table th.weekly-date-col,.weekly-table td.weekly-date-col{width:72px;white-space:nowrap;padding-left:8px;padding-right:6px}
 .weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
-.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr;gap:8px;padding:12px 14px;background:#f4fbf7;border-bottom:1px solid #cfe8dc;align-items:start}
-@media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
-.weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
-.weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
+.weekly-form{display:flex;flex-direction:column;gap:10px;padding:12px 14px;background:#f4fbf7;border-bottom:1px solid #cfe8dc}
+.weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555;min-width:0}
+.weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff;width:100%;box-sizing:border-box}
 .weekly-form textarea{min-height:70px;resize:vertical}
-.weekly-form-span{grid-column:1/-1}
-.weekly-ratings{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:10px 12px;background:#fff;border:1.5px solid #d8e0ec;border-radius:10px}
+.weekly-form-span{width:100%}
+.weekly-form-top{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.weekly-form-top .weekly-date-field{flex:0 0 140px}
+.weekly-form-top .weekly-trainer-field{flex:0 1 160px;max-width:180px}
+.weekly-form-top .weekly-submit-wrap{flex:0 0 auto;margin-left:auto;display:flex;align-items:flex-end}
+.weekly-form-notes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:900px){
+  .weekly-form-top .weekly-date-field,.weekly-form-top .weekly-trainer-field{flex:1 1 140px;max-width:none}
+  .weekly-form-top .weekly-submit-wrap{margin-left:0;width:100%}
+  .weekly-form-top .weekly-submit-wrap .btn{width:100%}
+  .weekly-form-notes{grid-template-columns:1fr}
+}
+.weekly-ratings{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:10px 4px;background:#fff;border:1.5px solid #d8e0ec;border-radius:10px}
 @media(max-width:900px){.weekly-ratings{grid-template-columns:1fr 1fr}}
-.weekly-su{display:flex;flex-direction:column;gap:6px;min-width:0}
-.weekly-su-lbl{font-size:10px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.3px}
-.weekly-su-opts{display:flex;gap:6px}
-.weekly-su-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;margin:0;padding:7px 6px;border:1.5px solid #d8e0ec;border-radius:8px;background:#fafbfd;font-size:12px;font-weight:800;color:#555;cursor:pointer;user-select:none}
+.weekly-su{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:0 10px}
+.weekly-su+.weekly-su{border-left:1px solid #d8e0ec}
+.weekly-su-lbl{font-size:10px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.3px;text-align:center;line-height:1.2}
+.weekly-su-opts{display:flex;justify-content:center;gap:4px}
+.weekly-su-opt{display:flex;align-items:center;justify-content:center;width:28px;min-width:28px;padding:6px 0;margin:0;border:1.5px solid #d8e0ec;border-radius:8px;background:#fafbfd;font-size:12px;font-weight:800;color:#555;cursor:pointer;user-select:none}
 .weekly-su-opt input{position:absolute;opacity:0;pointer-events:none}
 .weekly-su-opt:has(input:checked){border-color:#0F6E56;background:#e8f7f1;color:#0F6E56}
 .weekly-su-opt.u:has(input:checked){border-color:#C0392B;background:#fdecea;color:#C0392B}
 .weekly-su-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;font-size:11px;font-weight:800}
 .weekly-su-badge.s{background:#e8f7f1;color:#0F6E56}
 .weekly-su-badge.u{background:#fdecea;color:#C0392B}
-.weekly-form-bottom{grid-column:1/-1;display:grid;grid-template-columns:1.2fr 1.2fr auto;gap:8px;align-items:start}
-@media(max-width:900px){.weekly-form-bottom{grid-template-columns:1fr}}
 .weekly-empty{padding:18px;color:#888;font-size:13px}
 .tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
 .tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:160px}
@@ -840,11 +854,11 @@ body.mobile-nav-open{overflow:hidden}
   .detail-topbar .back-btn{padding:8px 12px;font-size:11px}
   .detail-name{font-size:15px}
   .detail-body,.alerts-list,.compare-body,.page-body,.q-wrap{padding:12px 14px}
-  .metrics{padding:14px 14px 0;gap:8px}
-  .metric{padding:12px 14px}
-  .metric-val{font-size:22px}
+  .metrics{padding:10px 14px 0;gap:6px}
+  .metric{padding:7px 9px}
+  .metric-val{font-size:15px}
   .section-label,.pm-search-wrap{padding-left:14px;padding-right:14px}
-  .pm-search-wrap input{max-width:none}
+  .pm-search-wrap input,.pm-filter-select{max-width:none;min-width:0;flex:1 1 100%}
   .tech-grid{padding:0 14px 20px}
   .dates-cards{grid-template-columns:1fr}
   .comp-row{flex-direction:column;align-items:stretch;gap:6px}
@@ -1543,7 +1557,15 @@ body.mobile-nav-open{overflow:hidden}
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
         <div class="section-label">Team members — click a row to view their progress</div>
         <div class="pm-search-wrap">
-          <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
+          <div class="pm-filter-bar">
+            <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
+            <select id="pm-cat-filter" class="pm-filter-select" aria-label="Filter by category 90%+" onchange="onPmCatFilterChange()">
+              <option value="">Category (90%+)</option>
+            </select>
+            <select id="pm-task-filter" class="pm-filter-select" aria-label="Filter by task scored 4" onchange="onPmTaskFilterChange()" disabled>
+              <option value="">Task scored 4</option>
+            </select>
+          </div>
           <div class="pm-search-hint" id="pm-search-hint"></div>
         </div>
         <div class="tech-grid" id="tech-grid"><div class="loading">Loading...</div></div>
@@ -8563,12 +8585,92 @@ async function rpc(fn,args={}){
   const t=await res.text();return t?JSON.parse(t):null;
 }
 
-async function loadPMDashboard(){
-  document.getElementById('tech-grid').innerHTML='<div class="loading">Loading team...</div>';
+const PM_CAT_FILTER_EXCLUDE=new Set(['safety','safety_instruments']);
+
+function pmFilterableCategories(){
+  return (SKILL_CATS||[]).filter(c=>c&&c.skey&&!PM_CAT_FILTER_EXCLUDE.has(c.skey));
+}
+function pmFilterCategoryLabel(cat){
+  const o=PROFICIENCY_CATEGORY_OPTIONS.find(x=>x.key===cat.skey);
+  let label=o?o.label:(cat.label||cat.skey);
+  if(cat.skey==='intermediate'||cat.skey==='intermediate_7_12')label+=' — VAVs';
+  if(cat.skey==='advanced')label+=' — Hydronics';
+  return label;
+}
+function pmCategoryTasks(skey){
+  const sec=(QUESTIONNAIRE||[]).find(s=>s.key===skey);
+  return sec&&sec.skills?sec.skills.slice():[];
+}
+function techLatestAssessment(t){
+  return t&&t.assessments&&t.assessments.length?t.assessments[t.assessments.length-1]:null;
+}
+function techCategoryPctAtLeast(t,skey,minPct){
+  const last=techLatestAssessment(t);
+  if(!last)return false;
+  const cat=(SKILL_CATS||[]).find(c=>c.skey===skey);
+  if(!cat)return false;
+  const pct=categoryCombinedPct(last,cat);
+  return pct!==null&&pct!==undefined&&pct>=minPct;
+}
+function techHasTaskScore4(t,skillId){
+  const last=techLatestAssessment(t);
+  if(!last||!skillId)return false;
+  const raw=rawOf(last)||{};
+  const v=raw[skillId];
+  if(v===undefined||v===null||typeof v==='object')return false;
+  const sec=(QUESTIONNAIRE||[]).find(s=>(s.skills||[]).some(sk=>sk.id===skillId));
+  if(sec&&isProjectsSection(sec))return Number(v)===1||v===true;
+  const n=normalizeSkillScore(v,sec);
+  return n!==null&&Number(n)>=4;
+}
+function populatePmCategoryFilter(){
+  const sel=document.getElementById('pm-cat-filter');
+  if(!sel)return;
+  const cur=sel.value||'';
+  const opts=['<option value="">Category (90%+)</option>'].concat(
+    pmFilterableCategories().map(c=>`<option value="${adminEsc(c.skey)}">${adminEsc(pmFilterCategoryLabel(c))}</option>`)
+  );
+  sel.innerHTML=opts.join('');
+  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
+  else sel.value='';
+  populatePmTaskFilter(sel.value);
+}
+function populatePmTaskFilter(skey){
+  const sel=document.getElementById('pm-task-filter');
+  if(!sel)return;
+  const tasks=skey?pmCategoryTasks(skey):[];
+  const cur=sel.value||'';
+  const isProjects=skey&&(QUESTIONNAIRE||[]).some(s=>s.key===skey&&isProjectsSection(s));
+  const placeholder=isProjects?'Task complete':'Task scored 4';
+  sel.innerHTML=['<option value="">'+placeholder+'</option>'].concat(
+    tasks.map(sk=>`<option value="${adminEsc(sk.id)}">${adminEsc(sk.name)}</option>`)
+  ).join('');
+  sel.disabled=!skey||!tasks.length;
+  if(skey&&cur&&tasks.some(sk=>sk.id===cur))sel.value=cur;
+  else sel.value='';
+}
+function resetPmTechFilters(){
   const searchEl=document.getElementById('pm-tech-search');
   if(searchEl)searchEl.value='';
-  updatePmSearchHint('');
+  const catEl=document.getElementById('pm-cat-filter');
+  if(catEl)catEl.value='';
+  populatePmTaskFilter('');
+  updatePmSearchHint('',0,0);
+}
+function onPmCatFilterChange(){
+  const catEl=document.getElementById('pm-cat-filter');
+  populatePmTaskFilter(catEl?catEl.value:'');
+  renderTechGrid(regionTechs);
+}
+function onPmTaskFilterChange(){
+  renderTechGrid(regionTechs);
+}
+
+async function loadPMDashboard(){
+  document.getElementById('tech-grid').innerHTML='<div class="loading">Loading team...</div>';
+  resetPmTechFilters();
   await ensureSkills();
+  populatePmCategoryFilter();
   const techs=await rpc('app_pm_dashboard',{p_token:currentToken});
   regionTechs=techs;
   renderMetrics(techs);
@@ -8584,17 +8686,31 @@ async function loadPMDashboard(){
 
 function filterTechsBySearch(techs,query){
   const q=(query||'').trim().toLowerCase();
+  const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
+  const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
   const indexed=techs.map((t,i)=>({t,idx:i}));
-  if(!q)return indexed;
-  return indexed.filter(({t})=>(t.name||'').toLowerCase().includes(q));
+  return indexed.filter(({t})=>{
+    if(q&&!(t.name||'').toLowerCase().includes(q))return false;
+    if(catKey&&!techCategoryPctAtLeast(t,catKey,90))return false;
+    if(taskId&&!techHasTaskScore4(t,taskId))return false;
+    return true;
+  });
 }
 
 function updatePmSearchHint(query,shown,total){
   const hint=document.getElementById('pm-search-hint');
   if(!hint)return;
   const q=(query||'').trim();
-  if(!q){hint.textContent='';return;}
-  hint.textContent=shown===total?`${shown} match${shown===1?'':'es'}`:`Showing ${shown} of ${total}`;
+  const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
+  const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
+  const bits=[];
+  if(q)bits.push('name');
+  if(catKey)bits.push('90%+ category');
+  if(taskId)bits.push('task score 4');
+  if(!bits.length){hint.textContent='';return;}
+  hint.textContent=shown===total
+    ?`${shown} match${shown===1?'':'es'} (${bits.join(' · ')})`
+    :`Showing ${shown} of ${total} (${bits.join(' · ')})`;
 }
 
 function onPmTechSearch(){
@@ -8602,17 +8718,12 @@ function onPmTechSearch(){
 }
 
 function renderMetrics(techs){
-  const avgs=techs.filter(t=>t.assessments.length).map(t=>{
-    const last=t.assessments[t.assessments.length-1];
-    const vals=SKILL_CATS.map(c=>catScore(last,c)).filter(v=>v!==null);
-    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
-  });
-  const avg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'—';
+  const nebbCertified=techs.filter(isNebbCtCertified).length;
   const stalled=countStalled(techs);
   document.getElementById('alert-count').textContent=stalled;
   document.getElementById('pm-metrics').innerHTML=`
     <div class="metric"><div class="metric-label">Technicians</div><div class="metric-val">${techs.length}</div></div>
-    <div class="metric"><div class="metric-label">Team avg</div><div class="metric-val">${avg}</div></div>
+    <div class="metric"><div class="metric-label">NEBB Certified count</div><div class="metric-val">${nebbCertified}</div></div>
     <div class="metric metric-alert"><div class="metric-label">Stalled</div><div class="metric-val" style="color:#9090c0">${stalled}</div></div>`;
 }
 
@@ -8633,9 +8744,18 @@ function countStalled(techs){
 function renderTechGrid(techs){
   if(!techs.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians found.</div>';updatePmSearchHint('',0,0);return;}
   const query=document.getElementById('pm-tech-search')?document.getElementById('pm-tech-search').value:'';
+  const catKey=(document.getElementById('pm-cat-filter')||{}).value||'';
+  const taskId=(document.getElementById('pm-task-filter')||{}).value||'';
   const filtered=filterTechsBySearch(techs,query);
   updatePmSearchHint(query,filtered.length,techs.length);
-  if(!filtered.length){document.getElementById('tech-grid').innerHTML='<div class="loading">No technicians match “'+adminEsc(query.trim())+'”.</div>';return;}
+  if(!filtered.length){
+    let emptyMsg='No technicians match the current filters.';
+    if(query.trim()&&!catKey&&!taskId)emptyMsg='No technicians match “'+adminEsc(query.trim())+'”.';
+    else if(catKey&&!taskId)emptyMsg='No technicians at 90%+ in that category.';
+    else if(taskId)emptyMsg='No technicians scored 4 on that task (with 90%+ in the category).';
+    document.getElementById('tech-grid').innerHTML='<div class="loading">'+emptyMsg+'</div>';
+    return;
+  }
   document.getElementById('tech-grid').innerHTML=filtered.map(({t,idx})=>{
     const last=t.assessments.length?t.assessments[t.assessments.length-1]:null;
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
@@ -8733,11 +8853,11 @@ function renderWeeklyLinksBar(hostId,region){
     <button type="button" class="admin-chrome-btn" style="padding:6px 12px;font-size:12px;border-color:#1B3A6B;color:#1B3A6B;font-weight:800" onclick="weeklyCopyLinkForRegion(null)" title="Copy training-tech link for ${adminEsc(label)}">${adminEsc(label)} · Copy Link</button>`;
 }
 const WEEKLY_RATING_FIELDS=[
-  {key:'punctuality',label:'Punctual'},
-  {key:'attitude',label:'Attitude'},
-  {key:'effort',label:'Effort Level'},
-  {key:'engagement',label:'Engaged'},
-  {key:'teamwork',label:'Team-work'}
+  {key:'punctuality',label:'Punctual',header:'Punct.'},
+  {key:'attitude',label:'Attitude',header:'Att.'},
+  {key:'effort',label:'Effort Level',header:'Effort'},
+  {key:'engagement',label:'Engaged',header:'Engaged'},
+  {key:'teamwork',label:'Team-work',header:'Team-Work'}
 ];
 function weeklyFmtDate(d){
   const dt=parseDateOnly(d);
@@ -8779,7 +8899,7 @@ function buildWeeklyRosterHtml(data,opts){
   if(!roster.length){
     return`<div class="weekly-empty">No technicians on Weekly Evaluations yet. Add one above to start tracking weekly notes.</div>`;
   }
-  const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th class="weekly-su-col" title="${adminEsc(f.label)}">${adminEsc(f.label)}</th>`).join('');
+  const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th class="weekly-su-col" title="${adminEsc(f.label)}">${adminEsc(f.header||f.label)}</th>`).join('');
   return roster.map(r=>{
     const updates=r.updates||[];
     const rows=updates.length?updates.map(u=>`<tr>
@@ -8807,15 +8927,17 @@ function buildWeeklyRosterHtml(data,opts){
       </div>
       <div class="weekly-card-body">
         <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
-          <div class="weekly-form-bottom">
+          <div class="weekly-form-top">
+            <label class="weekly-date-field">Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
+            <label class="weekly-trainer-field">Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
+            <label class="weekly-trainer-field">Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
+            <div class="weekly-submit-wrap"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
+          </div>
+          ${weeklyRatingsFormHtml(r.tech_id)}
+          <div class="weekly-form-notes">
             <label>Comment<textarea name="comment" placeholder="Summary of Tech's performance this week." required></textarea></label>
             <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
-            <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
           </div>
-          <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
-          <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
-          <label>Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
-          ${weeklyRatingsFormHtml(r.tech_id)}
         </form>
         <div style="overflow-x:auto">
           <table class="weekly-table">
