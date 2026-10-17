@@ -1574,16 +1574,16 @@ body.mobile-nav-open{overflow:hidden}
           <div class="pm-filter-bar">
             <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
             <div class="pm-filter-stack">
-              <select id="pm-cat-filter" class="pm-filter-select" aria-label="Filter by category 90%+" onchange="onPmCatFilterChange()">
-                <option value="">Category (90%+)</option>
+              <select id="pm-cat-filter" class="pm-filter-select" aria-label="Filter by Category" onchange="onPmCatFilterChange()">
+                <option value="">Filter by Category</option>
               </select>
-              <select id="pm-task-filter" class="pm-filter-select" aria-label="Filter by task scored 4" onchange="onPmTaskFilterChange()" disabled>
-                <option value="">Task scored 4</option>
+              <select id="pm-task-filter" class="pm-filter-select" aria-label="Filter by Sub-Category (tasks)" onchange="onPmTaskFilterChange()" disabled>
+                <option value="">Filter by Sub-Category (tasks)</option>
               </select>
             </div>
             <div class="pm-multi-task" id="pm-multi-task">
-              <button type="button" class="pm-filter-select pm-multi-task-btn" id="pm-multi-task-btn" aria-haspopup="listbox" aria-expanded="false" onclick="togglePmMultiTaskMenu(event)">Filter by Tasks</button>
-              <div class="pm-multi-task-menu" id="pm-multi-task-menu" role="listbox" aria-label="Filter by Tasks" aria-multiselectable="true"></div>
+              <button type="button" class="pm-filter-select pm-multi-task-btn" id="pm-multi-task-btn" aria-haspopup="listbox" aria-expanded="false" onclick="togglePmMultiTaskMenu(event)">Filter by Sub-Category (tasks)</button>
+              <div class="pm-multi-task-menu" id="pm-multi-task-menu" role="listbox" aria-label="Filter by Sub-Category (tasks)" aria-multiselectable="true"></div>
             </div>
           </div>
           <div class="pm-search-hint" id="pm-search-hint"></div>
@@ -8726,7 +8726,7 @@ function updatePmMultiTaskBtnLabel(){
   const btn=document.getElementById('pm-multi-task-btn');
   if(!btn)return;
   const n=selectedPmMultiTaskIds().length;
-  btn.textContent=n?('Filter by Tasks ('+n+')'):'Filter by Tasks';
+  btn.textContent=n?('Filter by Sub-Category (tasks) ('+n+')'):'Filter by Sub-Category (tasks)';
 }
 function populatePmMultiTaskFilter(){
   const menu=document.getElementById('pm-multi-task-menu');
@@ -8778,7 +8778,7 @@ function populatePmCategoryFilter(){
   const sel=document.getElementById('pm-cat-filter');
   if(!sel)return;
   const cur=sel.value||'';
-  const opts=['<option value="">Category (90%+)</option>'].concat(
+  const opts=['<option value="">Filter by Category</option>'].concat(
     pmFilterableCategories().map(c=>`<option value="${adminEsc(c.skey)}">${adminEsc(pmFilterCategoryLabel(c))}</option>`)
   );
   sel.innerHTML=opts.join('');
@@ -8792,9 +8792,7 @@ function populatePmTaskFilter(skey){
   if(!sel)return;
   const tasks=skey?pmCategoryTasks(skey):[];
   const cur=sel.value||'';
-  const isProjects=skey&&(QUESTIONNAIRE||[]).some(s=>s.key===skey&&isProjectsSection(s));
-  const placeholder=isProjects?'Task complete':'Task scored 4';
-  sel.innerHTML=['<option value="">'+placeholder+'</option>'].concat(
+  sel.innerHTML=['<option value="">Filter by Sub-Category (tasks)</option>'].concat(
     tasks.map(sk=>`<option value="${adminEsc(sk.id)}">${adminEsc(sk.name)}</option>`)
   ).join('');
   sel.disabled=!skey||!tasks.length;
@@ -8961,7 +8959,7 @@ function renderCompareView(techs){
       const v=last?catScore(last,c):null;
       return v!==null?`<td><span class="sp ${spClass(v)}">${v.toFixed(1)}</span></td>`:`<td style="color:rgba(255,255,255,0.2)">—</td>`;
     }).join('');
-    return`<tr><td><div class="ct-name">${t.name}</div><div class="ct-sub">${techStatusSummaryText(t)}</div></td>${cells}</tr>`;
+    return`<tr><td><div class="ct-name">${t.name}</div></td>${cells}</tr>`;
   }).join('');
 }
 
