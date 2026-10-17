@@ -1024,6 +1024,7 @@ body.mobile-nav-open{overflow:hidden}
       <div class="field">
         <label>Region</label>
         <select id="region-sel">
+          <option value="ALL">All Regions</option>
           <option value="IM">Intermountain</option>
           <option value="KES">KES</option>
           <option value="MA">Mid-Atlantic</option>
@@ -1438,6 +1439,7 @@ body.mobile-nav-open{overflow:hidden}
           <input id="add-pm-email" type="email" placeholder="name@airadigmsolutions.com">
           <select id="add-pm-region">
             <option value="">Region (optional)</option>
+            <option value="ALL">All Regions</option>
             <option value="IM">Intermountain</option>
             <option value="KES">KES</option>
             <option value="MA">Mid-Atlantic</option>
@@ -1466,6 +1468,7 @@ body.mobile-nav-open{overflow:hidden}
           <input id="add-admin-email" type="email" placeholder="name@airadigmsolutions.com">
           <select id="add-admin-region">
             <option value="">Region (optional)</option>
+            <option value="ALL">All Regions</option>
             <option value="IM">Intermountain</option>
             <option value="KES">KES</option>
             <option value="MA">Mid-Atlantic</option>
@@ -1525,6 +1528,7 @@ body.mobile-nav-open{overflow:hidden}
       </div>
       <div class="sb-region-info">
         <select id="sb-region-select" class="sb-region-select" onchange="switchRegion(this.value)" title="Switch region" aria-label="Switch region">
+          <option value="ALL">All Regions</option>
           <option value="IM">Intermountain</option>
           <option value="KES">KES</option>
           <option value="MA">Mid-Atlantic</option>
@@ -1544,6 +1548,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">Alerts <span class="sb-badge" id="alert-count">0</span></div>
         <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">Compare</div>
         <div class="sb-nav" id="nav-preboot" onclick="setPMView('preboot',this);loadPmPreBootReport();closeMobileNav()">Pre-Bootcamp Report</div>
+        <div class="sb-nav" id="nav-nebb" onclick="setPMView('nebb',this);loadPmNebbReport();closeMobileNav()">NEBB CT</div>
         <div class="sb-nav" id="nav-weekly" onclick="setPMView('weekly',this);loadPmWeeklyUpdates();closeMobileNav()">Weekly Evaluations</div>
         <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">ATA Progress</div>
       </div>
@@ -1557,6 +1562,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title" id="pm-dash-title">Team Dashboard</div><div class="topbar-sub">Project Manager</div></div>
           <select id="pm-region-switch" class="pm-region-switch" onchange="switchRegion(this.value)" title="Switch region" aria-label="Switch region">
+            <option value="ALL">All Regions</option>
             <option value="IM">Intermountain</option>
             <option value="KES">KES</option>
             <option value="MA">Mid-Atlantic</option>
@@ -1620,6 +1626,39 @@ body.mobile-nav-open{overflow:hidden}
           <div class="err" id="pm-preboot-err" style="display:none"></div>
           <div class="report-filter-hint" id="pm-preboot-hint" style="margin-bottom:10px"></div>
           <div id="pm-preboot-wrap"><div class="loading">Open to load report…</div></div>
+        </div>
+      </div>
+      <div id="pm-view-nebb" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow">
+            <div class="topbar-title">NEBB CT</div>
+            <div class="topbar-sub">NEBB Certified report for <span id="pm-nebb-region-label">your region</span> — upload, view, and save certification PDFs</div>
+          </div>
+          <button type="button" class="btn" style="background:#4A90D9;padding:7px 12px;font-size:12px" id="pm-nebb-preview-btn" onclick="previewPmNebbReportPdf()">Preview</button>
+          <button type="button" class="btn" style="padding:7px 12px;font-size:12px" id="pm-nebb-download-btn" onclick="downloadPmNebbReportPdf()">Download PDF</button>
+          <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmNebbReport()">Refresh</button>
+        </div>
+        <div class="page-body">
+          <div class="err" id="pm-nebb-report-err" style="display:none"></div>
+          <div class="report-filters">
+            <div class="pm-search-wrap">
+              <input type="search" id="pm-nebb-search" placeholder="Search by name…" autocomplete="off" oninput="onPmNebbFilterChange()">
+            </div>
+            <div class="report-filter-field">
+              <label for="pm-nebb-deadline">Cert deadline</label>
+              <select id="pm-nebb-deadline" onchange="onPmNebbFilterChange()">
+                <option value="30">Under 30 days</option>
+                <option value="60">Under 60 days</option>
+                <option value="90">Under 90 days</option>
+                <option value="120">Under 120 days</option>
+                <option value="all" selected>All</option>
+              </select>
+            </div>
+          </div>
+          <div class="report-filter-hint" id="pm-nebb-filter-hint" style="margin-bottom:10px"></div>
+          <div class="report-meta" style="margin-bottom:10px">Report date: <span id="pm-nebb-report-date-label">—</span></div>
+          <div class="report-wrap" id="pm-nebb-report-wrap"><div class="loading">Open to load NEBB CT report…</div></div>
         </div>
       </div>
       <div id="pm-view-weekly" class="view">
@@ -3642,9 +3681,21 @@ async function switchRegion(region){
     saveSessionPref();
     await loadPMDashboard();
     const weeklyView=document.getElementById('pm-view-weekly');
+    const nebbView=document.getElementById('pm-view-nebb');
+    const prebootView=document.getElementById('pm-view-preboot');
+    const ataView=document.getElementById('pm-view-ata');
     if(weeklyView&&weeklyView.classList.contains('active')){
       setPMView('weekly',document.getElementById('nav-weekly'));
       await loadPmWeeklyUpdates();
+    }else if(nebbView&&nebbView.classList.contains('active')){
+      setPMView('nebb',document.getElementById('nav-nebb'));
+      await loadPmNebbReport();
+    }else if(prebootView&&prebootView.classList.contains('active')){
+      setPMView('preboot',document.getElementById('nav-preboot'));
+      await loadPmPreBootReport();
+    }else if(ataView&&ataView.classList.contains('active')){
+      setPMView('ata',document.getElementById('nav-ata'));
+      await loadPmAta();
     }else{
       setPMView('dashboard',document.getElementById('nav-dashboard'));
     }
@@ -3674,6 +3725,7 @@ async function doLogout(){
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
+let pmNebbRows=[],pmNebbReportDate=null,pmNebbSearch='',pmNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['National-TAB Survey','National-TAB Survey'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
 const ADMIN_POSITION_OPTIONS=[
@@ -4015,8 +4067,21 @@ async function assertNebbCertPdfFile(file){
   }
 }
 
+function nebbReportErrEl(){
+  const pmView=document.getElementById('pm-view-nebb');
+  if(pmView&&pmView.classList.contains('active'))return document.getElementById('pm-nebb-report-err');
+  return document.getElementById('admin-nebb-report-err')||document.getElementById('pm-nebb-report-err');
+}
+function isPmNebbViewActive(){
+  const pmView=document.getElementById('pm-view-nebb');
+  return !!(pmView&&pmView.classList.contains('active'));
+}
+async function reloadActiveNebbReport(){
+  if(isPmNebbViewActive())return loadPmNebbReport();
+  return loadAdminNebbReport();
+}
 async function uploadNebbCertPdf(personId){
-  const err=document.getElementById('admin-nebb-report-err');
+  const err=nebbReportErrEl();
   if(err)err.style.display='none';
   const input=document.getElementById('nebb-cert-file-'+personId);
   if(!input||!input.files||!input.files.length)return;
@@ -4028,10 +4093,11 @@ async function uploadNebbCertPdf(personId){
     await rpc('app_admin_save_cert_pdf',{
       p_person_id:personId,
       p_file_name:safeName.toLowerCase().endsWith('.pdf')?safeName:'certification.pdf',
-      p_content_base64:contentBase64
+      p_content_base64:contentBase64,
+      p_token:currentToken||null
     });
     input.value='';
-    await loadAdminNebbReport();
+    await reloadActiveNebbReport();
   }catch(e){
     input.value='';
     if(err){
@@ -4050,7 +4116,7 @@ function base64ToBlob(base64,mimeType){
 }
 
 async function fetchNebbCertPdfBlob(personId){
-  const data=await rpc('app_admin_get_cert_pdf',{p_person_id:personId});
+  const data=await rpc('app_admin_get_cert_pdf',{p_person_id:personId,p_token:currentToken||null});
   const b64=data&&data.content_base64?String(data.content_base64):'';
   if(!b64)throw new Error('No certification PDF is uploaded yet.');
   return {
@@ -4060,7 +4126,7 @@ async function fetchNebbCertPdfBlob(personId){
 }
 
 async function downloadNebbCertPdf(personId){
-  const err=document.getElementById('admin-nebb-report-err');
+  const err=nebbReportErrEl();
   if(err)err.style.display='none';
   try{
     const {blob,fileName}=await fetchNebbCertPdfBlob(personId);
@@ -4081,7 +4147,7 @@ async function downloadNebbCertPdf(personId){
 }
 
 async function viewNebbCertPdf(personId){
-  const err=document.getElementById('admin-nebb-report-err');
+  const err=nebbReportErrEl();
   if(err)err.style.display='none';
   try{
     const {blob}=await fetchNebbCertPdfBlob(personId);
@@ -4132,16 +4198,15 @@ function buildAdminNebbTableHtml(rows){
       <td>
         <div class="nebb-cert-actions">
           <button type="button" class="btn" style="padding:5px 8px;font-size:10px" onclick="saveNebbReportRow(${r.person_id})">Save</button>
-          <button type="button" class="btn" style="padding:5px 8px;font-size:10px;background:#C0392B" onclick="removeNebbCertifiedPerson(${r.person_id})">Remove</button>
         </div>
       </td>
     </tr>`;
   }).join('');
   return `<table class="report-table nebb-cert-table">
     <colgroup>
-      <col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:8%">
-      <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:7%">
-      <col style="width:18%"><col style="width:8%">
+      <col style="width:14%"><col style="width:7%"><col style="width:10%"><col style="width:8%">
+      <col style="width:11%"><col style="width:7%"><col style="width:8%"><col style="width:7%">
+      <col style="width:20%"><col style="width:8%">
     </colgroup>
     <thead><tr>
       <th>Name</th><th>Role</th><th>Region</th><th>Cert</th><th>Expires</th><th>CECs</th><th>Site Updated</th><th>Days</th><th>Certification PDF</th><th></th>
@@ -4246,38 +4311,6 @@ async function addNebbCertifiedPerson(createNew){
     }
   }
 }
-async function removeNebbCertifiedPerson(personId){
-  const row=(adminNebbRows||[]).find(r=>Number(r.person_id)===Number(personId));
-  const name=(row&&row.name)||'this person';
-  if(!confirm('Remove '+name+' from the NEBB Certified list? They stay in Technicians and can be added again later.'))return;
-  const err=document.getElementById('admin-nebb-report-err');
-  if(err)err.style.display='none';
-  try{
-    await rpc('app_admin_update_person',{
-      p_id:personId,
-      p_name:null,
-      p_email:null,
-      p_role:null,
-      p_region:null,
-      p_start_date:null,
-      p_bootcamp_start_date:null,
-      p_nebb_status:'',
-      p_cert_expires_on:'',
-      p_cecs_complete:false,
-      p_nebb_site_updated:false
-    });
-    const tableSearch=document.getElementById('admin-nebb-search');
-    if(tableSearch){tableSearch.value='';adminNebbSearch='';}
-    try{await loadAdminLists();}catch(_){}
-    await loadAdminNebbReport();
-  }catch(e){
-    if(err){
-      err.textContent='Could not remove them from the NEBB list. '+(e.message||'Try again.');
-      err.style.display='block';
-    }
-  }
-}
-
 async function loadAdminNebbReport(){
   const wrap=document.getElementById('admin-nebb-report-wrap');
   const err=document.getElementById('admin-nebb-report-err');
@@ -4305,7 +4338,7 @@ async function loadAdminNebbReport(){
 }
 
 async function saveNebbReportRow(personId){
-  const err=document.getElementById('admin-nebb-report-err');
+  const err=nebbReportErrEl();
   if(err)err.style.display='none';
   const exp=document.getElementById('nebb-exp-'+personId);
   const cecs=document.getElementById('nebb-cecs-'+personId);
@@ -4315,16 +4348,113 @@ async function saveNebbReportRow(personId){
       p_person_id:personId,
       p_cert_expires_on:exp?exp.value:null,
       p_cecs_complete:cecs?!!cecs.checked:false,
-      p_nebb_site_updated:siteUpdated?!!siteUpdated.checked:false
+      p_nebb_site_updated:siteUpdated?!!siteUpdated.checked:false,
+      p_token:currentToken||null
     });
-    await loadAdminNebbReport();
-    await loadAdminLists();
+    await reloadActiveNebbReport();
+    if(currentRole==='admin'){
+      try{await loadAdminLists();}catch(_){}
+    }
   }catch(e){
     if(err){
-      err.textContent='Could not save certification updates. '+(e.message||'Try again. If this persists, run the latest supabase/admin-reports.sql in Supabase.');
+      err.textContent='Could not save certification updates. '+(e.message||'Try again. If this persists, run supabase/pm-nebb-report.sql in Supabase.');
       err.style.display='block';
     }
   }
+}
+
+function filteredPmNebbRows(){
+  const q=pmNebbSearch.trim().toLowerCase();
+  const deadlineFilter=String(pmNebbDeadlineFilter||'all');
+  return sortAdminNebbRows(pmNebbRows).filter(r=>{
+    if(deadlineFilter!=='all'){
+      const n=Number(r.days_until_expiry);
+      const cap=Number(deadlineFilter);
+      if(Number.isNaN(n)||n>cap)return false;
+    }
+    if(!q)return true;
+    return String(r.name||'').toLowerCase().includes(q);
+  });
+}
+function updatePmNebbFilterHint(shown,total){
+  const hint=document.getElementById('pm-nebb-filter-hint');
+  if(!hint)return;
+  if(!total){hint.textContent='';return;}
+  if(shown===total&&!pmNebbSearch.trim()&&String(pmNebbDeadlineFilter||'all')==='all'){
+    hint.textContent=total+' certified employee'+(total===1?'':'s');
+    return;
+  }
+  hint.textContent='Showing '+shown+' of '+total;
+}
+function onPmNebbFilterChange(){
+  const searchEl=document.getElementById('pm-nebb-search');
+  const deadlineEl=document.getElementById('pm-nebb-deadline');
+  pmNebbSearch=searchEl?searchEl.value:'';
+  pmNebbDeadlineFilter=deadlineEl?deadlineEl.value:'all';
+  renderPmNebbReport();
+}
+function renderPmNebbReport(){
+  const wrap=document.getElementById('pm-nebb-report-wrap');
+  if(!wrap)return;
+  const filtered=filteredPmNebbRows();
+  updatePmNebbFilterHint(filtered.length,pmNebbRows.length);
+  wrap.innerHTML=buildAdminNebbTableHtml(filtered);
+}
+async function loadPmNebbReport(){
+  const wrap=document.getElementById('pm-nebb-report-wrap');
+  const err=document.getElementById('pm-nebb-report-err');
+  if(!wrap)return;
+  if(err)err.style.display='none';
+  const regionLbl=document.getElementById('pm-nebb-region-label');
+  if(regionLbl)regionLbl.textContent=REGION_LABELS[currentRegion]||currentRegion||'your region';
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  pmNebbReportDate=new Date();
+  const dateLabel=document.getElementById('pm-nebb-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(pmNebbReportDate.toISOString().slice(0,10));
+  try{
+    pmNebbRows=sortAdminNebbRows(await rpc('app_pm_nebb_certified_report',{p_token:currentToken})||[]);
+  }catch(e){
+    wrap.innerHTML='';
+    updatePmNebbFilterHint(0,0);
+    if(err){
+      err.textContent='Could not load NEBB CT report. '+(e.message||'Run supabase/pm-nebb-report.sql in Supabase.');
+      err.style.display='block';
+    }
+    return;
+  }
+  renderPmNebbReport();
+}
+async function downloadPmNebbReportPdf(){
+  const rows=filteredPmNebbRows();
+  if(!rows.length){
+    alert(pmNebbRows.length?'No certified employees match the current filters.':'Load the report first.');
+    return;
+  }
+  await withAdminPdfBusy('pm-nebb-download-btn','Generating PDF…',async()=>{
+    const iso=pmNebbReportDate?pmNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
+    doc.save(adminNebbPdfFilename(iso));
+  }).catch(e=>{
+    console.error('PM NEBB report PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
+  });
+}
+async function previewPmNebbReportPdf(){
+  const rows=filteredPmNebbRows();
+  if(!rows.length){
+    alert(pmNebbRows.length?'No certified employees match the current filters.':'Load the report first.');
+    return;
+  }
+  await withAdminPdfBusy('pm-nebb-preview-btn','Preparing…',async()=>{
+    const iso=pmNebbReportDate?pmNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
+    await openAdminPdfPreview(doc,'NEBB Certified Report Preview',adminNebbPdfFilename(iso));
+  }).catch(e=>{
+    console.error('PM NEBB report PDF preview failed:',e);
+    alert('Could not preview PDF. Please try again.');
+  });
 }
 
 // ── ATA Tracking ─────────────────────────────────────────────────────────────
@@ -7399,7 +7529,9 @@ function regionOptionsHtml(sel){
 }
 
 function regionOptionsWithBlankHtml(sel){
-  return `<option value="">Not set</option>`+regionOptionsHtml(sel);
+  // Admins / PMs can be assigned All Regions (see every region in PM mode).
+  const allSel=sel==='ALL'?' selected':'';
+  return `<option value="">Not set</option><option value="ALL"${allSel}>All Regions</option>`+regionOptionsHtml(sel==='ALL'?'':sel);
 }
 
 function nebbOptionsHtml(sel){
@@ -9132,6 +9264,11 @@ function weeklyShowErr(id,msg){
 async function loadPmWeeklyUpdates(){
   const wrap=document.getElementById('pm-weekly-wrap');
   weeklyShowErr('pm-weekly-err','');
+  if(currentRegion==='ALL'){
+    weeklyShowErr('pm-weekly-err','Weekly Evaluations are per region. Switch from All Regions to a specific region to view or add evaluations.');
+    if(wrap)wrap.innerHTML='';
+    return;
+  }
   if(wrap)wrap.innerHTML='<div class="loading">Loading…</div>';
   try{
     weeklyData=await rpc('app_weekly_get',{p_token:currentToken});
