@@ -92,6 +92,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .tech-home-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px;flex-wrap:wrap}
 .tech-home-header-row .tech-home-name-line{margin:0;flex:1;min-width:0}
 .tech-home-back-btn{padding:7px 14px;font-size:12px;white-space:nowrap;flex-shrink:0}
+.pm-tech-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:100%}
+.pm-tech-nav-btn{padding:7px 12px;font-size:12px;white-space:nowrap;flex-shrink:0}
+.pm-tech-nav-btn:disabled{opacity:.45;cursor:default}
+.pm-tech-nav-select{min-width:160px;max-width:240px;padding:7px 10px;font-size:12px;font-weight:600;color:#1B3A6B;border:1.5px solid #1B3A6B;border-radius:9px;background:#fff;outline:none;font-family:inherit;cursor:pointer}
+.pm-tech-nav-select:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .trow-name-line{margin:0}
 .trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-name-line .nm-meta{font-size:12px;color:#555}
@@ -106,16 +111,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
-.admin-tech-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1400px}
+.admin-tech-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
 .admin-tech-table th{text-align:left;padding:8px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1}
-.admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333;max-width:160px}
+.admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333}
+.admin-tech-table th.admin-tech-name,.admin-tech-table td.admin-tech-name{min-width:180px;width:180px}
+.admin-tech-table th.admin-tech-position,.admin-tech-table td.admin-tech-position{min-width:200px;width:200px}
+.admin-tech-table th.admin-tech-region,.admin-tech-table td.admin-tech-region{min-width:150px;width:150px}
+.admin-tech-table th.admin-tech-date,.admin-tech-table td.admin-tech-date{min-width:132px;width:132px}
 .admin-tech-table th.admin-tech-focus,.admin-tech-table td.admin-tech-focus{min-width:270px;max-width:320px;width:270px}
-.admin-tech-table th.admin-tech-cat,.admin-tech-table td.admin-tech-cat{max-width:72px;text-align:center;white-space:nowrap}
+.admin-tech-table th.admin-tech-cat,.admin-tech-table td.admin-tech-cat{width:48px;max-width:56px;text-align:center;white-space:nowrap}
 .admin-tech-table tr:hover td{background:#f8faff}
 .admin-tech-table .admin-miss{color:#C0392B;font-weight:700}
 .admin-tech-table .admin-miss-list{color:#C0392B;font-size:11px;font-weight:600;line-height:1.35}
 .admin-tech-table .admin-ok{color:#0F6E56;font-weight:600}
-.admin-tech-table .admin-edit-field{width:100%;min-width:0;padding:6px 8px;font-size:12px}
+.admin-tech-table .admin-edit-field{width:100%;min-width:100%;box-sizing:border-box;padding:6px 8px;font-size:12px}
 .admin-tech-table textarea.admin-edit-field{min-height:56px;resize:vertical;line-height:1.35}
 .admin-tech-table .admin-tech-cat-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#555;cursor:pointer}
 .admin-tech-table .admin-tech-cat-label input{margin:0}
@@ -920,7 +929,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-preboot" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('preboot')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Assessment Report</div>
-                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs who have not started bootcamp (blank or future bootcamp start date). Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs with the Pre-Bootcamp category selected. Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootReport()">Refresh</button>
@@ -5701,7 +5710,7 @@ function updateAdminPreBootFilterHint(shown,total){
   if(!hint)return;
   if(!total){hint.textContent='';return;}
   if(shown===total&&!adminPreBootSearch.trim()&&!adminPreBootRegion){
-    hint.textContent=total+' technician'+(total===1?'':'s')+' who have not started bootcamp';
+    hint.textContent=total+' technician'+(total===1?'':'s')+' with Pre-Bootcamp selected';
     return;
   }
   hint.textContent='Showing '+shown+' of '+total;
@@ -5720,7 +5729,7 @@ function adminPreBootProgressLabel(r){
   return pct+'%';
 }
 function buildAdminPreBootTableHtml(rows){
-  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians who have not started bootcamp (or none match filters).</div>';
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians with Pre-Bootcamp selected (or none match filters).</div>';
   const body=rows.map(r=>{
     const last=r.last_update_date?fmtDate(r.last_update_date):'Not Yet';
     const days=r.days_since_update;
@@ -5766,7 +5775,7 @@ async function loadAdminPreBootReport(){
     wrap.innerHTML='';
     updateAdminPreBootFilterHint(0,0);
     if(err){
-      err.textContent='Could not load report. Run supabase/pre-bootcamp-report.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
+      err.textContent='Could not load report. Run supabase/pre-bootcamp-report-by-category.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
       err.style.display='block';
     }
     return;
@@ -5826,7 +5835,7 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     'Report date: '+reportDateText,
     adminPreBootSearch.trim()?('Search: '+adminPreBootSearch.trim()):'',
     adminPreBootRegion?('Region: '+regionLabel(adminPreBootRegion)):'',
-    'Only techs who have not started bootcamp · Untaken = Not Yet · Days red if never or ≥7',
+    'Only techs with Pre-Bootcamp category selected · Untaken = Not Yet · Days red if never or ≥7',
     'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
   ].filter(Boolean).join('  ·  ');
   doc.splitTextToSize(pdfSafeText(filterNote),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
@@ -6148,14 +6157,14 @@ const ADMIN_TECH_BASE_COLS=[
 ];
 /** Columns shown in Technician Table view (editable). */
 const ADMIN_TECH_TABLE_COLS=[
-  {key:'name',label:'Name'},
-  {key:'position',label:'Position'},
-  {key:'region',label:'Region'},
-  {key:'start',label:'Start Date'},
-  {key:'bootcamp',label:'Bootcamp Date'},
-  {key:'focus',label:'Focus',wide:true},
-  {key:'goal_start',label:'Goal Start'},
-  {key:'goal_end',label:'Goal End'}
+  {key:'name',label:'Name',colClass:'admin-tech-name'},
+  {key:'position',label:'Position',colClass:'admin-tech-position'},
+  {key:'region',label:'Region',colClass:'admin-tech-region'},
+  {key:'start',label:'Start Date',colClass:'admin-tech-date'},
+  {key:'bootcamp',label:'Bootcamp Date',colClass:'admin-tech-date'},
+  {key:'focus',label:'Focus',colClass:'admin-tech-focus',wide:true},
+  {key:'goal_start',label:'Goal Start',colClass:'admin-tech-date'},
+  {key:'goal_end',label:'Goal End',colClass:'admin-tech-date'}
 ];
 function adminTechCategoryCols(){
   return PROFICIENCY_CATEGORY_OPTIONS.map(o=>({key:'cat_'+o.key,label:o.label,catKey:o.key}));
@@ -6239,8 +6248,8 @@ function renderAdminTechTable(rows){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
   const cols=adminTechTableCols();
   const head=cols.map(c=>{
-    const cls=c.wide?' class="admin-tech-focus"':(c.catKey?' class="admin-tech-cat"':'');
-    return`<th${cls} title="${adminEsc(c.label)}">${adminEsc(c.catKey?adminTechCatShort(c.label):c.label)}</th>`;
+    const cls=c.colClass||(c.catKey?'admin-tech-cat':'');
+    return`<th${cls?` class="${cls}"`:''} title="${adminEsc(c.label)}">${adminEsc(c.catKey?adminTechCatShort(c.label):c.label)}</th>`;
   }).join('')+'<th>Actions</th>';
   const body=rows.map(p=>{
     const d=adminTechRowData(p);
@@ -6254,14 +6263,14 @@ function renderAdminTechTable(rows){
     const goalStartCell=`<input type="date" id="tbl-goal-start-${id}" class="admin-edit-field" value="${adminEsc(d.goal_start)}">`;
     const goalEndCell=`<input type="date" id="tbl-goal-end-${id}" class="admin-edit-field" value="${adminEsc(d.goal_end)}">`;
     const baseCells=[
-      `<td>${nameCell}</td>`,
-      `<td>${posCell}</td>`,
-      `<td>${regionCell}</td>`,
-      `<td>${startCell}</td>`,
-      `<td>${bootCell}</td>`,
+      `<td class="admin-tech-name">${nameCell}</td>`,
+      `<td class="admin-tech-position">${posCell}</td>`,
+      `<td class="admin-tech-region">${regionCell}</td>`,
+      `<td class="admin-tech-date">${startCell}</td>`,
+      `<td class="admin-tech-date">${bootCell}</td>`,
       `<td class="admin-tech-focus">${focusCell}</td>`,
-      `<td>${goalStartCell}</td>`,
-      `<td>${goalEndCell}</td>`
+      `<td class="admin-tech-date">${goalStartCell}</td>`,
+      `<td class="admin-tech-date">${goalEndCell}</td>`
     ];
     const catCells=PROFICIENCY_CATEGORY_OPTIONS.map(o=>{
       const on=d.cats[o.key]==='Yes';
@@ -7774,14 +7783,60 @@ function setPMView(v,el){
   if(el){document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
 }
 
+let pmTechNavBusy=false;
+function pmTechNavOrdered(){
+  return (regionTechs||[]).map((t,idx)=>({t,idx}))
+    .filter(x=>x.t)
+    .sort((a,b)=>String(a.t.name||'').localeCompare(String(b.t.name||''),undefined,{sensitivity:'base'}));
+}
+function pmTechNavCurrentPos(){
+  const order=pmTechNavOrdered();
+  if(!order.length)return{order,pos:-1};
+  let pos=order.findIndex(x=>x.idx===currentDetailIdx);
+  if(pos<0&&currentTechData){
+    pos=order.findIndex(x=>String(x.t.id)===String(currentTechData.id));
+  }
+  return{order,pos};
+}
+function pmTechNavSelectHtml(){
+  const {order,pos}=pmTechNavCurrentPos();
+  if(!order.length)return'';
+  const opts=order.map(({t,idx},i)=>`<option value="${idx}"${i===pos?' selected':''}>${adminEsc(t.name||('Technician '+(idx+1)))}</option>`).join('');
+  const multi=order.length>1;
+  return`<span class="pm-tech-nav">
+    <button type="button" class="btn btn-outline pm-tech-nav-btn" ${multi?'':'disabled'} onclick="pmNavAdjacent(-1)">Previous</button>
+    <select class="pm-tech-nav-select" id="pm-tech-nav-select" aria-label="Select technician" onchange="pmSelectTechFromNav(this.value)">${opts}</select>
+    <button type="button" class="btn btn-outline pm-tech-nav-btn" ${multi?'':'disabled'} onclick="pmNavAdjacent(1)">Next</button>
+    <button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>
+  </span>`;
+}
+async function pmSelectTechFromNav(idx){
+  const i=Number(idx);
+  if(!Number.isFinite(i)||i===currentDetailIdx||!regionTechs[i])return;
+  await openTech(i);
+}
+async function pmNavAdjacent(delta){
+  const {order,pos}=pmTechNavCurrentPos();
+  if(order.length<2)return;
+  const at=pos<0?0:pos;
+  const next=order[(at+delta+order.length)%order.length];
+  if(!next||next.idx===currentDetailIdx)return;
+  await openTech(next.idx);
+}
 async function openTech(idx){
-  currentDetailIdx=idx;
+  if(pmTechNavBusy)return;
   const t=regionTechs[idx];
   if(!t)return;
-  const tech=Object.assign({},t);
-  if(!tech.region)tech.region=currentRegion;
-  techViewBackPage='pg-pm';
-  await openTechReadOnly(tech);
+  pmTechNavBusy=true;
+  try{
+    currentDetailIdx=idx;
+    const tech=Object.assign({},t);
+    if(!tech.region)tech.region=currentRegion;
+    techViewBackPage='pg-pm';
+    await openTechReadOnly(tech);
+  }finally{
+    pmTechNavBusy=false;
+  }
 }
 
 // Legacy embed helpers kept for any residual callers; PM now uses full tech page.
@@ -8680,7 +8735,7 @@ function renderTechHome(t,opts){
 
   const hasAssessments=!!(assessments&&assessments.length);
   const techHomeActions=fromPm
-    ?`<button type="button" class="btn btn-outline tech-home-back-btn" onclick="exitTechView()">Back to PM</button>`
+    ?pmTechNavSelectHtml()
     :(!readOnly
       ?`<span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button type="button" class="btn" style="padding:7px 14px;font-size:12px;background:#1D9E75${!hasAssessments?';opacity:.45':''}" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">📄 View My Assessment</button>

@@ -63,9 +63,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.app_checklist_rate(text, text, int) TO authenticated;
 
--- Techs who have not started bootcamp yet:
---   include when bootcamp_start_date is blank OR today (ET) is before that date
---   exclude when today (ET) is on/after bootcamp_start_date
+-- Techs with Pre-Bootcamp selected in required_categories.
 -- Untaken assessments still appear (progress 0 / Not Yet).
 CREATE OR REPLACE FUNCTION public.app_admin_pre_bootcamp_report()
 RETURNS json
@@ -134,10 +132,8 @@ BEGIN
     FROM public.technicians t
     JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'
     WHERE t.deleted_at IS NULL
-      AND (
-        t.bootcamp_start_date IS NULL
-        OR v_today < t.bootcamp_start_date::date
-      )
+      AND jsonb_typeof(t.required_categories) = 'array'
+      AND t.required_categories @> '["pre_bootcamp"]'::jsonb
   ) x;
 
   RETURN v_result;
