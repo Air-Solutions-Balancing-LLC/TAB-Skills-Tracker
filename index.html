@@ -98,8 +98,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .pm-tech-nav-select{min-width:160px;max-width:240px;padding:7px 10px;font-size:12px;font-weight:600;color:#1B3A6B;border:1.5px solid #1B3A6B;border-radius:9px;background:#fff;outline:none;font-family:inherit;cursor:pointer}
 .pm-tech-nav-select:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.08)}
 .trow-name-line{margin:0}
+.trow-name-line{margin:0!important}
 .trow-name-line .nm{font-size:14px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trow-name-line .nm-meta{font-size:12px;color:#555}
+.trow-name-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.trow-ata-text{font-size:12px;font-weight:700;color:#1a1a2e;white-space:nowrap}
+.trow-focus{font-size:12px;font-weight:700;color:#1a1a2e;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow-focus.empty{color:#999;font-weight:600}
 .admin-row .em{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-row .rg{font-size:11px;background:#E6EEF8;color:#1B3A6B;padding:3px 8px;border-radius:8px;font-weight:700;flex-shrink:0}
 .edit-deck-foot-right{display:flex;gap:10px;align-items:center;margin-left:auto}
@@ -7462,14 +7467,21 @@ function techHomeNameLineHtml(t){
   return line.replace('class="nm-line"','class="nm-line tech-home-name-line"');
 }
 function pmTechNameLineHtml(t){
-  const line=adminPeopleNameLine({
-    full_name:t.name,
-    job_position:t.job_position||'',
-    region:t.region||'',
-    nebb_status:t.nebb_status||'',
-    lead_tech:t.lead_tech||''
-  },{showRegion:true});
-  return line.replace('class="nm-line"','class="nm-line trow-name-line"');
+  // PM list: name only (no Position / Region). ATA status is rendered beside it.
+  return`<div class="nm-line trow-name-line"><span class="nm">${adminEsc(t.name||'')}</span></div>`;
+}
+function pmAtaStatusTextHtml(t){
+  const tech=ataTechForStatusDisplay(t);
+  if(!tech)return`<span class="trow-ata-text" style="color:#999">ATA —</span>`;
+  const m=ataCategoryMeta(ataCategory(tech));
+  return`<span class="trow-ata-text">ATA ${adminEsc(m.label)}</span>`;
+}
+function pmTechFocusLineHtml(t){
+  const focus=(t&&t.training_focus||'').trim();
+  if(!focus)return`<div class="trow-focus empty">No current focus</div>`;
+  const maxLen=90;
+  const lbl=focus.length>maxLen?focus.slice(0,maxLen-1)+'…':focus;
+  return`<div class="trow-focus" title="${adminEsc(focus)}">${adminEsc(lbl)}</div>`;
 }
 function renderPeople(el,rows,opts){
   if(!rows.length){el.innerHTML='<div class="admin-empty">None yet.</div>';return;}
@@ -8588,12 +8600,14 @@ function renderTechGrid(techs){
     return`<div class="trow" onclick="openTech(${idx})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTech(${idx});}">
       <div class="trow-main">
         <div class="trow-top">
-          <div class="trow-meta">${pmTechNameLineHtml(t)}</div>
+          <div class="trow-meta">
+            <div class="trow-name-row">${pmTechNameLineHtml(t)}${pmAtaStatusTextHtml(t)}</div>
+          </div>
         </div>
-        <div class="score-row">${techStatusFocusRowHtml(t,{showDates:false})}</div>
+        ${pmTechFocusLineHtml(t)}
       </div>
       <div class="trow-right">
-        ${last?`<span class="date-chip last">Last Updated: ${fmtDate(last.date)}</span>`:''}
+        ${last?`<span class="date-chip last">Last Assessment date: ${fmtDate(last.date)}</span>`:`<span class="date-chip last">Last Assessment date: —</span>`}
         <span class="trow-chevron" aria-hidden="true">›</span>
       </div>
     </div>`;
