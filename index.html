@@ -710,14 +710,20 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-add-row select,.weekly-add-row input,.weekly-add-row textarea{min-width:160px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;font-family:inherit;background:#fafafa}
 .weekly-add-row textarea{min-width:220px;min-height:64px;resize:vertical}
 .weekly-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:14px;overflow:hidden;border:1.5px solid #d8e2f0}
-.weekly-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f8faff;border-bottom:1px solid #eef1f6}
+.weekly-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f8faff;cursor:pointer;user-select:none}
+.weekly-card-h:hover{background:#f0f5fc}
 .weekly-card-name{font-size:15px;font-weight:800;color:#1B3A6B}
+.weekly-card-name .weekly-chev{display:inline-block;margin-right:6px;transition:transform .15s ease;color:#4A90D9}
+.weekly-card.is-open .weekly-chev{transform:rotate(90deg)}
 .weekly-card-meta{font-size:11px;color:#888;margin-top:2px}
+.weekly-card-body{display:none;border-top:1px solid #eef1f6}
+.weekly-card.is-open .weekly-card-body{display:block}
+.weekly-card.is-open .weekly-card-h{border-bottom:1px solid #eef1f6}
 .weekly-table{width:100%;border-collapse:collapse;font-size:12px}
 .weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
 .weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
-.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
+.weekly-form{display:grid;grid-template-columns:140px 1fr 1fr;gap:8px;padding:12px 14px;background:#f4fbf7;border-bottom:1px solid #cfe8dc;align-items:start}
 @media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
 .weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
 .weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
@@ -8330,32 +8336,38 @@ function buildWeeklyRosterHtml(data,opts){
       :`<tr><td colspan="11" style="color:#999">No updates yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
     return`<div class="weekly-card" data-tech="${r.tech_id}">
-      <div class="weekly-card-h">
+      <div class="weekly-card-h" role="button" tabindex="0" onclick="toggleWeeklyCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeeklyCard(this);}">
         <div>
-          <div class="weekly-card-name">${adminEsc(r.name)}</div>
+          <div class="weekly-card-name"><span class="weekly-chev">▶</span>${adminEsc(r.name)}</div>
           <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory</div>
         </div>
-        ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
+        ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="event.stopPropagation();weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
       </div>
-      <div style="overflow-x:auto">
-        <table class="weekly-table">
-          <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
-        <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
-        <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
-        <label>Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
-        ${weeklyRatingsFormHtml(r.tech_id)}
-        <div class="weekly-form-bottom">
-          <label>Comment<textarea name="comment" placeholder="Summary of Tech's performance this week." required></textarea></label>
-          <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
-          <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Updates</button></div>
+      <div class="weekly-card-body">
+        <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
+          <div class="weekly-form-bottom">
+            <label>Comment<textarea name="comment" placeholder="Summary of Tech's performance this week." required></textarea></label>
+            <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
+            <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Updates</button></div>
+          </div>
+          <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
+          <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
+          <label>Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
+          ${weeklyRatingsFormHtml(r.tech_id)}
+        </form>
+        <div style="overflow-x:auto">
+          <table class="weekly-table">
+            <thead><tr><th>Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
         </div>
-      </form>
+      </div>
     </div>`;
   }).join('');
+}
+function toggleWeeklyCard(el){
+  const card=el&&el.closest('.weekly-card');
+  if(card)card.classList.toggle('is-open');
 }
 function weeklyFillAddSelect(selectId,data,rosterOnly){
   const el=document.getElementById(selectId);if(!el)return;
