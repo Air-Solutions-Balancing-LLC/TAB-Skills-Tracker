@@ -700,6 +700,26 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .pm-preboot-level-1{color:#E87722}
 .pm-preboot-level-2{color:#4A90D9}
 .pm-preboot-level-3{color:#0F6E56}
+.weekly-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.weekly-link-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.weekly-add-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:16px;padding:12px 14px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.weekly-add-row label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
+.weekly-add-row select,.weekly-add-row input,.weekly-add-row textarea{min-width:160px;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:9px;font-size:13px;font-family:inherit;background:#fafafa}
+.weekly-add-row textarea{min-width:220px;min-height:64px;resize:vertical}
+.weekly-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:14px;overflow:hidden;border:1.5px solid #d8e2f0}
+.weekly-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f8faff;border-bottom:1px solid #eef1f6}
+.weekly-card-name{font-size:15px;font-weight:800;color:#1B3A6B}
+.weekly-card-meta{font-size:11px;color:#888;margin-top:2px}
+.weekly-table{width:100%;border-collapse:collapse;font-size:12px}
+.weekly-table th{text-align:left;padding:8px 10px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
+.weekly-table td{padding:10px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
+.weekly-table td.weekly-comment,.weekly-table td.weekly-plan{white-space:pre-wrap;line-height:1.45;max-width:280px}
+.weekly-form{display:grid;grid-template-columns:140px 1fr 1.2fr 1.2fr auto;gap:8px;padding:12px 14px;background:#f4fbf7;border-top:1px solid #cfe8dc;align-items:start}
+@media(max-width:900px){.weekly-form{grid-template-columns:1fr 1fr}}
+.weekly-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#555}
+.weekly-form input,.weekly-form select,.weekly-form textarea{padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;font-family:inherit;background:#fff}
+.weekly-form textarea{min-height:70px;resize:vertical}
+.weekly-empty{padding:18px;color:#888;font-size:13px}
 .tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
 .tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:160px}
 .tech-tenure-action .btn{width:100%;justify-content:center;padding:9px 12px;font-size:12px;white-space:nowrap}
@@ -816,6 +836,27 @@ body.mobile-nav-open{overflow:hidden}
 </style>
 </head>
 <body>
+
+<!-- WEEKLY UPDATES (shareable region link — no login required) -->
+<div id="pg-weekly" class="page">
+  <div class="main-content" style="margin:0 auto;max-width:1100px;padding:20px 20px 40px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <div style="font-size:20px;font-weight:800;color:#1B3A6B">Weekly Updates</div>
+        <div style="font-size:13px;color:#666;margin-top:4px" id="weekly-public-sub">Region training notes</div>
+      </div>
+      <a href="/" style="font-size:13px;font-weight:700;color:#1B3A6B;text-decoration:none;padding:8px 12px;border:1.5px solid #c5d4ea;border-radius:10px">Staff sign-in</a>
+    </div>
+    <div class="err" id="weekly-public-err" style="display:none"></div>
+    <div class="weekly-add-row" id="weekly-public-add-row" style="display:none">
+      <label>Technician
+        <select id="weekly-public-add-tech"></select>
+      </label>
+      <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyPublicAddTech()">Add technician</button>
+    </div>
+    <div id="weekly-public-wrap"><div class="loading">Loading…</div></div>
+  </div>
+</div>
 
 <!-- LOGIN -->
 <div id="pg-login" class="page active">
@@ -1216,7 +1257,7 @@ body.mobile-nav-open{overflow:hidden}
 
       <div class="admin-sec">
         <button type="button" class="admin-sec-h admin-sec-toggle" id="admin-sec-h-ata" aria-expanded="false" onclick="toggleAdminSection('ata')">
-          <span class="admin-sec-chevron">▼</span> ATA Tracking
+          <span class="admin-sec-chevron">▼</span> ATA Progress
         </button>
         <div class="admin-sec-body collapsed" id="admin-sec-body-ata">
           <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress in three categories: <strong>Active</strong> (in progress), <strong>Complete</strong> (Basic + Intermediate + Advanced all passed), and <strong>Exempt</strong> (not required). Technicians see their ATA status on My Progress — Active techs also see % Basic / Intermediate / Advanced. Sync from Teachable for scores; use <strong>Mark Exempt</strong> for people who should not be tracked.</div>
@@ -1395,11 +1436,12 @@ body.mobile-nav-open{overflow:hidden}
       <div class="sb-region-info">🗺️ <strong id="sb-region-label">Region</strong></div>
       <div class="sb-nav-wrap">
         <div class="sb-section">Navigation</div>
-        <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">📊 Dashboard</div>
-        <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">⚠️ Alerts <span class="sb-badge" id="alert-count">0</span></div>
-        <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">📈 Compare</div>
-        <div class="sb-nav" id="nav-preboot" onclick="setPMView('preboot',this);loadPmPreBootReport();closeMobileNav()">🎒 Pre-Bootcamp Report</div>
-        <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">📚 ATA Tracking</div>
+        <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">Dashboard</div>
+        <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">Alerts <span class="sb-badge" id="alert-count">0</span></div>
+        <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">Compare</div>
+        <div class="sb-nav" id="nav-preboot" onclick="setPMView('preboot',this);loadPmPreBootReport();closeMobileNav()">Pre-Bootcamp Report</div>
+        <div class="sb-nav" id="nav-weekly" onclick="setPMView('weekly',this);loadPmWeeklyUpdates();closeMobileNav()">Weekly Updates</div>
+        <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">ATA Progress</div>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -1425,7 +1467,6 @@ body.mobile-nav-open{overflow:hidden}
           </select>
         </div>
         <div class="metrics" id="pm-metrics"><div class="loading">Loading...</div></div>
-        <div id="pm-alert-box"></div>
         <div class="section-label">Team members — click a row to view their progress</div>
         <div class="pm-search-wrap">
           <input type="search" id="pm-tech-search" placeholder="Search technicians by name…" autocomplete="off" oninput="onPmTechSearch()">
@@ -1463,11 +1504,34 @@ body.mobile-nav-open{overflow:hidden}
           <div id="pm-preboot-wrap"><div class="loading">Open to load report…</div></div>
         </div>
       </div>
+      <div id="pm-view-weekly" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow">
+            <div class="topbar-title">Weekly Updates</div>
+            <div class="topbar-sub">Track weekly training notes by technician — share the region link with training techs</div>
+          </div>
+          <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmWeeklyUpdates()">Refresh</button>
+        </div>
+        <div class="page-body">
+          <div class="err" id="pm-weekly-err" style="display:none"></div>
+          <div class="weekly-toolbar">
+            <div class="weekly-link-row" id="pm-weekly-links"></div>
+          </div>
+          <div class="weekly-add-row">
+            <label>Add technician
+              <select id="pm-weekly-add-tech"></select>
+            </label>
+            <button type="button" class="btn" style="background:#0F6E56;padding:9px 14px" onclick="weeklyAddTech()">Add to Weekly Updates</button>
+          </div>
+          <div id="pm-weekly-wrap"><div class="loading">Open to load weekly updates…</div></div>
+        </div>
+      </div>
       <div id="pm-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">One lesson per week, due Thursday — holiday Thursdays move to the next Thursday</div></div>
-          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">📄 Region Report PDF</button>
+          <div class="topbar-grow"><div class="topbar-title">ATA Progress</div><div class="topbar-sub">One lesson per week, due Thursday — holiday Thursdays move to the next Thursday</div></div>
+          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">Region Report PDF</button>
         </div>
         <div class="page-body">
           <div class="report-filters">
@@ -1527,7 +1591,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="sb-sidebar-close" onclick="closeMobileNav()" aria-label="Close menu">‹</button>
         </div>
         <button type="button" class="sb-nav" id="sb-nav-view-assessment" onclick="viewLatestAssessment()">📄 View My Assessment</button>
-        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">ATA Tracking</button>
+        <button type="button" class="sb-nav" id="sb-nav-ata" onclick="showTechAta();closeMobileNav()" style="display:none">ATA Progress</button>
       </div>
       <div class="sb-footer">
         <div class="sb-logout" onclick="doLogout()">🚪 Sign out</div>
@@ -1548,7 +1612,7 @@ body.mobile-nav-open{overflow:hidden}
       <div id="tech-view-ata" class="view">
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
-          <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
+          <div class="topbar-grow"><div class="topbar-title">ATA Progress</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
           <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="showTechHome()">Close</button>
           <button type="button" class="admin-chrome-btn" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">Back</button>
           <button type="button" class="admin-chrome-btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="switchAdminTechView()">Change Technician</button>
@@ -1686,20 +1750,21 @@ body.mobile-nav-open{overflow:hidden}
       <h3 id="ata-report-title" style="margin:0;font-size:17px">ATA Report</h3>
       <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="ataCloseReport()">Close</button>
     </div>
-    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Admins can <strong>Edit progress</strong> (scores / pass / completed date) or <strong>Manage resets</strong>, then preview and download the PDF.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Use <strong>Edit</strong> for scores / pass / dates, <strong>Manage resets</strong> for retakes, or <strong>Report</strong> to preview and download the PDF.</p>
     <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px">
       <span style="font-weight:700;font-size:12px;color:#1B3A6B">Modules:</span>
       <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="basic" checked onchange="ataOnReportModulesChange()"> Basic</label>
       <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="intermediate" checked onchange="ataOnReportModulesChange()"> Intermediate</label>
       <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="advanced" checked onchange="ataOnReportModulesChange()"> Advanced</label>
       <div style="flex:1"></div>
-      <button type="button" class="btn" id="ata-rep-edit-toggle" style="background:#0F6E56;font-size:12px;padding:6px 11px;display:none" onclick="ataToggleProgressEditPanel()">Edit progress</button>
-      <button type="button" class="btn" id="ata-rep-reset-toggle" style="background:#6b7280;font-size:12px;padding:6px 11px" onclick="ataToggleResetPanel()">Manage resets</button>
-      <button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataReportDownload()">⬇ Download PDF</button>
+      <button type="button" class="btn" id="ata-rep-edit-toggle" style="background:#0F6E56;font-size:12px;padding:6px 11px;display:none" onclick="ataSetReportMode('edit')">Edit</button>
+      <button type="button" class="btn" id="ata-rep-reset-toggle" style="background:#6b7280;font-size:12px;padding:6px 11px;display:none" onclick="ataSetReportMode('resets')">Manage resets</button>
+      <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
+      <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
-    <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7"></div>
-    <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe"></div>
-    <div style="flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
+    <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
+    <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
+    <div id="ata-report-preview-wrap" style="display:none;flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
       <iframe id="ata-report-frame" style="width:100%;height:62vh;border:0;display:block" title="ATA report preview"></iframe>
     </div>
   </div>
@@ -2716,6 +2781,7 @@ let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,
 let regionTechs=[],qAnswers={},qProjectJobs={},qNebbStatus='',azureEmailAddr=null,qForceRerateComplete=false;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
+let weeklyData=null,weeklyLinkToken=null,weeklyLinkRegion=null,weeklyPublicMode=false;
 
 // Company Microsoft domains allowed to sign in
 const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com'];
@@ -2763,7 +2829,16 @@ async function initAuth(){
     // users back to login even though the session was about to land (2nd try then worked).
     const {data:{session}}=await sbClient.auth.getSession();
     authReady=true;
-    if(session)await handleSession(session);
+    const weeklyLink=weeklyLinkFromUrl();
+    if(weeklyLink){
+      weeklyLinkToken=weeklyLink.key;
+      weeklyLinkRegion=weeklyLink.region;
+      weeklyPublicMode=true;
+      showPage('pg-weekly');
+      loadPublicWeeklyUpdates().catch(console.error);
+    }else if(session){
+      await handleSession(session);
+    }
 
     sbClient.auth.onAuthStateChange((event,session)=>{
       if(event==='INITIAL_SESSION')return;
@@ -2773,6 +2848,7 @@ async function initAuth(){
         currentToken=null;
         currentRole=null;
         clearSessionPref();
+        if(weeklyPublicMode&&weeklyLinkFromUrl()){showPage('pg-weekly');return;}
         showPage('pg-login');
         return;
       }
@@ -2850,7 +2926,16 @@ function isAlreadyInApp(){
   if(currentRole==='admin'||currentRole==='pm'||currentRole==='tech')return true;
   if(currentToken)return true;
   const active=document.querySelector('.page.active');
-  return !!(active&&(active.id==='pg-admin'||active.id==='pg-pm'||active.id==='pg-tech'));
+  return !!(active&&(active.id==='pg-admin'||active.id==='pg-pm'||active.id==='pg-tech'||active.id==='pg-weekly'));
+}
+function weeklyLinkFromUrl(){
+  try{
+    const u=new URL(window.location.href);
+    const region=u.searchParams.get('weekly');
+    const key=u.searchParams.get('k');
+    if(region&&key)return{region:String(region),key:String(key)};
+  }catch(e){}
+  return null;
 }
 async function tryRestoreSession(pref,registryRole){
   if(!pref||!pref.role)return false;
@@ -5175,9 +5260,41 @@ function buildAtaTechDoc(tech,opts){
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
 }
-// Opens the report modal: choose modules, preview the PDF, then download.
-let ataReportTechId=null,ataReportBlobUrl=null;
+// Opens the report modal: Edit (admin), Manage resets, or Report preview.
+let ataReportTechId=null,ataReportBlobUrl=null,ataReportMode='report';
 function ataDownloadTechPdf(techId){ataOpenReport(techId);}
+function ataApplyReportModeBtn(el,active,baseBg,show){
+  if(!el)return;
+  if(!show){el.style.display='none';return;}
+  el.style.display='';
+  el.style.background=baseBg;
+  el.style.fontSize='12px';
+  el.style.padding='6px 11px';
+  el.style.opacity=active?'1':'.72';
+  el.style.fontWeight=active?'800':'600';
+  el.style.boxShadow=active?'0 0 0 2px rgba(27,58,107,.25)':'none';
+}
+function ataSetReportMode(mode){
+  ataReportMode=mode==='edit'||mode==='resets'||mode==='report'?mode:'report';
+  if((ataReportMode==='edit'||ataReportMode==='resets')&&!userIsAdmin)ataReportMode='report';
+  const ep=document.getElementById('ata-progress-edit-panel');
+  const rp=document.getElementById('ata-reset-panel');
+  const wrap=document.getElementById('ata-report-preview-wrap');
+  const et=document.getElementById('ata-rep-edit-toggle');
+  const rt=document.getElementById('ata-rep-reset-toggle');
+  const vt=document.getElementById('ata-rep-view-toggle');
+  const dl=document.getElementById('ata-rep-download-btn');
+  if(ep){ep.style.display=ataReportMode==='edit'?'block':'none';if(ataReportMode!=='edit')ep.innerHTML='';}
+  if(rp){rp.style.display=ataReportMode==='resets'?'block':'none';if(ataReportMode!=='resets')rp.innerHTML='';}
+  if(wrap)wrap.style.display=ataReportMode==='report'?'block':'none';
+  if(dl)dl.style.display=ataReportMode==='report'?'':'none';
+  ataApplyReportModeBtn(et,ataReportMode==='edit','#0F6E56',!!userIsAdmin);
+  ataApplyReportModeBtn(rt,ataReportMode==='resets','#6b7280',!!userIsAdmin);
+  ataApplyReportModeBtn(vt,ataReportMode==='report','#1B3A6B',true);
+  if(ataReportMode==='edit')ataRenderProgressEditPanel();
+  else if(ataReportMode==='resets')ataRenderResetPanel();
+  else ataReportPreview();
+}
 function ataOpenReport(techId){
   const tech=ataFindTech(techId);
   if(!tech)return;
@@ -5185,26 +5302,21 @@ function ataOpenReport(techId){
   const title=document.getElementById('ata-report-title');
   if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
   document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
-  const rt=document.getElementById('ata-rep-reset-toggle');if(rt)rt.style.display=userIsAdmin?'':'none';
-  const et=document.getElementById('ata-rep-edit-toggle');if(et)et.style.display=userIsAdmin?'':'none';
-  const rp=document.getElementById('ata-reset-panel');if(rp){rp.style.display='none';rp.innerHTML='';}
-  const ep=document.getElementById('ata-progress-edit-panel');if(ep){ep.style.display='none';ep.innerHTML='';}
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
-  if(userIsAdmin&&ep){ep.style.display='block';ataRenderProgressEditPanel();}
-  ataReportPreview();
+  // List "Report" opens preview; admins can switch to Edit / Manage resets.
+  ataSetReportMode('report');
 }
 function ataCloseReport(){
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.remove('visible');
   const frame=document.getElementById('ata-report-frame');if(frame)frame.removeAttribute('src');
   if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
   ataReportTechId=null;
+  ataReportMode='report';
 }
 function ataOnReportModulesChange(){
-  ataReportPreview();
-  const ep=document.getElementById('ata-progress-edit-panel');
-  if(ep&&ep.style.display!=='none')ataRenderProgressEditPanel();
-  const rp=document.getElementById('ata-reset-panel');
-  if(rp&&rp.style.display!=='none')ataRenderResetPanel();
+  if(ataReportMode==='report')ataReportPreview();
+  else if(ataReportMode==='edit')ataRenderProgressEditPanel();
+  else if(ataReportMode==='resets')ataRenderResetPanel();
 }
 function ataReportSelectedPrograms(){
   return Array.from(document.querySelectorAll('.ata-rep-mod')).filter(c=>c.checked).map(c=>c.value);
@@ -5221,10 +5333,6 @@ async function ataReportPreview(){
     ataReportBlobUrl=doc.output('bloburl');
     if(frame)frame.src=ataReportBlobUrl;
   }catch(e){console.error('ATA preview failed',e);}
-  const rp=document.getElementById('ata-reset-panel');
-  if(rp&&rp.style.display!=='none')ataRenderResetPanel();
-  const ep=document.getElementById('ata-progress-edit-panel');
-  if(ep&&ep.style.display!=='none')ataRenderProgressEditPanel();
 }
 async function ataReportDownload(){
   const tech=ataFindTech(ataReportTechId);if(!tech)return;
@@ -5236,12 +5344,6 @@ async function ataReportDownload(){
     const tag=progs.length===3?'':'-'+progs.map(p=>p.charAt(0).toUpperCase()).join('');
     doc.save('ATA-'+String(tech.name||'tech').replace(/[^a-z0-9]+/gi,'-')+tag+'.pdf');
   }catch(e){console.error(e);alert('Could not create the PDF. Please try again.');}
-}
-// Admin-only progress editor inside the report modal.
-function ataToggleProgressEditPanel(){
-  const ep=document.getElementById('ata-progress-edit-panel');if(!ep)return;
-  if(ep.style.display==='none'){ep.style.display='block';ataRenderProgressEditPanel();}
-  else{ep.style.display='none';}
 }
 function ataIsoDateInput(v){
   if(!v)return'';
@@ -5260,10 +5362,10 @@ function ataRenderProgressEditPanel(){
   const startsHtml=ATA_PROGRAMS.map(pr=>{
     const val=adminDateInputValue(ataStart(tech,pr));
     return`<label style="font-size:11px;color:#555;display:inline-flex;flex-direction:column;gap:3px">${ATA_PROGRAM_LABEL[pr]} start
-      <input type="date" class="admin-edit-field" style="padding:5px 8px" value="${val}" onchange="ataSaveStart(${tech.id},'${pr}',this.value);setTimeout(function(){ataRenderProgressEditPanel();ataReportPreview();},400)">
+      <input type="date" class="admin-edit-field" style="padding:5px 8px" value="${val}" onchange="ataSaveStart(${tech.id},'${pr}',this.value);setTimeout(function(){if(ataReportMode==='edit')ataRenderProgressEditPanel();else if(ataReportMode==='report')ataReportPreview();},400)">
     </label>`;
   }).join('');
-  let html=`<div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:6px">Edit progress — scores save as admin overrides (Teachable will not overwrite locked rows). Due dates follow program start + week # on the master list.</div>
+  let html=`<div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:6px">Edit — scores save as admin overrides (Teachable will not overwrite locked rows). Due dates follow program start + week # on the master list.</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px">${startsHtml}</div>
     <div style="max-height:280px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr>
       <th style="width:36px">Wk</th><th>Lesson</th><th style="width:72px">Due</th><th style="width:70px">Score %</th><th style="width:64px">Pass</th><th style="width:120px">Completed</th><th style="width:150px">Actions</th>
@@ -5299,8 +5401,8 @@ function ataRenderProgressEditPanel(){
 }
 async function ataRefreshAfterProgressEdit(){
   try{await ataLoadAdmin();}catch(e){}
-  ataRenderProgressEditPanel();
-  ataReportPreview();
+  if(ataReportMode==='edit')ataRenderProgressEditPanel();
+  else if(ataReportMode==='report')ataReportPreview();
   const ataPage=document.getElementById('pg-tech');
   if(ataPage&&ataPage.classList.contains('active')){
     try{await loadTechAta();}catch(e){}
@@ -5357,12 +5459,6 @@ async function ataUnlockLessonProgress(techId,code){
   await ataRefreshAfterProgressEdit();
 }
 
-// Admin-only reset manager inside the report modal.
-function ataToggleResetPanel(){
-  const rp=document.getElementById('ata-reset-panel');if(!rp)return;
-  if(rp.style.display==='none'){rp.style.display='block';ataRenderResetPanel();}
-  else{rp.style.display='none';}
-}
 function ataRenderResetPanel(){
   const rp=document.getElementById('ata-reset-panel');if(!rp)return;
   const tech=ataFindTech(ataReportTechId);if(!tech){rp.innerHTML='';return;}
@@ -5398,8 +5494,8 @@ async function ataAdjustReset(techId,code,delta){
     return;
   }
   try{await ataLoadAdmin();}catch(e){}
-  ataRenderResetPanel();
-  ataReportPreview();
+  if(ataReportMode==='resets')ataRenderResetPanel();
+  else if(ataReportMode==='report')ataReportPreview();
   const ataPage=document.getElementById('pg-tech');
   if(ataPage&&ataPage.classList.contains('active')){
     try{await loadTechAta();}catch(e){}
@@ -7966,7 +8062,6 @@ async function loadPMDashboard(){
   const techs=await rpc('app_pm_dashboard',{p_token:currentToken});
   regionTechs=techs;
   renderMetrics(techs);
-  renderAlertBox(techs);
   renderTechGrid(techs);
   renderAlertsView(techs);
   renderCompareView(techs);
@@ -8023,22 +8118,6 @@ function countStalled(techs){
     }
   });
   return n;
-}
-
-function renderAlertBox(techs){
-  const issues=[];
-  techs.forEach(t=>{
-    if(t.assessments.length>=2){
-      const last=t.assessments[t.assessments.length-1],prev=t.assessments[t.assessments.length-2];
-      SKILL_CATS.forEach(c=>{
-        const lv=catScore(last,c),pv=catScore(prev,c);
-        if(lv!==null&&pv!==null&&lv<=2&&lv<=pv)issues.push(`${t.name.split(' ')[0]} — ${c.label}`);
-      });
-    }
-  });
-  const box=document.getElementById('pm-alert-box');
-  if(!issues.length){box.innerHTML='';return;}
-  box.innerHTML=`<div class="alert-box"><div class="alert-title">⚠️ Skills stalled — score ≤ 2, no improvement in last 2 assessments</div><div class="alert-pills">${issues.map(i=>`<span class="alert-pill">${i}</span>`).join('')}</div></div>`;
 }
 
 function renderTechGrid(techs){
@@ -8102,8 +8181,236 @@ function renderCompareView(techs){
 function setPMView(v,el){
   document.querySelectorAll('[id^="pm-view-"]').forEach(e=>e.classList.remove('active'));
   document.getElementById('pm-view-'+v).classList.add('active');
-  if(el){document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
+  if(el){document.querySelectorAll('#pm-sidebar .sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
 }
+
+function weeklyTodayInput(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function weeklyTechOptionsHtml(techs,selectedId){
+  const opts=['<option value="">Select…</option>'];
+  (techs||[]).forEach(t=>{
+    const sel=selectedId!=null&&String(selectedId)===String(t.id)?' selected':'';
+    opts.push(`<option value="${t.id}"${sel}>${adminEsc(t.name)}</option>`);
+  });
+  return opts.join('');
+}
+function weeklyShareUrl(region,token){
+  const u=new URL(window.location.href);
+  u.search='';
+  u.hash='';
+  u.searchParams.set('weekly',region);
+  u.searchParams.set('k',token);
+  return u.toString();
+}
+async function weeklyCopyLinkForRegion(region){
+  try{
+    const res=await rpc('app_weekly_ensure_link',{p_token:currentToken,p_region:region||null});
+    const url=weeklyShareUrl(res.region,res.token);
+    if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(url);
+    else{
+      const ta=document.createElement('textarea');
+      ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    alert('Link copied for '+regionLabel(res.region)+'.\n\nShare it with training techs so they can add weekly updates.');
+  }catch(e){
+    const msg=e&&e.message||'';
+    alert('Could not copy link. '+(msg.includes('app_weekly_ensure_link')?'Run supabase/weekly-updates.sql in Supabase, then try again.':(msg||'Try again.')));
+  }
+}
+function renderWeeklyLinksBar(hostId,region){
+  const host=document.getElementById(hostId);if(!host)return;
+  const cur=region||currentRegion||'';
+  host.innerHTML=`<span style="font-size:12px;font-weight:700;color:#1B3A6B;margin-right:4px">Share links:</span>`+
+    ADMIN_REGIONS.map(([code,label])=>{
+      const active=code===cur;
+      return`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;${active?'border-color:#1B3A6B;color:#1B3A6B;font-weight:800':''}" onclick="weeklyCopyLinkForRegion('${code}')" title="${active?'Copy training-tech link for this region':'Copy link (PM must be switched to this region, or use admin)'}">${adminEsc(label)} · Copy Link</button>`;
+    }).join('');
+}
+function buildWeeklyRosterHtml(data,opts){
+  opts=opts||{};
+  const canManageRoster=!!opts.canManageRoster;
+  const techs=data&&data.techs||[];
+  const roster=data&&data.roster||[];
+  if(!roster.length){
+    return`<div class="weekly-empty">No technicians on Weekly Updates yet. Add one above to start tracking weekly notes.</div>`;
+  }
+  return roster.map(r=>{
+    const updates=r.updates||[];
+    const rows=updates.length?updates.map(u=>`<tr>
+      <td style="white-space:nowrap;font-weight:700;color:#1B3A6B">${adminEsc(fmtDateFull(u.update_date))}</td>
+      <td>${adminEsc(u.trainer_name||'—')}</td>
+      <td class="weekly-comment">${adminEsc(u.comment||'—')}</td>
+      <td class="weekly-plan">${adminEsc(u.action_plan||'—')}</td>
+      <td style="white-space:nowrap"><button type="button" class="sk-mini del" onclick="weeklyDeleteUpdate(${u.id})">Delete</button></td>
+    </tr>`).join('')
+      :`<tr><td colspan="5" style="color:#999">No updates yet.</td></tr>`;
+    const formId='weekly-form-'+r.tech_id;
+    return`<div class="weekly-card" data-tech="${r.tech_id}">
+      <div class="weekly-card-h">
+        <div>
+          <div class="weekly-card-name">${adminEsc(r.name)}</div>
+          <div class="weekly-card-meta">${updates.length} update${updates.length===1?'':'s'} · newest on top</div>
+        </div>
+        ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#C0392B;border-color:#f0c0c0" onclick="weeklyRemoveTech(${r.tech_id})">Remove</button>`:''}
+      </div>
+      <div style="overflow-x:auto">
+        <table class="weekly-table">
+          <thead><tr><th>Date</th><th>Training Tech</th><th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
+        <label>Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
+        <label>Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
+        <label>Comment<textarea name="comment" placeholder="What happened this week?" required></textarea></label>
+        <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
+        <div style="display:flex;align-items:flex-end"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add next update</button></div>
+      </form>
+    </div>`;
+  }).join('');
+}
+function weeklyFillAddSelect(selectId,data,rosterOnly){
+  const el=document.getElementById(selectId);if(!el)return;
+  const onRoster=new Set((data.roster||[]).map(r=>String(r.tech_id)));
+  const techs=(data.techs||[]).filter(t=>!rosterOnly||!onRoster.has(String(t.id)));
+  // For "add to roster", exclude already-rostered; for public add same.
+  const available=(data.techs||[]).filter(t=>!onRoster.has(String(t.id)));
+  el.innerHTML=weeklyTechOptionsHtml(available);
+}
+function weeklyShowErr(id,msg){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(msg){el.textContent=msg;el.style.display='block';}
+  else{el.textContent='';el.style.display='none';}
+}
+async function loadPmWeeklyUpdates(){
+  const wrap=document.getElementById('pm-weekly-wrap');
+  weeklyShowErr('pm-weekly-err','');
+  if(wrap)wrap.innerHTML='<div class="loading">Loading…</div>';
+  try{
+    weeklyData=await rpc('app_weekly_get',{p_token:currentToken});
+    renderWeeklyLinksBar('pm-weekly-links',weeklyData.region||currentRegion);
+    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+  }catch(e){
+    const msg=e&&e.message||'';
+    weeklyShowErr('pm-weekly-err',msg.includes('app_weekly_get')
+      ?'Could not load Weekly Updates. Run supabase/weekly-updates.sql in Supabase, then Refresh.'
+      :(msg||'Could not load Weekly Updates.'));
+    if(wrap)wrap.innerHTML='';
+  }
+}
+async function weeklyAddTech(){
+  const sel=document.getElementById('pm-weekly-add-tech');
+  const id=sel&&sel.value?Number(sel.value):null;
+  if(!id){alert('Select a technician to add.');return;}
+  try{
+    weeklyData=await rpc('app_weekly_add_tech',{p_token:currentToken,p_tech_id:id});
+    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+    const wrap=document.getElementById('pm-weekly-wrap');
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+  }catch(e){
+    alert('Could not add technician. '+(e.message||'Try again.'));
+  }
+}
+async function weeklyRemoveTech(techId){
+  if(!confirm('Remove this technician from Weekly Updates? Past notes will stay in the database but this section will be hidden.'))return;
+  try{
+    weeklyData=await rpc('app_weekly_remove_tech',{p_token:currentToken,p_tech_id:techId});
+    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+    const wrap=document.getElementById('pm-weekly-wrap');
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+  }catch(e){
+    alert('Could not remove technician. '+(e.message||'Try again.'));
+  }
+}
+async function weeklySubmitUpdate(ev,techId){
+  ev.preventDefault();
+  const form=ev.target;
+  const date=form.date.value;
+  const trainer=form.trainer.value?Number(form.trainer.value):null;
+  const comment=form.comment.value||'';
+  const plan=form.plan.value||'';
+  if(!trainer){alert('Select the Training Tech.');return;}
+  try{
+    weeklyData=await rpc('app_weekly_add_update',{
+      p_session_token:weeklyPublicMode?null:currentToken,
+      p_link_token:weeklyPublicMode?weeklyLinkToken:null,
+      p_tech_id:techId,
+      p_update_date:date||null,
+      p_trainer_tech_id:trainer,
+      p_comment:comment,
+      p_action_plan:plan
+    });
+    if(weeklyPublicMode)renderPublicWeekly();
+    else{
+      weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+      const wrap=document.getElementById('pm-weekly-wrap');
+      if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+    }
+  }catch(e){
+    alert('Could not save update. '+(e.message||'Try again.'));
+  }
+}
+async function weeklyDeleteUpdate(updateId){
+  if(!confirm('Delete this weekly update?'))return;
+  try{
+    weeklyData=await rpc('app_weekly_delete_update',{
+      p_session_token:weeklyPublicMode?null:currentToken,
+      p_link_token:weeklyPublicMode?weeklyLinkToken:null,
+      p_update_id:updateId
+    });
+    if(weeklyPublicMode)renderPublicWeekly();
+    else{
+      weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+      const wrap=document.getElementById('pm-weekly-wrap');
+      if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+    }
+  }catch(e){
+    alert('Could not delete update. '+(e.message||'Try again.'));
+  }
+}
+function renderPublicWeekly(){
+  const sub=document.getElementById('weekly-public-sub');
+  if(sub)sub.textContent=(regionLabel(weeklyData&&weeklyData.region||weeklyLinkRegion)||'Region')+' — add weekly notes for technicians on the list';
+  const addRow=document.getElementById('weekly-public-add-row');
+  if(addRow)addRow.style.display='flex';
+  weeklyFillAddSelect('weekly-public-add-tech',weeklyData);
+  const wrap=document.getElementById('weekly-public-wrap');
+  if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:false,sessionToken:null,linkToken:weeklyLinkToken});
+}
+async function loadPublicWeeklyUpdates(){
+  weeklyShowErr('weekly-public-err','');
+  const wrap=document.getElementById('weekly-public-wrap');
+  if(wrap)wrap.innerHTML='<div class="loading">Loading…</div>';
+  try{
+    weeklyData=await rpc('app_weekly_public_get',{p_link_token:weeklyLinkToken});
+    weeklyLinkRegion=weeklyData.region||weeklyLinkRegion;
+    renderPublicWeekly();
+  }catch(e){
+    const msg=e&&e.message||'';
+    weeklyShowErr('weekly-public-err',msg.includes('Invalid')||msg.includes('expired')
+      ?'This Weekly Updates link is invalid. Ask your PM for a new Copy Link.'
+      :(msg.includes('app_weekly_public_get')
+        ?'Weekly Updates is not set up yet. Ask an admin to run supabase/weekly-updates.sql.'
+        :(msg||'Could not load Weekly Updates.')));
+    if(wrap)wrap.innerHTML='';
+  }
+}
+async function weeklyPublicAddTech(){
+  const sel=document.getElementById('weekly-public-add-tech');
+  const id=sel&&sel.value?Number(sel.value):null;
+  if(!id){alert('Select a technician to add.');return;}
+  try{
+    weeklyData=await rpc('app_weekly_public_add_tech',{p_link_token:weeklyLinkToken,p_tech_id:id});
+    renderPublicWeekly();
+  }catch(e){
+    alert('Could not add technician. '+(e.message||'Try again.'));
+  }
+}
+
 let pmPreBootRows=[];
 let pmPreBootShowNeededOnly=true;
 let adminPreBootTasksRows=[];
@@ -8137,7 +8444,7 @@ function buildPreBootTasksReportHtml(rows,opts){
     const needCount=allTasks.filter(t=>isPreBootTaskNeeded(t.level)).length;
     const tasks=neededOnly?allTasks.filter(t=>isPreBootTaskNeeded(t.level)):allTasks;
     const pct=allTasks.length?Math.round(allTasks.reduce((s,t)=>s+checklistItemPct(t.level),0)/allTasks.length):0;
-    const open=idx===0?' is-open':'';
+    const open='';
     const taskRows=tasks.map(t=>`<tr>
       <td style="color:#888;white-space:nowrap">${adminEsc(t.cat)}</td>
       <td>${adminEsc(t.name)}</td>
