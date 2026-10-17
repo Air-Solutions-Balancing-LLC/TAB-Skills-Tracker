@@ -111,8 +111,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-edit:hover{background:#e0ebff}
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
+.report-wrap.admin-tech-table-wrap{max-height:min(70vh,720px);overflow:auto;-webkit-overflow-scrolling:touch}
 .admin-tech-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-.admin-tech-table th{text-align:left;padding:10px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1;vertical-align:bottom;min-height:52px;height:52px;box-sizing:border-box}
+.admin-tech-table thead th{text-align:left;padding:10px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:4;vertical-align:bottom;min-height:52px;height:52px;box-sizing:border-box;box-shadow:0 2px 4px rgba(27,58,107,0.08)}
 .admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333;background:#fff}
 .admin-tech-table th.admin-tech-name,.admin-tech-table td.admin-tech-name{
   min-width:180px;width:180px;max-width:180px;
@@ -121,7 +122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   background:#fff;
   box-shadow:2px 0 6px rgba(27,58,107,0.1);
 }
-.admin-tech-table th.admin-tech-name{top:0;z-index:3;background:#EEF4FF}
+.admin-tech-table thead th.admin-tech-name{top:0;left:0;z-index:5;background:#EEF4FF;box-shadow:2px 2px 6px rgba(27,58,107,0.12)}
 .admin-tech-table th.admin-tech-position,.admin-tech-table td.admin-tech-position{min-width:200px;width:200px}
 .admin-tech-table th.admin-tech-region,.admin-tech-table td.admin-tech-region{min-width:150px;width:150px}
 .admin-tech-table th.admin-tech-date,.admin-tech-table td.admin-tech-date{min-width:132px;width:132px}
@@ -143,7 +144,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-tech-table textarea.admin-edit-field{min-height:56px;resize:vertical;line-height:1.35}
 .admin-tech-table .admin-tech-cat-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#555;cursor:pointer}
 .admin-tech-table .admin-tech-cat-label input{margin:0}
-.admin-tech-table th.admin-tech-actions-h{position:sticky;top:0;z-index:2;background:#EEF4FF;white-space:nowrap}
+.admin-tech-table thead th.admin-tech-actions-h{position:sticky;top:0;z-index:4;background:#EEF4FF;white-space:nowrap}
 .admin-tech-table th.admin-tech-actions-h .admin-tech-save-all{background:#0F6E56;color:#fff;border-color:#0F6E56;padding:6px 12px;font-size:11px}
 .admin-tech-table th.admin-tech-actions-h .admin-tech-save-all:disabled{opacity:.55;cursor:default}
 .admin-tech-actions{display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap}
@@ -368,6 +369,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .topbar-badge{font-size:11px;padding:5px 14px;border-radius:20px;background:#1B3A6B;color:#fff;font-weight:700;letter-spacing:.3px}
 .pm-region-switch{flex-shrink:0;min-width:150px;max-width:220px;padding:8px 12px;border-radius:10px;border:1.5px solid #1B3A6B;font-size:13px;font-weight:700;color:#1B3A6B;background:#fff;cursor:pointer;outline:none}
 .pm-region-switch:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.12)}
+.admin-chrome-btn{flex-shrink:0;padding:7px 14px;border-radius:10px;border:1.5px solid #1B3A6B;font-size:13px;font-weight:700;color:#1B3A6B;background:#fff;cursor:pointer;outline:none;font-family:inherit;line-height:1.2}
+.admin-chrome-btn:hover{background:#EEF4FF}
+.admin-chrome-btn:focus{box-shadow:0 0 0 3px rgba(27,58,107,0.12)}
 
 /* METRICS */
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:20px 24px 0}
@@ -671,9 +675,30 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-cover-col-right{text-align:right}
 .tech-cover-comments{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px;border-top:4px solid #E87722;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-cover-comments .tech-notes-title{margin-bottom:6px}
-.tech-tenure-info{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tech-tenure-info{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px 18px;font-size:12px;color:#555;margin-bottom:14px;padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .tech-tenure-info strong{color:#1B3A6B;font-weight:700}
-.tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;flex:1;min-width:0}
+.tech-tenure-meta-col{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.tech-tenure-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.tech-tenure-view-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tech-tenure-view-links .admin-chrome-btn:disabled{opacity:.45;cursor:default}
+.pm-preboot-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:12px;overflow:hidden}
+.pm-preboot-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;user-select:none}
+.pm-preboot-card-h:hover{background:#f8faff}
+.pm-preboot-card-name{font-size:14px;font-weight:800;color:#1B3A6B}
+.pm-preboot-card-meta{font-size:11px;color:#888;margin-top:2px}
+.pm-preboot-card-pct{font-size:13px;font-weight:800;color:#1B3A6B;white-space:nowrap}
+.pm-preboot-card-body{display:none;border-top:1px solid #eef1f6;padding:0;overflow-x:auto}
+.pm-preboot-card.is-open .pm-preboot-card-body{display:block}
+.pm-preboot-card.is-open .pm-preboot-chev{transform:rotate(90deg)}
+.pm-preboot-chev{display:inline-block;color:#4A90D9;font-size:11px;margin-right:8px;transition:transform .15s}
+.pm-preboot-table{width:100%;border-collapse:collapse;font-size:12px}
+.pm-preboot-table th{text-align:left;padding:8px 12px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
+.pm-preboot-table td{padding:8px 12px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
+.pm-preboot-level{font-weight:700;white-space:nowrap}
+.pm-preboot-level-0{color:#C0392B}
+.pm-preboot-level-1{color:#E87722}
+.pm-preboot-level-2{color:#4A90D9}
+.pm-preboot-level-3{color:#0F6E56}
 .tech-tenure-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:flex-end}
 .tech-tenure-action{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:160px}
 .tech-tenure-action .btn{width:100%;justify-content:center;padding:9px 12px;font-size:12px;white-space:nowrap}
@@ -1330,6 +1355,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="sb-nav active" id="nav-dashboard" onclick="setPMView('dashboard',this);closeMobileNav()">📊 Dashboard</div>
         <div class="sb-nav" id="nav-alerts" onclick="setPMView('alerts',this);closeMobileNav()">⚠️ Alerts <span class="sb-badge" id="alert-count">0</span></div>
         <div class="sb-nav" id="nav-compare" onclick="setPMView('compare',this);closeMobileNav()">📈 Compare</div>
+        <div class="sb-nav" id="nav-preboot" onclick="setPMView('preboot',this);loadPmPreBootReport();closeMobileNav()">🎒 Pre-Bootcamp Report</div>
         <div class="sb-nav" id="nav-ata" onclick="setPMView('ata',this);loadPmAta();closeMobileNav()">📚 ATA Tracking</div>
       </div>
       <div class="sb-footer">
@@ -1377,6 +1403,21 @@ body.mobile-nav-open{overflow:hidden}
           <div class="topbar-grow"><div class="topbar-title">📈 Team Comparison</div><div class="topbar-sub" id="compare-sub">Latest scores</div></div>
         </div>
         <div class="compare-body"><div style="overflow-x:auto"><table class="compare-table" id="compare-table"><thead></thead><tbody></tbody></table></div></div>
+      </div>
+      <div id="pm-view-preboot" class="view">
+        <div class="topbar">
+          <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
+          <div class="topbar-grow">
+            <div class="topbar-title">🎒 Pre-Bootcamp Report</div>
+            <div class="topbar-sub">Technicians with Pre-Bootcamp selected — tasks and mastery level</div>
+          </div>
+          <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmPreBootReport()">Refresh</button>
+        </div>
+        <div class="page-body">
+          <div class="err" id="pm-preboot-err" style="display:none"></div>
+          <div class="report-filter-hint" id="pm-preboot-hint" style="margin-bottom:10px"></div>
+          <div id="pm-preboot-wrap"><div class="loading">Open to load report…</div></div>
+        </div>
       </div>
       <div id="pm-view-ata" class="view">
         <div class="topbar">
@@ -1427,9 +1468,9 @@ body.mobile-nav-open{overflow:hidden}
       </div>
       <div class="sb-region-info">👷 <strong id="tech-name-label">Technician</strong></div>
       <div id="tech-admin-switch" class="sb-admin-switch">
-        <button type="button" class="btn" style="background:#E87722" id="tech-admin-edit-btn" onclick="editTechCardFromView()">Edit Tech</button>
-        <button type="button" class="btn" style="background:#4A90D9" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change Technician</button>
-        <button type="button" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);background:transparent" id="tech-admin-back-btn" onclick="exitTechView()">← Back to admin</button>
+        <button type="button" class="admin-chrome-btn" id="tech-admin-edit-btn" onclick="editTechCardFromView()">Edit Tech</button>
+        <button type="button" class="admin-chrome-btn" id="tech-admin-change-btn" onclick="switchAdminTechView()">Change Technician</button>
+        <button type="button" class="admin-chrome-btn" id="tech-admin-back-btn" onclick="exitTechView()">Back</button>
       </div>
       <div class="sb-assess-wrap">
         <button type="button" class="sb-assess-btn sb-preboot-btn" id="tech-preboot-nav" onclick="openPreBootcampAssessment()">Take Pre-Bootcamp assessment</button>
@@ -1464,9 +1505,9 @@ body.mobile-nav-open{overflow:hidden}
         <div class="topbar">
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('tech')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">📚 ATA Tracking</div><div class="topbar-sub">Due each Thursday · holiday Thursdays move to the next Thursday</div></div>
-          <button type="button" class="btn btn-outline" style="padding:7px 12px;font-size:12px" onclick="showTechHome()">Close</button>
-          <button type="button" class="btn btn-outline" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">← Back</button>
-          <button type="button" class="btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px;background:#4A90D9" onclick="switchAdminTechView()">Change Technician</button>
+          <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="showTechHome()">Close</button>
+          <button type="button" class="admin-chrome-btn" id="ata-admin-back-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="exitTechView()">Back</button>
+          <button type="button" class="admin-chrome-btn" id="ata-admin-switch-btn" style="display:none;padding:7px 12px;font-size:12px" onclick="switchAdminTechView()">Change Technician</button>
           <button type="button" class="btn" style="padding:7px 12px;font-size:12px;background:#1B3A6B" onclick="ataDownloadSelfPdf()">⬇ Download PDF</button>
         </div>
         <div class="page-body" id="tech-ata-body"><div class="loading">Loading...</div></div>
@@ -2262,18 +2303,18 @@ function updateTechAssessNav(t,readOnly){
   const hasAssessments=assessments.length>0;
   const btnLabel=draft?'Continue assessment':(submittedThisMonth?'Update assessment':'Take Assessment');
   const clickFn=beginAssessmentFromHome;
-  // Always show home Take/View Assessment + last date (sidebar is gone).
+  // Always show home Take Assessment + View Assessment link + last date.
+  if(homeViewBtn){
+    homeViewBtn.style.display='';
+    homeViewBtn.disabled=!hasAssessments;
+    homeViewBtn.onclick=hasAssessments?viewLatestAssessment:null;
+  }
   if(homeBtn&&homeWrap){
     homeWrap.style.display='flex';
     homeBtn.textContent=btnLabel;
     homeBtn.disabled=!canAssess;
     homeBtn.style.opacity=canAssess?'':'0.55';
     homeBtn.onclick=canAssess?clickFn:null;
-    if(homeViewBtn){
-      homeViewBtn.disabled=!hasAssessments;
-      homeViewBtn.style.opacity=hasAssessments?'':'0.55';
-      homeViewBtn.onclick=hasAssessments?viewLatestAssessment:null;
-    }
     if(homeDate)homeDate.textContent=lastAssessmentDateLabel(t);
   }else if(nav&&canAssess){
     nav.classList.add('visible');
@@ -2339,6 +2380,7 @@ function updateTechPreBootcampNav(t,readOnly){
   if(nav)nav.classList.remove('visible');
   if(mobile)mobile.classList.remove('visible');
   if(homeWrap)homeWrap.style.display='none';
+  if(homeViewBtn)homeViewBtn.style.display='none';
   if(!shouldShowPreBootcampCta(t))return;
   const canEdit=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
   const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
@@ -2349,17 +2391,17 @@ function updateTechPreBootcampNav(t,readOnly){
   const dateBits=[bootcampDateLabel(t)];
   const lastPb=lastPreBootcampDateLabel(t);
   if(lastPb&&lastPb!=='Not taken yet')dateBits.push(lastPb);
+  if(homeViewBtn){
+    homeViewBtn.style.display='';
+    homeViewBtn.disabled=false;
+    homeViewBtn.onclick=viewPreBootcampAssessment;
+  }
   if(homeBtn&&homeWrap){
     homeWrap.style.display='flex';
     homeBtn.textContent=label;
     homeBtn.disabled=!canEdit;
     homeBtn.style.opacity=canEdit?'':'0.55';
     homeBtn.onclick=canEdit?beginPreBootcampFromHome:null;
-    if(homeViewBtn){
-      homeViewBtn.disabled=false;
-      homeViewBtn.style.opacity='';
-      homeViewBtn.onclick=viewPreBootcampAssessment;
-    }
     if(homeDate)homeDate.textContent=dateBits.join(' · ');
   }else if(nav&&canEdit){
     nav.classList.add('visible');
@@ -6359,8 +6401,8 @@ function renderAdminTechTable(rows){
     const actions=`<td><div class="admin-tech-actions">${viewBtn}<button type="button" class="admin-edit" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="saveAdminTechTableRow(${id})">Save</button></div></td>`;
     return`<tr data-person-id="${id}">${baseCells.join('')}${catCells.join('')}${actions}</tr>`;
   }).join('');
-  el.className='report-wrap';
-  el.style.overflowX='auto';
+  el.className='report-wrap admin-tech-table-wrap';
+  el.style.overflowX='';
   el.innerHTML=`<table class="admin-tech-table report-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 function collectAdminTechTableRowArgs(id){
@@ -7977,6 +8019,79 @@ function setPMView(v,el){
   document.getElementById('pm-view-'+v).classList.add('active');
   if(el){document.querySelectorAll('.sb-nav').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
 }
+let pmPreBootRows=[];
+function pmPreBootSkillRows(completed){
+  const sec=(CHECKLIST_SECTIONS||[]).find(isRatedChecklistSection);
+  if(!sec||!(sec.skills||[]).length)return[];
+  return sec.skills.map(sk=>{
+    const level=getChecklistRating(completed,sk.id);
+    return{code:sk.id,cat:sk.cat||'General',name:sk.name,level,label:preBootcampRatingLabel(level)};
+  });
+}
+function buildPmPreBootReportHtml(rows){
+  if(!rows.length){
+    return'<div class="admin-empty" style="padding:16px">No technicians in this region have Pre-Bootcamp selected.</div>';
+  }
+  return rows.map((r,idx)=>{
+    const completed=parseChecklistCompleted(r.checklist_completed);
+    const tasks=pmPreBootSkillRows(completed);
+    const pct=tasks.length?Math.round(tasks.reduce((s,t)=>s+checklistItemPct(t.level),0)/tasks.length):0;
+    const open=idx===0?' is-open':'';
+    const taskRows=tasks.map(t=>`<tr>
+      <td style="color:#888;white-space:nowrap">${adminEsc(t.cat)}</td>
+      <td>${adminEsc(t.name)}</td>
+      <td class="pm-preboot-level pm-preboot-level-${t.level}">${adminEsc(t.label)}</td>
+    </tr>`).join('');
+    const boot=r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set';
+    const last=r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet';
+    const need=tasks.filter(t=>t.level<3).length;
+    return`<div class="pm-preboot-card${open}" data-tech="${r.tech_id}">
+      <div class="pm-preboot-card-h" role="button" tabindex="0" onclick="togglePmPreBootCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePmPreBootCard(this);}">
+        <div>
+          <div class="pm-preboot-card-name"><span class="pm-preboot-chev">▶</span>${adminEsc(r.name)}</div>
+          <div class="pm-preboot-card-meta">${adminEsc(boot)} · ${adminEsc(last)} · ${need} task${need===1?'':'s'} still to master</div>
+        </div>
+        <div class="pm-preboot-card-pct">${pct}%</div>
+      </div>
+      <div class="pm-preboot-card-body">
+        <table class="pm-preboot-table">
+          <thead><tr><th>Category</th><th>Task</th><th>Level</th></tr></thead>
+          <tbody>${taskRows||'<tr><td colspan="3" style="color:#999">No Pre-Bootcamp tasks available.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+function togglePmPreBootCard(el){
+  const card=el&&el.closest('.pm-preboot-card');
+  if(card)card.classList.toggle('is-open');
+}
+async function loadPmPreBootReport(){
+  const wrap=document.getElementById('pm-preboot-wrap');
+  const err=document.getElementById('pm-preboot-err');
+  const hint=document.getElementById('pm-preboot-hint');
+  if(!wrap)return;
+  if(err){err.style.display='none';err.textContent='';}
+  wrap.innerHTML='<div class="loading">Loading Pre-Bootcamp report…</div>';
+  if(hint)hint.textContent='';
+  try{
+    await ensureSkills();
+    pmPreBootRows=await rpc('app_pm_pre_bootcamp_report',{p_token:currentToken})||[];
+    if(!Array.isArray(pmPreBootRows))pmPreBootRows=[];
+    if(hint){
+      hint.textContent=pmPreBootRows.length
+        ? (pmPreBootRows.length+' technician'+(pmPreBootRows.length===1?'':'s')+' with Pre-Bootcamp selected in '+(regionLabel(currentRegion)||currentRegion||'this region'))
+        :'';
+    }
+    wrap.innerHTML=buildPmPreBootReportHtml(pmPreBootRows);
+  }catch(e){
+    wrap.innerHTML='';
+    if(err){
+      err.textContent='Could not load report. Run supabase/pm-pre-bootcamp-report.sql in the Supabase SQL Editor, then click Refresh. '+(e.message||'');
+      err.style.display='block';
+    }
+  }
+}
 
 let pmTechNavBusy=false;
 function pmTechNavOrdered(){
@@ -8131,12 +8246,12 @@ async function editTechFromAdmin(techId,region,name){
 function adminTechViewChromeHtml(){
   // Buttons on the admin Viewing/Editing banner (Edit Tech is admin-only).
   const editBtn=userIsAdmin
-    ?`<button type="button" class="btn" style="padding:6px 12px;background:#E87722;flex-shrink:0" onclick="editTechCardFromView()">Edit Tech</button>`
+    ?`<button type="button" class="admin-chrome-btn" onclick="editTechCardFromView()">Edit Tech</button>`
     :'';
   const changeBtn=techViewBackPage==='pg-admin'
-    ?`<button type="button" class="btn" style="padding:6px 12px;background:#4A90D9;flex-shrink:0" onclick="switchAdminTechView()">Change Technician</button>`
+    ?`<button type="button" class="admin-chrome-btn" onclick="switchAdminTechView()">Change Technician</button>`
     :'';
-  return`${editBtn}${changeBtn}<button type="button" class="btn" style="padding:6px 12px;flex-shrink:0" onclick="exitTechView()">Back</button>`;
+  return`${editBtn}${changeBtn}<button type="button" class="admin-chrome-btn" onclick="exitTechView()">Back</button>`;
 }
 function updateTechViewAdminChrome(){
   const on=!!techViewMode;
@@ -8876,34 +8991,31 @@ function renderTechHome(t,opts){
 
   const notesHtml=renderTechNotesHtml(t,{readOnly,adminEdit});
   const tenure=yearsEmployedText(t);
-  const reqInfo=requiredAssessmentSections(t);
-  const levelLabel=reqInfo.level==='custom'?'CUSTOM REQUIRED CATEGORIES'
-    :reqInfo.level==='basic'?'BASIC (0–3.9 months)'
-    :reqInfo.level==='intermediate'?(employmentTenureMonths(t)>=7?'INTERMEDIATE (7.0–12.9 months)':'INTERMEDIATE (4.0–6.9 months)')
-    :reqInfo.level==='advanced'?'ADVANCED (13+ months)'
-    :null;
-  // Take/View Assessment + Pre-Bootcamp (when required) sit on the tenure row.
+  // Take Assessment + Pre-Bootcamp on the right; View links sit under Years employed.
   const showPreBoot=shouldShowPreBootcampCta(t);
   const hasAssessments=!!(assessments&&assessments.length);
   const tenureHtml=`<div class="tech-tenure-info">
-    <div class="tech-tenure-meta">
-      <span><strong>Years employed:</strong> ${tenure||'—'}</span>
-      <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
-      ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
-      ${levelLabel?`<span><strong>Level:</strong> ${levelLabel}</span>`:''}
+    <div class="tech-tenure-meta-col">
+      <div class="tech-tenure-meta">
+        <span><strong>Years employed:</strong> ${tenure||'—'}</span>
+        <span><strong>Employed since:</strong> ${fmtDateFull(techStartDate(t))}</span>
+        ${showPreBoot?`<span><strong>Bootcamp date:</strong> ${fmtDateFull(t.bootcamp_start_date)||'Not set'}</span>`:''}
+      </div>
+      <div class="tech-tenure-view-links">
+        <button type="button" class="admin-chrome-btn" id="home-preboot-view-btn" style="${showPreBoot?'':'display:none'}" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp Assessment</button>
+        <button type="button" class="admin-chrome-btn" id="home-assess-view-btn" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">View Assessment</button>
+      </div>
     </div>
     <div class="tech-tenure-actions">
       <div class="tech-tenure-action" id="home-preboot-action" style="${showPreBoot?'':'display:none'}">
         <div class="tech-tenure-action-btns">
           <button type="button" class="btn" id="home-preboot-btn" style="background:#0F6E56">Take Pre-Bootcamp Assessment</button>
-          <button type="button" class="btn" id="home-preboot-view-btn" style="background:#0F6E56" onclick="viewPreBootcampAssessment()">View Pre-Bootcamp Assessment</button>
         </div>
         <div class="tech-tenure-action-date" id="home-preboot-date">${showPreBoot?adminEsc(bootcampDateLabel(t)):''}</div>
       </div>
       <div class="tech-tenure-action" id="home-assess-action">
         <div class="tech-tenure-action-btns">
           <button type="button" class="btn" id="home-assess-btn" style="background:#E87722">Take Assessment</button>
-          <button type="button" class="btn" id="home-assess-view-btn" style="background:#E87722${!hasAssessments?';opacity:.55':''}" ${hasAssessments?'':'disabled'} onclick="viewLatestAssessment()">View Assessment</button>
         </div>
         <div class="tech-tenure-action-date" id="home-assess-date">${adminEsc(lastAssessmentDateLabel(t))}</div>
       </div>
