@@ -112,7 +112,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-view{font-size:12px;color:#0F6E56;background:#E1F5EE;border:1px solid #b6e3d3;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;flex-shrink:0}
 .admin-view:hover{background:#d4efe5}
 .admin-tech-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-.admin-tech-table th{text-align:left;padding:8px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1}
+.admin-tech-table th{text-align:left;padding:10px 8px;background:#EEF4FF;color:#1B3A6B;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #d8e2f0;white-space:nowrap;position:sticky;top:0;z-index:1;vertical-align:bottom;min-height:52px;height:52px;box-sizing:border-box}
 .admin-tech-table td{padding:6px 8px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#333;background:#fff}
 .admin-tech-table th.admin-tech-name,.admin-tech-table td.admin-tech-name{
   min-width:180px;width:180px;max-width:180px;
@@ -126,7 +126,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .admin-tech-table th.admin-tech-region,.admin-tech-table td.admin-tech-region{min-width:150px;width:150px}
 .admin-tech-table th.admin-tech-date,.admin-tech-table td.admin-tech-date{min-width:132px;width:132px}
 .admin-tech-table th.admin-tech-focus,.admin-tech-table td.admin-tech-focus{min-width:270px;max-width:320px;width:270px}
-.admin-tech-table th.admin-tech-cat,.admin-tech-table td.admin-tech-cat{width:48px;max-width:56px;text-align:center;white-space:nowrap}
+.admin-tech-table th.admin-tech-cat{
+  width:72px;min-width:72px;max-width:80px;
+  text-align:center;vertical-align:bottom;
+  white-space:normal;overflow-wrap:anywhere;word-break:break-word;
+  line-height:1.2;letter-spacing:.2px;
+  height:auto;min-height:52px;padding:8px 4px;
+}
+.admin-tech-table td.admin-tech-cat{width:72px;min-width:72px;max-width:80px;text-align:center;white-space:nowrap}
 .admin-tech-table tr:hover td{background:#f8faff}
 .admin-tech-table tr:hover td.admin-tech-name{background:#f8faff}
 .admin-tech-table .admin-miss{color:#C0392B;font-weight:700}
@@ -6312,11 +6319,6 @@ function toggleAdminTechTableView(){
   if(hint)hint.style.display=adminTechViewMode==='table'?'':'none';
   renderAdminLists();
 }
-function adminTechCatShort(label){
-  const s=String(label||'');
-  if(s.length<=14)return s;
-  return s.replace(/\s*\([^)]*\)\s*/g,'').trim().slice(0,14);
-}
 function renderAdminTechTable(rows){
   const el=document.getElementById('list-techs');
   if(!el)return;
@@ -6324,7 +6326,7 @@ function renderAdminTechTable(rows){
   const cols=adminTechTableCols();
   const head=cols.map(c=>{
     const cls=c.colClass||(c.catKey?'admin-tech-cat':'');
-    return`<th${cls?` class="${cls}"`:''} title="${adminEsc(c.label)}">${adminEsc(c.catKey?adminTechCatShort(c.label):c.label)}</th>`;
+    return`<th${cls?` class="${cls}"`:''} title="${adminEsc(c.label)}">${adminEsc(c.label)}</th>`;
   }).join('')+`<th class="admin-tech-actions-h"><button type="button" class="admin-edit admin-tech-save-all" id="admin-tech-save-all" onclick="saveAdminTechTableAll()">Save All</button></th>`;
   const body=rows.map(p=>{
     const d=adminTechRowData(p);
