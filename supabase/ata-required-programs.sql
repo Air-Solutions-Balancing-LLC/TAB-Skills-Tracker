@@ -16,6 +16,7 @@ AS $$
       FROM (
         SELECT
           t.id, t.name, t.region, t.email,
+          t.job_position,
           t.start_date,
           t.bootcamp_start_date,
           t.required_categories,
@@ -86,6 +87,7 @@ BEGIN
   FROM (
     SELECT
       t.id, t.name, t.region, t.email,
+      t.job_position,
       t.start_date,
       t.bootcamp_start_date,
       t.required_categories,

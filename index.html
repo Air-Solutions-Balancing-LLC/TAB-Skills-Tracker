@@ -4774,16 +4774,22 @@ function ataTechWithRequiredContext(tech){
   if(!src)return tech;
   let out=tech;
   if(tech.required_categories==null&&src.required_categories!=null)out=Object.assign({},out,{required_categories:src.required_categories});
+  if(!tech.region&&src.region)out=Object.assign({},out,{region:src.region});
+  if(!tech.job_position&&src.job_position)out=Object.assign({},out,{job_position:src.job_position});
   if(tech.start_date==null&&src.start_date!=null)out=Object.assign({},out,{start_date:src.start_date});
   if(tech.bootcamp_start_date==null&&src.bootcamp_start_date!=null)out=Object.assign({},out,{bootcamp_start_date:src.bootcamp_start_date});
   return out;
 }
-/** ATA Intermediate required if either Intermediate skill category is required; Advanced if Advanced skills required. Basic always required. */
+/** Only TAB Survey skips Intermediate and Advanced. Position wins; otherwise the National-TAB Survey region is the survey group. */
+function ataIsSurveyTech(tech){
+  const pos=String((tech&&tech.job_position)||'').trim().toLowerCase();
+  if(pos)return pos==='tab survey technician';
+  return String((tech&&tech.region)||'').trim()==='National-TAB Survey';
+}
+/** Basic, Intermediate, and Advanced are required for Regional and National. TAB Survey is Not Required on Intermediate and Advanced. */
 function ataProgramRequired(tech,program){
   if(!program||program==='basic')return true;
-  const keys=techRequiredCategoryKeys(ataTechWithRequiredContext(tech)||{});
-  if(program==='intermediate')return keys.includes('intermediate')||keys.includes('intermediate_7_12');
-  if(program==='advanced')return keys.includes('advanced');
+  if(program==='intermediate'||program==='advanced')return !ataIsSurveyTech(ataTechWithRequiredContext(tech)||{});
   return true;
 }
 function ataProgramLockState(tech,program,start,hasWork){
@@ -4921,6 +4927,8 @@ function ataTechForStatusDisplay(entity){
   const ata=ataLookupTechRecord(id);
   const base=ata?Object.assign({},ata):{id:id,starts:{},completions:{},attempts:{}};
   if(entity.required_categories!=null)base.required_categories=entity.required_categories;
+  if(entity.region)base.region=entity.region;
+  if(entity.job_position)base.job_position=entity.job_position;
   if(entity.start_date!=null)base.start_date=entity.start_date;
   if(entity.bootcamp_start_date!=null)base.bootcamp_start_date=entity.bootcamp_start_date;
   if(entity.ata_archived!=null||entity.ata_archived_at){
