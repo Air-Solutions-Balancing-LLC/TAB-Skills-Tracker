@@ -4780,16 +4780,18 @@ function ataTechWithRequiredContext(tech){
   if(tech.bootcamp_start_date==null&&src.bootcamp_start_date!=null)out=Object.assign({},out,{bootcamp_start_date:src.bootcamp_start_date});
   return out;
 }
-/** Only TAB Survey skips Intermediate and Advanced. Position wins; otherwise the National-TAB Survey region is the survey group. */
-function ataIsSurveyTech(tech){
+/** Survey and National skip Intermediate and Advanced. Position wins; otherwise those two regions are the fallback. */
+function ataSkipsHigherPrograms(tech){
   const pos=String((tech&&tech.job_position)||'').trim().toLowerCase();
-  if(pos)return pos==='tab survey technician';
-  return String((tech&&tech.region)||'').trim()==='National-TAB Survey';
+  if(pos==='tab survey technician'||pos==='tab national technician')return true;
+  if(pos)return false;
+  const region=String((tech&&tech.region)||'').trim();
+  return region==='National'||region==='National-TAB Survey';
 }
-/** Basic, Intermediate, and Advanced are required for Regional and National. TAB Survey is Not Required on Intermediate and Advanced. */
+/** Basic is always required. Intermediate and Advanced are required for Regional technicians only. */
 function ataProgramRequired(tech,program){
   if(!program||program==='basic')return true;
-  if(program==='intermediate'||program==='advanced')return !ataIsSurveyTech(ataTechWithRequiredContext(tech)||{});
+  if(program==='intermediate'||program==='advanced')return !ataSkipsHigherPrograms(ataTechWithRequiredContext(tech)||{});
   return true;
 }
 function ataProgramLockState(tech,program,start,hasWork){
