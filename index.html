@@ -3262,8 +3262,12 @@ function closeTechNoteHistory(){
   if(modal)modal.classList.remove('visible');
 }
 function canEditTrainingFocus(){
-  // PM/Admin viewing a tech (readonly or edit). Actual technicians cannot edit.
-  return !!techViewMode;
+  // Technicians and PMs only read goals. Admins edit them.
+  return !!userIsAdmin;
+}
+function trainingGoalHistoryToggleHtml(){
+  return`<button type="button" class="admin-chrome-btn" style="margin-top:10px;padding:6px 10px;font-size:12px" onclick="toggleTrainingGoalHistory()">Goal history</button>
+    <div id="training-goal-history" style="display:none;margin-top:8px"></div>`;
 }
 function renderTrainingFocusHtml(t){
   const focusText=(t.training_focus||'').trim();
@@ -3277,6 +3281,7 @@ function renderTrainingFocusHtml(t){
         <span><strong>Start:</strong> ${fmtDateFull(t.training_goal_start)||'—'}</span>
         <span><strong>Target Date:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
       </div>
+      ${trainingGoalHistoryToggleHtml()}
     </div>`;
   }
   return`<div class="training-focus-card">
@@ -3287,7 +3292,44 @@ function renderTrainingFocusHtml(t){
       <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Target Date</span><input type="date" id="home-training-end" class="admin-edit-field" value="${focusEnd}"></label>
       <button type="button" class="btn" style="padding:9px 14px;font-size:12px;background:#1B3A6B" onclick="saveTrainingFocus()">Save training goals</button>
     </div>
+    ${trainingGoalHistoryToggleHtml()}
   </div>`;
+}
+let trainingGoalHistoryOpen=false;
+function toggleTrainingGoalHistory(){
+  trainingGoalHistoryOpen=!trainingGoalHistoryOpen;
+  const box=document.getElementById('training-goal-history');
+  if(box)box.style.display=trainingGoalHistoryOpen?'block':'none';
+  if(trainingGoalHistoryOpen)loadTrainingGoalHistory();
+}
+function renderTrainingGoalHistory(rows){
+  const box=document.getElementById('training-goal-history');
+  if(!box)return;
+  box.style.display=trainingGoalHistoryOpen?'block':'none';
+  if(!rows||!rows.length){
+    box.innerHTML='<div style="font-size:12px;color:#888">No earlier goals.</div>';
+    return;
+  }
+  box.innerHTML=rows.map(h=>{
+    const when=fmtDateFull(String(h.changed_at||'').slice(0,10));
+    const who=h.changed_by?` · ${adminEsc(h.changed_by)}`:'';
+    const goal=(h.training_focus||'').trim();
+    return`<div style="padding:8px 0;border-top:1px solid #d7e4f7;font-size:13px">
+      <div style="font-size:11px;color:#6b7c93;font-weight:700">${adminEsc(when)}${who}</div>
+      <div style="margin-top:3px;white-space:pre-wrap">${goal?adminEsc(goal):'—'}</div>
+      <div style="margin-top:2px;color:#555">Start ${fmtDateFull(h.training_goal_start)||'—'} · Target Date ${fmtDateFull(h.training_goal_end)||'—'}</div>
+    </div>`;
+  }).join('');
+}
+async function loadTrainingGoalHistory(){
+  if(!currentTechData||!currentTechData.id)return;
+  try{
+    const rows=await rpc('app_training_goal_history',{p_tech_id:currentTechData.id,p_token:currentToken||null});
+    renderTrainingGoalHistory(rows||[]);
+  }catch(e){
+    const box=document.getElementById('training-goal-history');
+    if(box&&trainingGoalHistoryOpen)box.innerHTML='<div style="font-size:12px;color:#888">Goal history is not available yet.</div>';
+  }
 }
 async function saveTrainingFocus(){
   if(!currentTechData||!canEditTrainingFocus())return;
@@ -3312,10 +3354,11 @@ async function saveTrainingFocus(){
       regionTechs[currentDetailIdx].training_goal_end=currentTechData.training_goal_end;
     }
     refreshAtaStatusDisplays();
+    if(trainingGoalHistoryOpen)loadTrainingGoalHistory();
     alert('Training goals saved.');
   }catch(e){
     const msg=e&&e.message||'';
-    alert('Could not save training goals. '+(msg.includes('app_save_training_focus')?'Run supabase/training-focus-pm-edit.sql in Supabase, then try again.':(msg||'Try again.')));
+    alert('Could not save training goals. '+(msg.includes('app_save_training_focus')||/not authorized/i.test(msg)?'Only an admin can change training goals. Run supabase/training-goal-history.sql in Supabase, then try again.':(msg||'Try again.')));
     console.error(e);
   }
 }
@@ -10556,6 +10599,7 @@ function renderTechHome(t,opts){
   techNotesComposing=false;
   loadTechNotesPanel();
   loadTechCommentsPanel();
+  if(trainingGoalHistoryOpen)loadTrainingGoalHistory();
 }
 
 function showTechHome(){
