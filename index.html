@@ -2461,6 +2461,9 @@ function sectionScore(a,cat){
     const vals=cat.codes.map(c=>raw[c]).filter(v=>v!==undefined&&v!==null&&typeof v!=='object')
       .map(v=>jobAcct?Number(v):clampSkillRating(v)).filter(v=>v!==null);
     if(vals.length)return vals.reduce((x,y)=>x+Number(y),0)/vals.length;
+    // Assessment has a skill snapshot, but none of this category's skills were rated.
+    // Ignore stale section averages (e.g. imported/carried 4.0 → false 100%).
+    if(assessmentHasRawScores(a))return null;
   }
   if(cat.key&&a[cat.key]!==undefined&&a[cat.key]!==null){
     const stored=Number(a[cat.key]);
@@ -2504,6 +2507,8 @@ function categoryItemPcts(assessment,cat){
       pcts.push(ratingPct(Number(v),max));
     });
     if(pcts.length)return pcts;
+    // Catalog skills exist but none are scored on this assessment → unrated.
+    if(assessmentHasRawScores(assessment))return null;
   }
   const v=sectionScore(assessment,cat);
   if(v===null||v===undefined)return null;
@@ -8449,7 +8454,8 @@ function sectionIsComplete100(assessment,sec){
   };
   if(categoryCombinedPct(assessment,cat)!==100)return false;
   const raw=rawOf(assessment)||{};
-  // Legacy assessments may only have section averages — trust the 100% combined %.
+  // Legacy assessments with only section averages (no skill snapshot) — trust the 100%.
+  // If a skill snapshot exists, every catalog skill in this section must be scored.
   if(!assessmentHasRawScores(assessment))return true;
   if(isProjectsSection(sec)){
     return sec.skills.every(sk=>Number(raw[sk.id])===1||raw[sk.id]===true);
