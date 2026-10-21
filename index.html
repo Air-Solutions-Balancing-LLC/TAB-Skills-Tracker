@@ -3261,36 +3261,18 @@ function closeTechNoteHistory(){
   const modal=document.getElementById('tech-note-history-modal');
   if(modal)modal.classList.remove('visible');
 }
-function canEditTrainingFocus(){
-  // Technicians and PMs only read goals. Admins edit them.
-  return !!userIsAdmin;
-}
 function trainingGoalHistoryToggleHtml(){
   return`<button type="button" class="admin-chrome-btn" style="margin-top:10px;padding:6px 10px;font-size:12px" onclick="toggleTrainingGoalHistory()">Goal history</button>
     <div id="training-goal-history" style="display:none;margin-top:8px"></div>`;
 }
 function renderTrainingFocusHtml(t){
   const focusText=(t.training_focus||'').trim();
-  const focusStart=adminDateInputValue(t.training_goal_start);
-  const focusEnd=adminDateInputValue(t.training_goal_end);
-  if(!canEditTrainingFocus()){
-    return`<div class="training-focus-card">
-      <div class="training-focus-label">Training Goals</div>
-      <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goals set yet.'}</div>
-      <div class="training-focus-dates">
-        <span><strong>Start:</strong> ${fmtDateFull(t.training_goal_start)||'—'}</span>
-        <span><strong>Target Date:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
-      </div>
-      ${trainingGoalHistoryToggleHtml()}
-    </div>`;
-  }
   return`<div class="training-focus-card">
     <div class="training-focus-label">Training Goals</div>
-    <textarea id="home-training-focus" class="admin-edit-field textarea" style="margin-top:4px;min-height:72px" placeholder="What are this technician's training goals right now?" maxlength="2000">${adminEsc(t.training_focus||'')}</textarea>
-    <div class="training-focus-dates" style="align-items:flex-end">
-      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Start</span><input type="date" id="home-training-start" class="admin-edit-field" value="${focusStart}"></label>
-      <label class="admin-start-wrap" style="margin:0;min-width:140px"><span class="admin-start-lbl">Target Date</span><input type="date" id="home-training-end" class="admin-edit-field" value="${focusEnd}"></label>
-      <button type="button" class="btn" style="padding:9px 14px;font-size:12px;background:#1B3A6B" onclick="saveTrainingFocus()">Save training goals</button>
+    <div class="training-focus-goal${focusText?'':' empty'}">${focusText?adminEsc(focusText):'No training goals set yet.'}</div>
+    <div class="training-focus-dates">
+      <span><strong>Start:</strong> ${fmtDateFull(t.training_goal_start)||'—'}</span>
+      <span><strong>Target Date:</strong> ${fmtDateFull(t.training_goal_end)||'—'}</span>
     </div>
     ${trainingGoalHistoryToggleHtml()}
   </div>`;
@@ -3332,7 +3314,7 @@ async function loadTrainingGoalHistory(){
   }
 }
 async function saveTrainingFocus(){
-  if(!currentTechData||!canEditTrainingFocus())return;
+  return;
   const focusEl=document.getElementById('home-training-focus');
   const startEl=document.getElementById('home-training-start');
   const endEl=document.getElementById('home-training-end');
