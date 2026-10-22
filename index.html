@@ -1841,7 +1841,7 @@ body.mobile-nav-open{overflow:hidden}
 <div class="assess-modal-overlay" id="assess-start-modal" role="dialog" aria-modal="true" aria-labelledby="assess-start-title">
   <div class="assess-modal">
     <h3 id="assess-start-title">Before you begin</h3>
-    <p>Your time with the company (from your start date) determines which skill levels to complete. Survey and National Accounts are always required.</p>
+    <p>Your time with the company (from your start date) determines which skill levels to complete. Only the sections assigned to you are included.</p>
     <div class="assess-modal-msg" id="assess-start-msg"></div>
     <div id="assess-start-skip-note" style="display:none;font-size:13px;color:#555;line-height:1.45;margin:0 0 12px"></div>
     <label id="assess-start-rerate-wrap" style="display:none;align-items:flex-start;gap:8px;font-size:13px;color:#333;font-weight:600;margin:0 0 14px;cursor:pointer;line-height:1.4">
@@ -8233,8 +8233,8 @@ function bootcampHasPassed(t){
 //   BASIC        0–3.9 months  (0–0.3 years)
 //   INTERMEDIATE 4.0–12.9 mo   (0.4–1.1 years)
 //   ADVANCED     13+ months    (1.2+ years)
-// Survey + National Accounts are always required at every level.
 // Scored sections are cumulative through the technician's current level.
+// Survey and National Accounts are included only when assigned in required_categories.
 // Pre-Bootcamp stays on My Progress and never locks the assessment.
 function employmentTenureMonths(t){
   const days=employmentTenureDays(t);
@@ -8272,20 +8272,21 @@ function proficiencyCategoryLabel(key){
 }
 function tenureRequiredCategoryKeys(t){
   const months=employmentTenureMonths(t);
-  const days=employmentTenureDays(t);
-  const accountSecs=['survey','national_accounts'];
   const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   const keys=[];
   if(hasNotStartedBootcamp(t))keys.push('pre_bootcamp');
   if(months===null){
-    return [...keys,...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs];
+    return [...keys,...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex'];
   }
   keys.push(...coreSecs);
   if(months>=4)keys.push('intermediate');
   if(months>=7)keys.push('intermediate_7_12');
   if(months>=13)keys.push('advanced','special_testing_complex');
-  keys.push(...accountSecs);
   return keys;
+}
+function assessmentIsPreBootcampOnly(t){
+  const custom=parseRequiredCategories(t&&t.required_categories);
+  return !!(custom&&custom.length===1&&custom[0]==='pre_bootcamp');
 }
 function techRequiredCategoryKeys(t){
   const saved=parseRequiredCategories(t&&t.required_categories);
@@ -8393,47 +8394,46 @@ function requiredAssessmentSections(t){
     };
   }
   const months=employmentTenureMonths(t);
-  const accountSecs=['survey','national_accounts'];
   const coreSecs=['safety','safety_instruments','basic','basic_solo_projects','basic_survey_projects'];
   if(months===null)return{
     all:true,
-    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex'],
     checklist:[],
     level:null,
-    message:'Required Sections: All scored sections (assign an employee start date to use tenure-based levels)'
+    message:'Required Sections: All scored skill levels (assign an employee start date to use tenure-based levels)'
   };
   const checklist=hasNotStartedBootcamp(t)?['pre_bootcamp']:[];
   // ADVANCED — 13+ months
   if(months>=13)return{
     all:false,
-    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12','advanced','special_testing_complex'],
     checklist,
     level:'advanced',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), Advanced, Special Testing / Complex Projects, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), Advanced, Special Testing / Complex Projects'
   };
   // INTERMEDIATE — 7.0–12.9 months (both intermediate bands)
   if(months>=7)return{
     all:false,
-    rated:[...coreSecs,'intermediate','intermediate_7_12',...accountSecs],
+    rated:[...coreSecs,'intermediate','intermediate_7_12'],
     checklist,
     level:'intermediate',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12), National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6 & 7–12)'
   };
   // INTERMEDIATE — 4.0–6.9 months (early intermediate only)
   if(months>=4)return{
     all:false,
-    rated:[...coreSecs,'intermediate',...accountSecs],
+    rated:[...coreSecs,'intermediate'],
     checklist,
     level:'intermediate',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6), National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, Intermediate (4–6)'
   };
   // BASIC — 0–3.9 months
   return{
     all:false,
-    rated:[...coreSecs,...accountSecs],
+    rated:[...coreSecs],
     checklist,
     level:'basic',
-    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects, National & Survey'
+    message:'Required Sections: Core, Safety & Instruments, Basics, Solo & Survey Projects'
   };
 }
 function requiredSectionsMessage(t){return requiredAssessmentSections(t).message;}
@@ -8450,6 +8450,9 @@ function requiredSectionLabels(t){
   return labels;
 }
 function requiredSectionsListHtml(t){
+  if(assessmentIsPreBootcampOnly(t)){
+    return`<div class="assess-req-title">Sections to complete</div><ul class="assess-req-list"><li>${adminEsc(proficiencyCategoryLabel('pre_bootcamp'))}</li></ul>`;
+  }
   // Assessment start modal: only sections the tech still needs (not already 100%).
   const pending=visibleQuestionnaireSections(t);
   const labels=pending.map(sec=>sec.section||proficiencyCategoryLabel(sec.key));
@@ -8493,7 +8496,13 @@ function sectionIsComplete100(assessment,sec){
 }
 function requiredQuestionnaireSections(t){
   const req=requiredAssessmentSections(t||currentTechData);
-  if(req.all||!req.rated)return QUESTIONNAIRE.slice();
+  if(req.all||!req.rated){
+    const assigned=new Set(req.rated||[]);
+    return QUESTIONNAIRE.filter(sec=>{
+      if(sec.key==='survey'||sec.key==='national_accounts')return assigned.has(sec.key);
+      return true;
+    });
+  }
   const keys=new Set(req.rated);
   return QUESTIONNAIRE.filter(sec=>keys.has(sec.key));
 }
@@ -10755,6 +10764,10 @@ async function startQuestionnaire(opts){
     qNebbStatus=matchNebbOption(currentTechData&&currentTechData.nebb_status);
   }
   const openQuestionnaire=()=>{
+    if(assessmentIsPreBootcampOnly(currentTechData)){
+      openPreBootcampAssessment();
+      return;
+    }
     setTechMainView('tech-view-questionnaire');
     renderQuestionnaire();
     if(draftComment){
