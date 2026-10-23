@@ -4735,13 +4735,19 @@ function ataIsDone(tech,code){
   const best=ataBestScore(tech,code);
   return best!=null&&Number(best)>=ATA_PASS_PCT;
 }
-// Failed = has an attempt/score on record but has not reached a passing score.
-function ataIsFailed(tech,code){
-  if(ataIsDone(tech,code))return false;
+// A reset was already used when Teachable marked the lesson complete, a manual
+// reset was logged, or there is more than one graded attempt.
+function ataWasReset(tech,code){
+  const i=ataAttemptInfo(tech,code);
   const c=ataCompletionFor(tech,code);
-  const a=ataAttemptInfo(tech,code);
-  if(a&&(a.count||0)>0)return true;
-  return !!(c&&c.score!=null&&Number(c.score)<ATA_PASS_PCT);
+  if(i&&((i.manual_total||0)>0||(i.count||0)>1))return true;
+  return !!(c&&c.passed===true);
+}
+// Failed only when the current score is under 80% and no reset has been used.
+function ataIsFailed(tech,code){
+  if(ataIsDone(tech,code)||ataWasReset(tech,code))return false;
+  const best=ataBestScore(tech,code);
+  return best!=null&&Number(best)<ATA_PASS_PCT;
 }
 // Fail on record, then marked Complete with no new graded attempt = a used reset.
 function ataImpliedRetake(tech,code){
@@ -4848,11 +4854,13 @@ function ataProgramStatus(tech,program,today){
   lessons.forEach((l,i)=>{
     const code=l.lesson_code;
     const done=ataIsDone(tech,code);
-    const isFailed=!done&&ataIsFailed(tech,code);
-    const tracked=ataLessonIsTracked(code)||done||isFailed;
+    const best=ataBestScore(tech,code);
+    const under=best!=null&&Number(best)<ATA_PASS_PCT;
+    const resetUsed=!done&&under&&ataWasReset(tech,code);
+    const isFailed=!done&&under&&!resetUsed;
+    const tracked=ataLessonIsTracked(code)||done||isFailed||resetUsed;
     const resets=ataResetsThisMonth(tech,code);
     const resetsTotal=ataResetsTotal(tech,code);
-    const best=ataBestScore(tech,code);
     const overLimit=resets>=ATA_MAX_RESETS;
     if(tracked)counted++;
     if(isFailed)failed++;
@@ -4862,6 +4870,7 @@ function ataProgramStatus(tech,program,today){
     let st='upcoming';
     if(done){completed++;st='complete';}
     else if(!tracked){st='untracked';}
+    else if(resetUsed){st='reset';}
     else if(isFailed){st='failed';if(start&&dl&&!(dl<today&&!ataIsSameDay(dl,today))){if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};}if(start&&dl&&dl<today&&!ataIsSameDay(dl,today)){overdue++;overdueList.push({lesson:l,deadline:dl});}}
     else if(start&&dl){
       if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
@@ -4872,13 +4881,13 @@ function ataProgramStatus(tech,program,today){
         else st='upcoming';
       }
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum,globalWeek:gwMap[code]||weekNum});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resetUsed:resetUsed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum,globalWeek:gwMap[code]||weekNum});
   });
   const total=counted||lessons.length;
   let status;
   if(!start)status='not_started';
   else if(completed>=total&&total>0)status='complete';
-  else if(overdue>0||failed>0)status='behind';
+  else if(overdue>0)status='behind';
   else status='on_track';
   return {program,start,total,completed,overdue,dueSoon,failed,atLimit,nextDue,overdueList,lessonRows,status};
 }
@@ -5091,6 +5100,7 @@ function ataLessonDisplay(lr,today){
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
   if(lr.done&&lr.best!=null&&Number(lr.best)>=ATA_PASS_PCT)return {t:'Passed',c:'#0F6E56'};
+  if(lr.resetUsed||lr.state==='reset')return {t:'—',c:'#bbbbbb'};
   if(lr.failed)return {t:'Failed',c:'#C0392B'};
   if(lr.state==='untracked')return {t:'Not in Teachable',c:'#888888'};
   if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
@@ -5117,7 +5127,7 @@ function ataTechSummary(tech){
   if(category==='exempt')status='archived';
   else if(category==='complete')status='complete';
   else if(!active.length)status='not_started';
-  else if(totalOverdue>0||totalFailed>0)status='behind';
+  else if(totalOverdue>0)status='behind';
   else status='on_track';
   const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
   const pcts={};
