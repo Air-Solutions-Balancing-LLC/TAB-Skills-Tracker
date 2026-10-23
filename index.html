@@ -4703,20 +4703,17 @@ function ataLessonDeadline(startISO,weekIndex){
   return thu;
 }
 
-// Canonical lesson order = the ATA weekly schedule (week_index / sort_order),
-// not the numeric lesson code. Basic is assigned as 101, 102, 104, 105, 110…
-// so sorting by code scrambled due dates (B-103 looked later than B-104).
+// Lesson order in every module follows the lesson code (101, 102, 103…),
+// matching the ATA score sheet. Due weeks follow that same sequence.
 function ataLessonOrder(code){
   const m=/TAB-[A-Z]+-(\d+)/i.exec(String(code||''));
   return m?parseInt(m[1],10):Number.MAX_SAFE_INTEGER;
 }
 function ataLessonsByProgram(program){
   return (ataCurriculum||[]).filter(l=>l.program===program).sort((a,b)=>{
-    const wa=a.week_index||0,wb=b.week_index||0;
-    if(wa!==wb)return wa-wb;
-    const sa=a.sort_order||0,sb=b.sort_order||0;
-    if(sa!==sb)return sa-sb;
-    return ataLessonOrder(a.lesson_code)-ataLessonOrder(b.lesson_code);
+    const oa=ataLessonOrder(a.lesson_code),ob=ataLessonOrder(b.lesson_code);
+    if(oa!==ob)return oa-ob;
+    return String(a.lesson_code||'').localeCompare(String(b.lesson_code||''));
   });
 }
 // Teachable only grades the Basic written final (B-401). The practical (B-402)
