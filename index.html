@@ -4729,14 +4729,11 @@ function ataAttemptInfo(tech,code){const a=(tech&&tech.attempts)||{};return a[co
 function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program]||null;}
 const ATA_PASS_PCT=80;
 const ATA_MAX_RESETS=3;
-// A lesson is "done" only when passed (>=80%). Legacy sheet completions with no
-// numeric score are treated as done; a recorded score below 80 is NOT done.
+// Passed only when the best recorded score is at least 80%.
+// A Teachable "complete" flag, or a lesson with no grade, is not a pass.
 function ataIsDone(tech,code){
-  const c=ataCompletionFor(tech,code);
-  if(!c)return false;
-  if(c.passed===true)return true;
-  if(c.score==null)return true; // legacy "completed, no score shown" import
-  return Number(c.score)>=ATA_PASS_PCT;
+  const best=ataBestScore(tech,code);
+  return best!=null&&Number(best)>=ATA_PASS_PCT;
 }
 // Failed = has an attempt/score on record but has not reached a passing score.
 function ataIsFailed(tech,code){
@@ -5093,7 +5090,7 @@ function ataLessonDisplay(lr,today){
 }
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
-  if(lr.done)return {t:lr.best==null?'Complete':'Passed',c:'#0F6E56'};
+  if(lr.done&&lr.best!=null&&Number(lr.best)>=ATA_PASS_PCT)return {t:'Passed',c:'#0F6E56'};
   if(lr.failed)return {t:'Failed',c:'#C0392B'};
   if(lr.state==='untracked')return {t:'Not in Teachable',c:'#888888'};
   if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
@@ -6060,7 +6057,7 @@ function ataRenderProgressEditPanel(){
       const code=lr.lesson.lesson_code;
       const c=ataCompletionFor(tech,code)||{};
       const score=c.score!=null?Number(c.score):(lr.best!=null?Number(lr.best):'');
-      const passed=!!(c.passed===true||ataIsDone(tech,code));
+      const passed=ataIsDone(tech,code);
       const locked=!!c.admin_locked;
       const doneAt=ataIsoDateInput(c.completed_at);
       const due=lr.deadline?ataFmtDeadline(lr.deadline):'—';
