@@ -1256,7 +1256,10 @@ body.mobile-nav-open{overflow:hidden}
                 <input id="nebb-add-expires" type="date" title="Certification expiration" aria-label="Expires">
                 <button type="button" class="btn" style="background:#0F6E56" onclick="addNebbCertifiedPerson()">Add to NEBB list</button>
               </div>
-              <div class="login-sub" style="color:#666;margin:-4px 0 10px">If they are not in the dropdown, add them here as a technician and they will go on the NEBB list.</div>
+              <div class="report-wrap" id="admin-nebb-report-wrap">
+                <div class="admin-empty" style="padding:12px">Loading…</div>
+              </div>
+              <div class="login-sub" style="color:#666;margin:16px 0 10px">If they are not in the dropdown, add them here as a technician and they will go on the NEBB list.</div>
               <div class="admin-add" style="margin:0 0 10px;padding-bottom:10px">
                 <input id="nebb-new-name" placeholder="Full name">
                 <input id="nebb-new-email" type="email" placeholder="name@airadigmsolutions.com">
@@ -1274,9 +1277,6 @@ body.mobile-nav-open{overflow:hidden}
                   <option value="SW">Southwest</option>
                 </select>
                 <button type="button" class="btn" style="background:#1B3A6B" onclick="addNebbCertifiedPerson(true)">Add new tech to NEBB</button>
-              </div>
-              <div class="report-wrap" id="admin-nebb-report-wrap">
-                <div class="admin-empty" style="padding:12px">Loading…</div>
               </div>
             </div>
           </div>
@@ -1398,6 +1398,7 @@ body.mobile-nav-open{overflow:hidden}
               <select id="ata-status" onchange="onAtaAdminFilterChange()">
                 <option value="">All statuses</option>
                 <option value="behind">Behind</option>
+                <option value="paused">Paused</option>
                 <option value="on_track">On track</option>
                 <option value="complete">Complete</option>
                 <option value="not_started">Not started</option>
@@ -1700,6 +1701,7 @@ body.mobile-nav-open{overflow:hidden}
               <select id="pm-ata-status" onchange="onPmAtaFilterChange()">
                 <option value="">All statuses</option>
                 <option value="behind">Behind</option>
+                <option value="paused">Paused</option>
                 <option value="on_track">On track</option>
                 <option value="complete">Complete</option>
                 <option value="not_started">Not started</option>
@@ -1919,6 +1921,7 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
       <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
+    <div id="ata-schedule-hold" style="display:none;border:1px solid #e7d7b8;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fffaf1"></div>
     <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-report-preview-wrap" style="display:none;flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
@@ -4690,16 +4693,31 @@ function ataNextDueThursday(fromDate){
   return d;
 }
 
+function ataHold(tech,program){
+  const h=tech&&tech.holds&&tech.holds[program];
+  if(!h)return {paused:false,from_week:0,weeks:0};
+  return {paused:h.paused===true||h.paused==='true',from_week:Number(h.from_week)||0,weeks:Number(h.weeks)||0};
+}
+function ataProgramPaused(tech,program){return ataHold(tech,program).paused;}
+function ataAddWeeks(fromDate,weeks){
+  let d=new Date(fromDate.getFullYear(),fromDate.getMonth(),fromDate.getDate());
+  for(let i=0;i<weeks;i++)d=ataNextDueThursday(new Date(d.getFullYear(),d.getMonth(),d.getDate()+7));
+  return d;
+}
 // One lesson per week, due Thursday. Week 1 is the first Thursday on or after
 // the start date that is not a company holiday. If a Thursday is a holiday,
 // that lesson (and the ones after it) move to the next Thursday.
-function ataLessonDeadline(startISO,weekIndex){
+// A schedule hold pushes only the open lessons forward, so lessons already
+// passed keep their original Thursday.
+function ataLessonDeadline(startISO,weekIndex,hold){
   const d=parseDateOnly(startISO);
   if(!d)return null;
   let thu=ataNextDueThursday(d);
   for(let i=1;i<Math.max(1,weekIndex);i++){
     thu=ataNextDueThursday(new Date(thu.getFullYear(),thu.getMonth(),thu.getDate()+7));
   }
+  const extra=hold&&hold.weeks>0&&hold.from_week>0&&weekIndex>=hold.from_week?hold.weeks:0;
+  if(extra)thu=ataAddWeeks(thu,extra);
   return thu;
 }
 
@@ -4847,6 +4865,8 @@ function ataPctLineHtml(s){
 function ataProgramStatus(tech,program,today){
   today=today||ataToday();
   const start=ataStart(tech,program);
+  const hold=ataHold(tech,program);
+  const paused=!!hold.paused;
   const lessons=ataLessonsByProgram(program);
   const gwMap=ataGlobalWeeks().map;
   let completed=0,overdue=0,dueSoon=0,failed=0,atLimit=0,counted=0,nextDue=null;
@@ -4866,15 +4886,22 @@ function ataProgramStatus(tech,program,today){
     if(isFailed)failed++;
     if(isFailed&&overLimit)atLimit++;
     const weekNum=i+1;
-    const dl=start?ataLessonDeadline(start,weekNum):null;
+    const dl=start?ataLessonDeadline(start,weekNum,hold):null;
     let st='upcoming';
+    const past=!!(dl&&dl<today&&!ataIsSameDay(dl,today));
     if(done){completed++;st='complete';}
     else if(!tracked){st='untracked';}
     else if(resetUsed){st='reset';}
-    else if(isFailed){st='failed';if(start&&dl&&!(dl<today&&!ataIsSameDay(dl,today))){if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};}if(start&&dl&&dl<today&&!ataIsSameDay(dl,today)){overdue++;overdueList.push({lesson:l,deadline:dl});}}
+    else if(isFailed){
+      st='failed';
+      if(!past){if(dl&&(!nextDue||dl<nextDue.deadline))nextDue={lesson:l,deadline:dl};}
+      else if(!paused){overdue++;overdueList.push({lesson:l,deadline:dl});}
+    }
     else if(start&&dl){
-      if(dl<today&&!ataIsSameDay(dl,today)){overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
-      else{
+      if(past){
+        if(paused)st='paused';
+        else{overdue++;st='overdue';overdueList.push({lesson:l,deadline:dl});}
+      }else{
         if(!nextDue||dl<nextDue.deadline)nextDue={lesson:l,deadline:dl};
         const diff=Math.round((dl-today)/86400000);
         if(diff<=7){dueSoon++;st='due';}
@@ -4888,8 +4915,9 @@ function ataProgramStatus(tech,program,today){
   if(!start)status='not_started';
   else if(completed>=total&&total>0)status='complete';
   else if(overdue>0)status='behind';
+  else if(paused)status='paused';
   else status='on_track';
-  return {program,start,total,completed,overdue,dueSoon,failed,atLimit,nextDue,overdueList,lessonRows,status};
+  return {program,start,total,completed,overdue,dueSoon,failed,atLimit,nextDue,overdueList,lessonRows,status,paused};
 }
 
 function ataIsArchived(tech){return !!(tech&&(tech.ata_archived===true||tech.ata_archived_at));}
@@ -5101,6 +5129,7 @@ function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
   if(lr.done&&lr.best!=null&&Number(lr.best)>=ATA_PASS_PCT)return {t:'Passed',c:'#0F6E56'};
   if(lr.resetUsed||lr.state==='reset')return {t:'—',c:'#bbbbbb'};
+  if(lr.state==='paused')return {t:'Paused',c:'#6b7280'};
   if(lr.failed)return {t:'Failed',c:'#C0392B'};
   if(lr.state==='untracked')return {t:'Not in Teachable',c:'#888888'};
   if(lr.state==='overdue')return {t:'Overdue',c:'#C0392B'};
@@ -5117,6 +5146,7 @@ function ataTechSummary(tech){
   const progs=ATA_PROGRAMS.map(p=>ataProgramStatus(tech,p,today));
   const active=progs.filter(p=>p.start);
   const totalOverdue=active.reduce((s,p)=>s+p.overdue,0);
+  const anyPaused=progs.some(p=>p.paused&&p.start&&p.completed<p.total);
   const totalFailed=progs.reduce((s,p)=>s+(p.failed||0),0);
   const totalAtLimit=progs.reduce((s,p)=>s+(p.atLimit||0),0);
   const resets=ataTechResetCounts(tech);
@@ -5128,6 +5158,7 @@ function ataTechSummary(tech){
   else if(category==='complete')status='complete';
   else if(!active.length)status='not_started';
   else if(totalOverdue>0)status='behind';
+  else if(anyPaused)status='paused';
   else status='on_track';
   const byProgram={};progs.forEach(p=>{byProgram[p.program]=p;});
   const pcts={};
@@ -5138,6 +5169,7 @@ function ataTechSummary(tech){
 function ataStatusMeta(status){
   switch(status){
     case 'behind':return {label:'Behind',color:'#C0392B',bg:'#FDECEA'};
+    case 'paused':return {label:'Paused',color:'#6b7280',bg:'#F3F4F6'};
     case 'on_track':return {label:'On track',color:'#0F6E56',bg:'#E7F5EF'};
     case 'complete':return {label:'Complete',color:'#1B3A6B',bg:'#EEF4FF'};
     case 'archived':return {label:'Exempt',color:'#6b7280',bg:'#F3F4F6'};
@@ -5985,6 +6017,7 @@ function ataSetReportMode(mode){
   if(ataReportMode==='edit')ataRenderProgressEditPanel();
   else if(ataReportMode==='resets')ataRenderResetPanel();
   else ataReportPreview();
+  ataRenderScheduleHold();
 }
 function ataOpenReport(techId){
   const tech=ataFindTech(techId);
@@ -6001,8 +6034,115 @@ function ataCloseReport(){
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.remove('visible');
   const frame=document.getElementById('ata-report-frame');if(frame)frame.removeAttribute('src');
   if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
+  const hold=document.getElementById('ata-schedule-hold');if(hold){hold.style.display='none';hold.innerHTML='';}
   ataReportTechId=null;
   ataReportMode='report';
+}
+function ataFirstOpenLesson(tech,program){
+  const start=ataStart(tech,program);
+  if(!start)return null;
+  const lessons=ataLessonsByProgram(program);
+  for(let i=0;i<lessons.length;i++){
+    const lesson=lessons[i];
+    if(!ataLessonIsTracked(lesson.lesson_code)||ataIsDone(tech,lesson.lesson_code))continue;
+    return {week:i+1,lesson,original:ataLessonDeadline(start,i+1,null)};
+  }
+  return null;
+}
+function ataPastDueOpenCount(tech,program,today){
+  today=today||ataToday();
+  const start=ataStart(tech,program);
+  if(!start)return 0;
+  const hold=ataHold(tech,program);
+  const lessons=ataLessonsByProgram(program);
+  let n=0;
+  lessons.forEach((l,i)=>{
+    if(!ataLessonIsTracked(l.lesson_code)||ataIsDone(tech,l.lesson_code))return;
+    const dl=ataLessonDeadline(start,i+1,hold);
+    if(dl&&dl<today&&!ataIsSameDay(dl,today))n++;
+  });
+  return n;
+}
+function ataCatchUpPlan(tech,program){
+  const open=ataFirstOpenLesson(tech,program);
+  if(!open||!open.original)return null;
+  const target=ataNextDueThursday(ataToday());
+  let n=0,d=new Date(open.original.getFullYear(),open.original.getMonth(),open.original.getDate());
+  while(d<target&&n<80){d=ataAddWeeks(d,1);n++;}
+  return {week:open.week,weeks:n,target,code:open.lesson.lesson_code,name:open.lesson.lesson_name};
+}
+function ataRenderScheduleHold(){
+  const box=document.getElementById('ata-schedule-hold');
+  if(!box)return;
+  const tech=ataFindTech(ataReportTechId);
+  if(!tech||!userIsAdmin){box.style.display='none';box.innerHTML='';return;}
+  const programs=ATA_PROGRAMS.filter(p=>ataStart(tech,p)&&ataProgramRequired(tech,p));
+  if(!programs.length){box.style.display='none';box.innerHTML='';return;}
+  const today=ataToday();
+  const first=String(tech.name||'This technician').split(' ')[0];
+  const blocks=programs.map(pr=>{
+    const paused=ataProgramPaused(tech,pr);
+    const past=ataPastDueOpenCount(tech,pr,today);
+    const plan=ataCatchUpPlan(tech,pr);
+    const hold=ataHold(tech,pr);
+    const dueTxt=plan?ataFmtDeadline(plan.target):'';
+    let msg='Nothing is past due.';
+    if(!plan)msg='Every tracked lesson in this module is already passed.';
+    else if(paused&&past)msg=past+' lesson'+(past===1?' is':'s are')+' past due. '+adminEsc(first)+' sees Paused, not Overdue.';
+    else if(paused)msg='Paused. New Thursdays will not show as overdue.';
+    else if(past)msg=past+' lesson'+(past===1?' is':'s are')+' past due, so this module shows as overdue.';
+    const buttons=[];
+    if(plan){
+      buttons.push(paused
+        ?`<button type="button" class="btn btn-outline" style="font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','resume')">Show overdue again</button>`
+        :`<button type="button" class="btn" style="background:#6b7280;font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','pause')">Pause schedule</button>`);
+    }
+    if(plan&&past)buttons.push(`<button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','shift')">Move due dates</button>`);
+    if(hold.weeks>0)buttons.push(`<button type="button" class="btn btn-outline" style="font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','clear')">Put original dates back</button>`);
+    const hint=plan&&past?`<div style="font-size:12px;color:#555;margin-top:6px">Move due dates sets <b>${adminEsc(plan.code)}</b> to ${adminEsc(dueTxt)}. Lessons after it stay one week apart. Passed lessons keep their original dates, and overdue goes away.</div>`:'';
+    return `<div style="padding:8px 0;border-top:1px solid #f0e6d2">
+      <div style="font-weight:800;color:#1B3A6B;font-size:13px">${ATA_PROGRAM_LABEL[pr]}${paused?' · Paused':''}</div>
+      <div style="font-size:13px;color:#333;margin:4px 0 8px">${msg}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${buttons.join('')}</div>
+      ${hint}
+    </div>`;
+  }).join('');
+  box.style.display='block';
+  box.innerHTML=`<div style="font-weight:800;color:#8a5a00;font-size:14px">Pause the schedule</div>
+    <div style="font-size:12px;color:#666;margin-top:2px">Use this when someone stopped on a lesson and the Thursdays kept going. <b>Pause schedule</b> hides Overdue on their page. <b>Move due dates</b> lines the next open lesson up with the coming Thursday.</div>
+    ${blocks}`;
+}
+async function ataSetProgramHold(program,action){
+  const tech=ataFindTech(ataReportTechId);
+  if(!tech)return;
+  const cur=ataHold(tech,program);
+  let paused=cur.paused, fromWeek=cur.from_week||null, weeks=cur.weeks||0;
+  if(action==='pause')paused=true;
+  else if(action==='resume')paused=false;
+  else if(action==='clear'){fromWeek=null;weeks=0;}
+  else if(action==='shift'){
+    const plan=ataCatchUpPlan(tech,program);
+    if(!plan)return;
+    paused=false;
+    fromWeek=plan.weeks?plan.week:null;
+    weeks=plan.weeks;
+  }
+  try{
+    await rpc('app_ata_set_hold',{p_tech_id:tech.id,p_program:program,p_paused:paused,p_from_week:fromWeek,p_weeks:weeks});
+  }catch(e){
+    alert('Could not update the schedule. In Supabase, open the SQL Editor and run supabase/ata-schedule-hold.sql, then try again.');
+    return;
+  }
+  const hold={paused:paused,from_week:fromWeek,weeks:weeks};
+  [ataAdminData,ataPmData].forEach(src=>{
+    const t=src&&(src.techs||[]).find(x=>String(x.id)===String(tech.id));
+    if(t){t.holds=Object.assign({},t.holds||{});t.holds[program]=hold;}
+  });
+  ataRenderScheduleHold();
+  if(ataReportMode==='report')ataReportPreview();
+  else if(ataReportMode==='edit')ataRenderProgressEditPanel();
+  try{ataRenderAdmin();}catch(e){}
+  try{if(document.getElementById('pm-ata-wrap'))renderPmAta();}catch(e){}
 }
 function ataOnReportModulesChange(){
   if(ataReportMode==='report')ataReportPreview();
@@ -6424,6 +6564,7 @@ function renderTechAta(tech){
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
     <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due Thursday (holiday Thursdays skip to the next Thursday) · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
+    ${s.status==='paused'?'<div style="margin-top:10px;font-size:13px;color:#555">Your schedule is paused, so these lessons are not marked overdue.</div>':''}
     ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
   </div>`;
   body.innerHTML=overall+sections;
