@@ -6099,7 +6099,7 @@ function ataRenderScheduleHold(){
     }
     if(plan&&past)buttons.push(`<button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','shift')">Move due dates</button>`);
     if(hold.weeks>0)buttons.push(`<button type="button" class="btn btn-outline" style="font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','clear')">Put original dates back</button>`);
-    const hint=plan&&past?`<div style="font-size:12px;color:#555;margin-top:6px">Move due dates sets <b>${adminEsc(plan.code)}</b> to ${adminEsc(dueTxt)}. Lessons after it stay one week apart. Passed lessons keep their original dates, and overdue goes away.</div>`:'';
+    const hint=plan&&past?`<div style="font-size:12px;color:#555;margin-top:6px">Move due dates sets <b>${adminEsc(plan.code)}</b> to ${adminEsc(dueTxt)}. Every Thursday in ${ATA_PROGRAM_LABEL[pr]} moves forward together, so those lessons are no longer overdue.</div>`:'';
     return `<div style="padding:8px 0;border-top:1px solid #f0e6d2">
       <div style="font-weight:800;color:#1B3A6B;font-size:13px">${ATA_PROGRAM_LABEL[pr]}${paused?' · Paused':''}</div>
       <div style="font-size:13px;color:#333;margin:4px 0 8px">${msg}</div>
@@ -6109,7 +6109,7 @@ function ataRenderScheduleHold(){
   }).join('');
   box.style.display='block';
   box.innerHTML=`<div style="font-weight:800;color:#8a5a00;font-size:14px">Pause the schedule</div>
-    <div style="font-size:12px;color:#666;margin-top:2px">Use this when someone stopped on a lesson and the Thursdays kept going. <b>Pause schedule</b> hides Overdue on their page. <b>Move due dates</b> lines the next open lesson up with the coming Thursday.</div>
+    <div style="font-size:12px;color:#666;margin-top:2px">Use this when someone stopped on a lesson and the Thursdays kept going. <b>Pause schedule</b> and <b>Move due dates</b> slide this module forward so he will not see those lessons as overdue.</div>
     ${blocks}`;
 }
 async function ataSetProgramHold(program,action){
@@ -6130,7 +6130,17 @@ async function ataSetProgramHold(program,action){
   try{
     await rpc('app_ata_set_hold',{p_tech_id:tech.id,p_program:program,p_paused:paused,p_from_week:fromWeek,p_weeks:weeks});
   }catch(e){
-    alert('Could not update the schedule. In Supabase, open the SQL Editor and run supabase/ata-schedule-hold.sql, then try again.');
+    if(action==='pause'||action==='shift'){
+      const moved=await ataShiftProgramStart(tech,program);
+      if(!moved)return;
+      ataRenderScheduleHold();
+      if(ataReportMode==='report')ataReportPreview();
+      else if(ataReportMode==='edit')ataRenderProgressEditPanel();
+      try{ataRenderAdmin();}catch(err){}
+      try{if(document.getElementById('pm-ata-wrap'))renderPmAta();}catch(err){}
+      return;
+    }
+    alert('Could not update the schedule. '+(e.message||'Try again.'));
     return;
   }
   const hold={paused:paused,from_week:fromWeek,weeks:weeks};
@@ -6143,6 +6153,26 @@ async function ataSetProgramHold(program,action){
   else if(ataReportMode==='edit')ataRenderProgressEditPanel();
   try{ataRenderAdmin();}catch(e){}
   try{if(document.getElementById('pm-ata-wrap'))renderPmAta();}catch(e){}
+}
+async function ataShiftProgramStart(tech,program){
+  const plan=ataCatchUpPlan(tech,program);
+  const startIso=ataStart(tech,program);
+  if(!plan||!startIso){alert('There is no open lesson to move.');return false;}
+  if(!plan.weeks){alert('Nothing is past due. The next lesson is already due on a coming Thursday.');return false;}
+  const start=parseDateOnly(startIso);
+  const moved=new Date(start.getFullYear(),start.getMonth(),start.getDate()+plan.weeks*7);
+  const iso=ataDateKey(moved);
+  try{
+    await rpc('app_ata_set_start',{p_tech_id:tech.id,p_program:program,p_start_date:iso});
+  }catch(e){
+    alert('Could not move the due dates. '+(e.message||'Try again.'));
+    return false;
+  }
+  [ataAdminData,ataPmData].forEach(src=>{
+    const t=src&&(src.techs||[]).find(x=>String(x.id)===String(tech.id));
+    if(t){t.starts=Object.assign({},t.starts||{});t.starts[program]=iso;}
+  });
+  return true;
 }
 function ataOnReportModulesChange(){
   if(ataReportMode==='report')ataReportPreview();
