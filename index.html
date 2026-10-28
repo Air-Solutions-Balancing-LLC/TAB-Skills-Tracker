@@ -1921,6 +1921,7 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
       <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
+    <div id="ata-brenda-note" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafbfe"></div>
     <div id="ata-schedule-hold" style="display:none;border:1px solid #e7d7b8;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fffaf1"></div>
     <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
@@ -4774,12 +4775,27 @@ function ataImpliedRetake(tech,code){
   const auto=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
   return auto===0 && (i.count||0)>0 && i.passed!==true;
 }
-// Resets this month = auto retakes (attempts this month - 1, min 0) + manual resets logged this month.
+// True once the roster includes a rolling 30-day count. Until then, use this calendar month.
+function ataUsesRollingResets(tech){
+  const attempts=(tech&&tech.attempts)||{};
+  for(const k in attempts){
+    const i=attempts[k];
+    if(i&&(Object.prototype.hasOwnProperty.call(i,'days30_count')||Object.prototype.hasOwnProperty.call(i,'manual_30')))return true;
+  }
+  return false;
+}
+function ataResetWindowPhrase(tech){
+  return ataUsesRollingResets(tech)?'in the last 30 days':'this month';
+}
+// Resets in the window = auto retakes (attempts in the window - 1, min 0) + manual resets in that window.
 function ataResetsThisMonth(tech,code){
   const i=ataAttemptInfo(tech,code);
   if(!i)return 0;
-  let n=Math.max(0,(i.month_count||0)-1)+(i.manual_month||0);
-  if(n===0&&ataImpliedRetake(tech,code)&&(i.month_count||0)>0)n=1;
+  const rolling=ataUsesRollingResets(tech);
+  const attempts=rolling?(i.days30_count||0):(i.month_count||0);
+  const manual=rolling?(i.manual_30||0):(i.manual_month||0);
+  let n=Math.max(0,attempts-1)+manual;
+  if(n===0&&ataImpliedRetake(tech,code)&&attempts>0)n=1;
   return n;
 }
 // Total resets ever = auto retakes (total attempts - 1, min 0) + manual resets logged all-time.
@@ -5102,6 +5118,44 @@ function ataTechResetCounts(tech){
     if(m>=ATA_MAX_RESETS)atLimit++;
   });
   return {month,total,atLimit};
+}
+// Book with Brenda at 3 resets in the window, or when 3 lessons are behind.
+function ataBrendaReminder(tech){
+  const phrase=ataResetWindowPhrase(tech);
+  const summary=ataTechSummary(tech);
+  const resets=summary.totalResetsMonth||0;
+  const behind=summary.totalOverdue||0;
+  const reasons=[];
+  if(resets>=ATA_MAX_RESETS)reasons.push(resets+' reset'+(resets===1?'':'s')+' '+phrase);
+  if(behind>=3)reasons.push(behind+' lesson'+(behind===1?'':'s')+' behind');
+  return {resets,behind,phrase,book:reasons.length>0,reasons};
+}
+function ataBrendaListHtml(tech,active){
+  if(!active||!tech)return '';
+  const b=ataBrendaReminder(tech);
+  if(b.book)return `<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">Book Brenda · ${b.reasons.map(adminEsc).join(' · ')}</div>`;
+  if(!b.resets&&!b.behind)return '';
+  return `<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${b.resets} reset${b.resets===1?'':'s'} ${adminEsc(b.phrase)} · ${b.behind} behind</div>`;
+}
+function ataRenderBrendaNote(){
+  const el=document.getElementById('ata-brenda-note');
+  if(!el)return;
+  const tech=ataFindTech(ataReportTechId);
+  if(!tech){el.style.display='none';el.innerHTML='';return;}
+  const b=ataBrendaReminder(tech);
+  el.style.display='block';
+  if(b.book){
+    el.style.borderColor='#f0c2c2';
+    el.style.background='#FDECEA';
+    el.innerHTML=`<div style="font-weight:800;color:#C0392B">Book a call with Brenda</div>
+      <div style="font-size:13px;color:#333;margin-top:4px">${adminEsc(tech.name)} has ${b.reasons.map(adminEsc).join(' and ')}.</div>
+      <div style="font-size:12px;color:#555;margin-top:4px">Resets ${adminEsc(b.phrase)}: <b>${b.resets}</b> · Lessons behind: <b>${b.behind}</b></div>`;
+  }else{
+    el.style.borderColor='#e2e6ee';
+    el.style.background='#fafbfe';
+    el.innerHTML=`<div style="font-size:13px;color:#333">Resets ${adminEsc(b.phrase)}: <b>${b.resets}</b> · Lessons behind: <b>${b.behind}</b></div>
+      <div style="font-size:12px;color:#777;margin-top:3px">Book a call with Brenda at 3 resets or when someone is 3 lessons behind.</div>`;
+  }
 }
 function ataResetDisplay(lr){
   const rm=lr.resets||0,tot=lr.resetsTotal||0;
@@ -5599,7 +5653,7 @@ function ataRenderAdmin(){
       ${ataStartCell(s,'basic')}
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
-      <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${s.totalAtLimit&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">🔴 ${s.totalAtLimit} at reset limit — Brenda</div>`:''}</td>
+      <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${ataBrendaListHtml(t,cat==='active')}</td>
       <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">Report</button></td>
     </tr>`;
   }).join('');
@@ -5728,7 +5782,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
     {label:'Advanced',w:contentW*0.13},
     {label:'Overdue',w:contentW*0.09},
     {label:'Failed',w:contentW*0.09},
-    {label:'Resets (mo)',w:contentW*0.13}
+    {label:'Resets',w:contentW*0.13}
   ];
   const bottom=pageH-40;
   function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
@@ -5784,6 +5838,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
     header();
     list.forEach((s,idx)=>{
       const m=ataStatusMeta(s.status);
+      const b=ataBrendaReminder(s.tech);
       const values=[
         pdfSafeText(s.tech.name),
         m.label,
@@ -5792,7 +5847,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
         String(s.totalFailed||0),
-        (s.totalResetsMonth||s.totalResets)?(String(s.totalResetsMonth||0)+' this mo.'+(s.totalResets>s.totalResetsMonth?(' / '+s.totalResets+' tot'):'')):'0'
+        pdfSafeText((b.resets||0)+(b.resets===1?' reset ':' resets ')+b.phrase+(b.book?' - Book Brenda':''))
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -5804,7 +5859,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
         else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
-        else if(i===7&&(s.totalResetsMonth||0)>0)doc.setTextColor(192,57,43);
+        else if(i===7&&(b.book||b.resets>0))doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
@@ -5894,18 +5949,22 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // Alerts strip
-  const alerts=[];
-  if(s.totalOverdue)alerts.push(s.totalOverdue+' overdue');
-  if(s.totalFailed)alerts.push(s.totalFailed+' failed (<80%)');
-  if(s.totalAtLimit)alerts.push(s.totalAtLimit+' at reset limit — schedule Brenda call');
-  if(alerts.length){
-    needPage(28);
-    doc.setFillColor(253,236,234);doc.roundedRect(margin,y,contentW,22,4,4,'F');
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(192,57,43);
-    doc.text(pdfSafeText('⚠  '+alerts.join('  ·  ')),margin+10,y+14);
-    y+=32;
-  }
+  // Reset count, lessons behind, and the Brenda reminder.
+  const brenda=ataBrendaReminder(tech);
+  const line=brenda.book
+    ?('Book a call with Brenda — '+brenda.reasons.join(' and '))
+    :('Resets '+brenda.phrase+': '+brenda.resets+' · Lessons behind: '+brenda.behind);
+  const extra=[];
+  if(s.totalFailed)extra.push(s.totalFailed+' failed (<80%)');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');
+  const noteLines=doc.splitTextToSize(pdfSafeText((brenda.book?'⚠  ':'')+line+(extra.length?('  ·  '+extra.join('  ·  ')):'')) ,contentW-20);
+  const noteH=Math.max(22, noteLines.length*12+10);
+  needPage(noteH+8);
+  if(brenda.book){doc.setFillColor(253,236,234);doc.setTextColor(192,57,43);}
+  else{doc.setFillColor(246,248,252);doc.setTextColor(60,70,90);}
+  doc.roundedRect(margin,y,contentW,noteH,4,4,'F');
+  noteLines.forEach((ln,i)=>doc.text(ln,margin+10,y+14+i*12));
+  y+=noteH+10;
 
   // Lesson tables per program — every lesson is one week (88 weeks across the 3 modules).
   const cols=[
@@ -6017,6 +6076,7 @@ function ataSetReportMode(mode){
   if(ataReportMode==='edit')ataRenderProgressEditPanel();
   else if(ataReportMode==='resets')ataRenderResetPanel();
   else ataReportPreview();
+  ataRenderBrendaNote();
   ataRenderScheduleHold();
 }
 function ataOpenReport(techId){
@@ -6400,7 +6460,7 @@ function renderPmAta(){
     const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
-    <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed${s.totalAtLimit?` · 🔴 ${s.totalAtLimit} at limit`:''}</div>`:''}${s.totalResetsMonth&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${s.totalResetsMonth} reset${s.totalResetsMonth===1?'':'s'} this month</div>`:''}</td>
+    <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed</div>`:''}${ataBrendaListHtml(s.tech,cat==='active')}</td>
     <td>${cell(s,'basic')}</td>
     <td>${cell(s,'intermediate')}</td>
     <td>${cell(s,'advanced')}</td>

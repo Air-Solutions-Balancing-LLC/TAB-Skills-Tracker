@@ -62,6 +62,10 @@ AS $$
                               AND source IS DISTINCT FROM 'manual_reset'),
                'manual_month', count(*) FILTER (WHERE source = 'manual_reset'
                               AND attempted_at >= date_trunc('month', now())),
+               'days30_count', count(*) FILTER (WHERE attempted_at >= now() - interval '30 days'
+                              AND source IS DISTINCT FROM 'manual_reset'),
+               'manual_30', count(*) FILTER (WHERE source = 'manual_reset'
+                              AND attempted_at >= now() - interval '30 days'),
                'manual_total', count(*) FILTER (WHERE source = 'manual_reset')
              ) AS info
              FROM ata_attempts WHERE tech_id = t.id GROUP BY lesson_code
@@ -139,6 +143,10 @@ BEGIN
                           AND source IS DISTINCT FROM 'manual_reset'),
            'manual_month', count(*) FILTER (WHERE source = 'manual_reset'
                           AND attempted_at >= date_trunc('month', now())),
+           'days30_count', count(*) FILTER (WHERE attempted_at >= now() - interval '30 days'
+                          AND source IS DISTINCT FROM 'manual_reset'),
+           'manual_30', count(*) FILTER (WHERE source = 'manual_reset'
+                          AND attempted_at >= now() - interval '30 days'),
            'manual_total', count(*) FILTER (WHERE source = 'manual_reset')
          ) AS info
          FROM ata_attempts WHERE tech_id = t.id GROUP BY lesson_code
