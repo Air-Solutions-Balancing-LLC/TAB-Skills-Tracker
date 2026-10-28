@@ -1921,7 +1921,7 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
       <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
-    <div id="ata-brenda-note" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fafbfe"></div>
+    <div id="ata-brenda-note" style="display:none;align-items:center;gap:8px;margin:0 0 8px;font-size:12px;color:#555"></div>
     <div id="ata-schedule-hold" style="display:none;border:1px solid #e7d7b8;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fffaf1"></div>
     <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
@@ -5133,9 +5133,8 @@ function ataBrendaReminder(tech){
 function ataBrendaListHtml(tech,active){
   if(!active||!tech)return '';
   const b=ataBrendaReminder(tech);
-  if(b.book)return `<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">Book Brenda · ${b.reasons.map(adminEsc).join(' · ')}</div>`;
-  if(!b.resets&&!b.behind)return '';
-  return `<div style="margin-top:4px;font-size:10px;font-weight:700;color:#555">${b.resets} reset${b.resets===1?'':'s'} ${adminEsc(b.phrase)} · ${b.behind} behind</div>`;
+  if(!b.book)return '';
+  return ` <span title="${adminEsc(b.reasons.join(' · '))}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">Book Brenda</span>`;
 }
 function ataRenderBrendaNote(){
   const el=document.getElementById('ata-brenda-note');
@@ -5143,19 +5142,9 @@ function ataRenderBrendaNote(){
   const tech=ataFindTech(ataReportTechId);
   if(!tech){el.style.display='none';el.innerHTML='';return;}
   const b=ataBrendaReminder(tech);
-  el.style.display='block';
-  if(b.book){
-    el.style.borderColor='#f0c2c2';
-    el.style.background='#FDECEA';
-    el.innerHTML=`<div style="font-weight:800;color:#C0392B">Book a call with Brenda</div>
-      <div style="font-size:13px;color:#333;margin-top:4px">${adminEsc(tech.name)} has ${b.reasons.map(adminEsc).join(' and ')}.</div>
-      <div style="font-size:12px;color:#555;margin-top:4px">Resets ${adminEsc(b.phrase)}: <b>${b.resets}</b> · Lessons behind: <b>${b.behind}</b></div>`;
-  }else{
-    el.style.borderColor='#e2e6ee';
-    el.style.background='#fafbfe';
-    el.innerHTML=`<div style="font-size:13px;color:#333">Resets ${adminEsc(b.phrase)}: <b>${b.resets}</b> · Lessons behind: <b>${b.behind}</b></div>
-      <div style="font-size:12px;color:#777;margin-top:3px">Book a call with Brenda at 3 resets or when someone is 3 lessons behind.</div>`;
-  }
+  el.style.display='flex';
+  const pill=b.book?`<span title="${adminEsc(b.reasons.join(' · '))}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">Book with Brenda</span>`:'';
+  el.innerHTML=`<span>Resets ${adminEsc(b.phrase)}: <b style="color:#1B3A6B">${b.resets}</b></span>${pill}`;
 }
 function ataResetDisplay(lr){
   const rm=lr.resets||0,tot=lr.resetsTotal||0;
@@ -5847,7 +5836,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
         String(s.totalFailed||0),
-        pdfSafeText((b.resets||0)+(b.resets===1?' reset ':' resets ')+b.phrase+(b.book?' - Book Brenda':''))
+        pdfSafeText(String(b.resets||0)+(b.book?' - Book Brenda':''))
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -5949,22 +5938,24 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // Reset count, lessons behind, and the Brenda reminder.
+  // One line: reset count, and Book Brenda only when it applies.
   const brenda=ataBrendaReminder(tech);
-  const line=brenda.book
-    ?('Book a call with Brenda — '+brenda.reasons.join(' and '))
-    :('Resets '+brenda.phrase+': '+brenda.resets+' · Lessons behind: '+brenda.behind);
-  const extra=[];
-  if(s.totalFailed)extra.push(s.totalFailed+' failed (<80%)');
   doc.setFontSize(9);doc.setFont('helvetica','bold');
-  const noteLines=doc.splitTextToSize(pdfSafeText((brenda.book?'⚠  ':'')+line+(extra.length?('  ·  '+extra.join('  ·  ')):'')) ,contentW-20);
-  const noteH=Math.max(22, noteLines.length*12+10);
-  needPage(noteH+8);
-  if(brenda.book){doc.setFillColor(253,236,234);doc.setTextColor(192,57,43);}
-  else{doc.setFillColor(246,248,252);doc.setTextColor(60,70,90);}
-  doc.roundedRect(margin,y,contentW,noteH,4,4,'F');
-  noteLines.forEach((ln,i)=>doc.text(ln,margin+10,y+14+i*12));
-  y+=noteH+10;
+  if(brenda.book){
+    const note=pdfSafeText('Book a call with Brenda - '+brenda.reasons.join(' and ')+(s.totalFailed?('  ·  '+s.totalFailed+' failed'):''));
+    const noteLines=doc.splitTextToSize(note,contentW-20);
+    const noteH=Math.max(22, noteLines.length*12+10);
+    needPage(noteH+8);
+    doc.setFillColor(253,236,234);doc.setTextColor(192,57,43);
+    doc.roundedRect(margin,y,contentW,noteH,4,4,'F');
+    noteLines.forEach((ln,i)=>doc.text(ln,margin+10,y+14+i*12));
+    y+=noteH+10;
+  }else{
+    needPage(16);
+    doc.setTextColor(80,80,80);
+    doc.text(pdfSafeText('Resets '+brenda.phrase+': '+brenda.resets+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
+    y+=16;
+  }
 
   // Lesson tables per program — every lesson is one week (88 weeks across the 3 modules).
   const cols=[
@@ -6139,18 +6130,17 @@ function ataRenderScheduleHold(){
   const programs=ATA_PROGRAMS.filter(p=>ataStart(tech,p)&&ataProgramRequired(tech,p));
   if(!programs.length){box.style.display='none';box.innerHTML='';return;}
   const today=ataToday();
-  const first=String(tech.name||'This technician').split(' ')[0];
   const blocks=programs.map(pr=>{
     const paused=ataProgramPaused(tech,pr);
     const past=ataPastDueOpenCount(tech,pr,today);
     const plan=ataCatchUpPlan(tech,pr);
     const hold=ataHold(tech,pr);
     const dueTxt=plan?ataFmtDeadline(plan.target):'';
-    let msg='Nothing is past due.';
-    if(!plan)msg='Every tracked lesson in this module is already passed.';
-    else if(paused&&past)msg=past+' lesson'+(past===1?' is':'s are')+' past due. '+adminEsc(first)+' sees Paused, not Overdue.';
-    else if(paused)msg='Paused. New Thursdays will not show as overdue.';
-    else if(past)msg=past+' lesson'+(past===1?' is':'s are')+' past due, so this module shows as overdue.';
+    let msg='Nothing past due';
+    if(!plan)msg='All passed';
+    else if(paused&&past)msg=past+' past due · shows as Paused';
+    else if(paused)msg='Paused';
+    else if(past)msg=past+' past due';
     const buttons=[];
     if(plan){
       buttons.push(paused
@@ -6159,18 +6149,16 @@ function ataRenderScheduleHold(){
     }
     if(plan&&past)buttons.push(`<button type="button" class="btn" style="background:#1B3A6B;font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','shift')">Move due dates</button>`);
     if(hold.weeks>0)buttons.push(`<button type="button" class="btn btn-outline" style="font-size:12px;padding:7px 12px" onclick="ataSetProgramHold('${pr}','clear')">Put original dates back</button>`);
-    const hint=plan&&past?`<div style="font-size:12px;color:#555;margin-top:6px">Move due dates sets <b>${adminEsc(plan.code)}</b> to ${adminEsc(dueTxt)}. Every Thursday in ${ATA_PROGRAM_LABEL[pr]} moves forward together, so those lessons are no longer overdue.</div>`:'';
-    return `<div style="padding:8px 0;border-top:1px solid #f0e6d2">
-      <div style="font-weight:800;color:#1B3A6B;font-size:13px">${ATA_PROGRAM_LABEL[pr]}${paused?' · Paused':''}</div>
-      <div style="font-size:13px;color:#333;margin:4px 0 8px">${msg}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">${buttons.join('')}</div>
+    const hint=plan&&past?`<span style="font-size:12px;color:#777">Moves ${adminEsc(plan.code)} to ${adminEsc(dueTxt)}.</span>`:'';
+    return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <span style="font-weight:700;color:#1B3A6B;font-size:13px">${ATA_PROGRAM_LABEL[pr]}${paused?' · Paused':''}</span>
+      <span style="font-size:12px;color:#555">${msg}</span>
       ${hint}
+      <span style="margin-left:auto;display:flex;flex-wrap:wrap;gap:6px">${buttons.join('')}</span>
     </div>`;
   }).join('');
   box.style.display='block';
-  box.innerHTML=`<div style="font-weight:800;color:#8a5a00;font-size:14px">Pause the schedule</div>
-    <div style="font-size:12px;color:#666;margin-top:2px">Use this when someone stopped on a lesson and the Thursdays kept going. <b>Pause schedule</b> and <b>Move due dates</b> slide this module forward so he will not see those lessons as overdue.</div>
-    ${blocks}`;
+  box.innerHTML=blocks;
 }
 async function ataSetProgramHold(program,action){
   const tech=ataFindTech(ataReportTechId);
