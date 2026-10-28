@@ -5131,7 +5131,7 @@ function ataBrendaReminder(tech){
   return {resets,behind,phrase,book:reasons.length>0,reasons};
 }
 function ataBrendaListHtml(tech,active){
-  if(!active||!tech)return '';
+  if(!userIsAdmin||!active||!tech)return '';
   const b=ataBrendaReminder(tech);
   if(!b.book)return '';
   return ` <span title="${adminEsc(b.reasons.join(' · '))}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">Book Brenda</span>`;
@@ -5139,6 +5139,7 @@ function ataBrendaListHtml(tech,active){
 function ataRenderBrendaNote(){
   const el=document.getElementById('ata-brenda-note');
   if(!el)return;
+  if(!userIsAdmin){el.style.display='none';el.innerHTML='';return;}
   const tech=ataFindTech(ataReportTechId);
   if(!tech){el.style.display='none';el.innerHTML='';return;}
   const b=ataBrendaReminder(tech);
@@ -5836,7 +5837,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
         String(s.totalFailed||0),
-        pdfSafeText(String(b.resets||0)+(b.book?' - Book Brenda':''))
+        pdfSafeText(String(b.resets||0)+(userIsAdmin&&b.book?' - Book Brenda':''))
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -5848,7 +5849,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
         else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
-        else if(i===7&&(b.book||b.resets>0))doc.setTextColor(192,57,43);
+        else if(i===7&&userIsAdmin&&(b.book||b.resets>0))doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
@@ -5938,10 +5939,10 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // One line: reset count, and Book Brenda only when it applies.
+  // One line for admins: reset count, and Book Brenda only when it applies.
   const brenda=ataBrendaReminder(tech);
   doc.setFontSize(9);doc.setFont('helvetica','bold');
-  if(brenda.book){
+  if(userIsAdmin&&brenda.book){
     const note=pdfSafeText('Book a call with Brenda - '+brenda.reasons.join(' and ')+(s.totalFailed?('  ·  '+s.totalFailed+' failed'):''));
     const noteLines=doc.splitTextToSize(note,contentW-20);
     const noteH=Math.max(22, noteLines.length*12+10);
@@ -5950,7 +5951,7 @@ function buildAtaTechDoc(tech,opts){
     doc.roundedRect(margin,y,contentW,noteH,4,4,'F');
     noteLines.forEach((ln,i)=>doc.text(ln,margin+10,y+14+i*12));
     y+=noteH+10;
-  }else{
+  }else if(userIsAdmin){
     needPage(16);
     doc.setTextColor(80,80,80);
     doc.text(pdfSafeText('Resets '+brenda.phrase+': '+brenda.resets+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
@@ -6028,7 +6029,7 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   If a due Thursday is a holiday, that lesson moves to the next Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   A 4th reset requires a call with Brenda   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   If a due Thursday is a holiday, that lesson moves to the next Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month'+(userIsAdmin?'   ·   A 4th reset requires a call with Brenda':'')+'   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
@@ -6448,7 +6449,7 @@ function renderPmAta(){
     const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return`<tr>
     <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
-    <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed</div>`:''}${ataBrendaListHtml(s.tech,cat==='active')}</td>
+    <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed</div>`:''}</td>
     <td>${cell(s,'basic')}</td>
     <td>${cell(s,'intermediate')}</td>
     <td>${cell(s,'advanced')}</td>
@@ -6613,7 +6614,7 @@ function renderTechAta(tech){
     if(rd.empty)return '<span style="color:#bbb">—</span>';
     const col=lr.overLimit?'#C0392B':(lr.resets||0)>=2?'#b58900':'#555';
     let txt=`<span style="color:${col};font-weight:700">${adminEsc(rd.text)}</span>`;
-    if(lr.overLimit)txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
+    if(lr.overLimit&&!(techViewMode==='readonly'&&!userIsAdmin))txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
     return txt;
   };
   const stateBadge=(lr)=>{
@@ -6643,7 +6644,7 @@ function renderTechAta(tech){
     <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due Thursday (holiday Thursdays skip to the next Thursday) · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
     ${s.status==='paused'?'<div style="margin-top:10px;font-size:13px;color:#555">Your schedule is paused, so these lessons are not marked overdue.</div>':''}
-    ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div><div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div></div>`:''}
+    ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div>${techViewMode==='readonly'&&!userIsAdmin?'':`<div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div>`}</div>`:''}
   </div>`;
   body.innerHTML=overall+sections;
 }
