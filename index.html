@@ -4694,10 +4694,14 @@ function ataNextDueThursday(fromDate){
   return d;
 }
 
+// Pause flags the database cannot store yet. Chad Lorenz, Basic.
+const ATA_PAUSED_PROGRAMS={'83':{basic:true}};
 function ataHold(tech,program){
   const h=tech&&tech.holds&&tech.holds[program];
-  if(!h)return {paused:false,from_week:0,weeks:0};
-  return {paused:h.paused===true||h.paused==='true',from_week:Number(h.from_week)||0,weeks:Number(h.weeks)||0};
+  if(h)return {paused:h.paused===true||h.paused==='true',from_week:Number(h.from_week)||0,weeks:Number(h.weeks)||0};
+  const local=ATA_PAUSED_PROGRAMS[String(tech&&tech.id||'')];
+  if(local&&local[program])return {paused:true,from_week:0,weeks:0};
+  return {paused:false,from_week:0,weeks:0};
 }
 function ataProgramPaused(tech,program){return ataHold(tech,program).paused;}
 function ataAddWeeks(fromDate,weeks){
@@ -6267,9 +6271,35 @@ async function ataSetProgramHold(program,action){
   try{
     await rpc('app_ata_set_hold',{p_tech_id:tech.id,p_program:program,p_paused:paused,p_from_week:fromWeek,p_weeks:weeks});
   }catch(e){
+    if(action==='resume'){
+      const key=String(tech.id);
+      if(ATA_PAUSED_PROGRAMS[key]){
+        const next=Object.assign({},ATA_PAUSED_PROGRAMS[key]);
+        delete next[program];
+        if(Object.keys(next).length)ATA_PAUSED_PROGRAMS[key]=next;
+        else delete ATA_PAUSED_PROGRAMS[key];
+      }
+      [ataAdminData,ataPmData].forEach(src=>{
+        const row=src&&(src.techs||[]).find(x=>String(x.id)===String(tech.id));
+        if(row&&row.holds){row.holds=Object.assign({},row.holds);row.holds[program]={paused:false,from_week:0,weeks:0};}
+      });
+      ataRenderScheduleHold();
+      if(ataReportMode==='report')ataReportPreview();
+      else if(ataReportMode==='edit')ataRenderProgressEditPanel();
+      try{ataRenderAdmin();}catch(err){}
+      try{if(document.getElementById('pm-ata-wrap'))renderPmAta();}catch(err){}
+      return;
+    }
     if(action==='pause'||action==='shift'){
       const moved=await ataShiftProgramStart(tech,program);
       if(!moved)return;
+      if(action==='pause'){
+        [ataAdminData,ataPmData].forEach(src=>{
+          const row=src&&(src.techs||[]).find(x=>String(x.id)===String(tech.id));
+          if(row){row.holds=Object.assign({},row.holds||{});row.holds[program]={paused:true,from_week:0,weeks:0};}
+        });
+        ATA_PAUSED_PROGRAMS[String(tech.id)]=Object.assign({},ATA_PAUSED_PROGRAMS[String(tech.id)]||{},{[program]:true});
+      }
       ataRenderScheduleHold();
       if(ataReportMode==='report')ataReportPreview();
       else if(ataReportMode==='edit')ataRenderProgressEditPanel();
@@ -6647,6 +6677,7 @@ function ataHomeProgramCell(summary,program){
   let detail='';
   if(ps.start){
     detail=`${ps.completed}/${ps.total} done · ${pct}%`
+      +(ps.paused?` · <span style="color:#6b7280;font-weight:700">Paused</span>`:'')
       +(ps.overdue?` · <span style="color:#C0392B;font-weight:700">${ps.overdue} overdue</span>`:'')
       +((ps.failed||0)?` · <span style="color:#C0392B;font-weight:700">${ps.failed} failed</span>`:'');
   }else if(locked){
@@ -6684,6 +6715,7 @@ function renderTechAtaHomeCard(tech){
       ${clickable?`<button type="button" class="admin-chrome-btn" onclick="event.stopPropagation();showTechAta()">ATA Report</button>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${programCells}</div>
+    ${s.status==='paused'?'<div style="margin-top:8px;font-size:13px;color:#555">Your schedule is paused, so these lessons are not marked overdue.</div>':''}
   </div>`;
 }
 function renderTechAta(tech){
