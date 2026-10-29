@@ -4775,6 +4775,105 @@ function ataImpliedRetake(tech,code){
   const auto=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
   return auto===0 && (i.count||0)>0 && i.passed!==true;
 }
+// Completed resets from the Quiz Reset Log. Shown in the counts; nobody is asked to call.
+const ATA_RESET_LOG=[
+  {name:"Andrew Lacobee",code:"TAB-B-109",date:"2026-07-22"},
+  {name:"Luis Rosendo",code:"TAB-B-207",date:"2026-07-23"},
+  {name:"Luis Rosendo",code:"TAB-B-208",date:"2026-07-23"},
+  {name:"Richard Wilson",code:"TAB-A-201",date:"2026-07-23"},
+  {name:"Chad Lorenz",code:"TAB-B-205",date:"2026-07-23"},
+  {name:"Richard Wilson",code:"TAB-A-202",date:"2026-07-29"},
+  {name:"Dom Jean-Louis",code:"TAB-I-103",date:"2026-07-29"},
+  {name:"Clinton Duru",code:"TAB-B-101",date:"2026-07-30"},
+  {name:"Sean Sutherland",code:"TAB-A-203",date:"2026-07-31"},
+  {name:"Richard Wilson",code:"TAB-A-203",date:"2026-08-06"},
+  {name:"Angel Lopez",code:"TAB-B-301",date:"2026-08-18"},
+  {name:"Angel Lopez",code:"TAB-B-110",date:"2026-08-18"},
+  {name:"Javed Esa Mohammed",code:"TAB-B-101",date:"2026-08-19"},
+  {name:"David Summiel",code:"TAB-B-101",date:"2026-08-20"},
+  {name:"Bilardo Artiga",code:"TAB-B-101",date:"2026-08-21"},
+  {name:"Angel Lopez",code:"TAB-B-302",date:"2026-08-24"},
+  {name:"James Bell",code:"TAB-B-106",date:"2026-08-27"},
+  {name:"Richard Wilson",code:"TAB-A-302",date:"2026-08-28"},
+  {name:"David Summiel",code:"TAB-B-105",date:"2026-08-28"},
+  {name:"Clinton Duru",code:"TAB-B-105",date:"2026-08-31"},
+  {name:"Derrick Jackson",code:"TAB-B-102",date:"2026-08-31"},
+  {name:"Hakym Conejo",code:"TAB-B-101",date:"2026-08-31"},
+  {name:"Ryan Dinger",code:"TAB-B-109",date:"2026-08-31"},
+  {name:"Joshua Kropf",code:"TAB-B-109",date:"2026-08-31"},
+  {name:"David Summiel",code:"TAB-B-108",date:"2026-09-04"},
+  {name:"Cameron Smith",code:"TAB-A-201",date:"2026-09-04"},
+  {name:"Paul Samuelson",code:"TAB-B-111",date:"2026-09-09"},
+  {name:"James Bell",code:"TAB-B-109",date:"2026-09-17"},
+  {name:"James Bell",code:"TAB-B-110",date:"2026-09-17"},
+  {name:"Luis Rosendo",code:"TAB-B-310",date:"2026-09-18"},
+  {name:"Clinton Duru",code:"TAB-B-108",date:"2026-09-22"},
+  {name:"Derrick Jackson",code:"TAB-B-105",date:"2026-09-22"},
+  {name:"Andrew Lacobee",code:"TAB-B-308",date:"2026-09-22"},
+  {name:"Angel Lopez",code:"TAB-B-206",date:"2026-09-23"},
+  {name:"Jason Chinchilla",code:"TAB-B-109",date:"2026-09-23"},
+  {name:"Bilardo Artiga",code:"TAB-B-105",date:"2026-09-24"},
+  {name:"Ryan Dinger",code:"TAB-B-111",date:"2026-09-25"},
+  {name:"Ryan Dinger",code:"TAB-B-301",date:"2026-09-25"},
+  {name:"Mitchell Peterson",code:"TAB-B-102",date:"2026-09-27"},
+  {name:"Mitchell Peterson",code:"TAB-B-102",date:"2026-09-28"},
+  {name:"Austin Annunziata",code:"TAB-B-101",date:"2026-09-28"},
+  {name:"Austin Annunziata",code:"TAB-B-102",date:"2026-09-28"},
+  {name:"Chad Lorenz",code:"TAB-B-107",date:"2026-09-28"},
+  {name:"Jason Chinchilla",code:"TAB-B-103",date:"2026-09-28"},
+  {name:"Javed Esa Mohammed",code:"TAB-B-108",date:"2026-10-04"},
+  {name:"Andrew Lacobee",code:"TAB-B-401",date:"2026-10-05"},
+  {name:"Javed Esa Mohammed",code:"TAB-B-109",date:"2026-10-05"},
+  {name:"Luis Rosendo",code:"TAB-B-309",date:"2026-10-06"},
+  {name:"Angel Lopez",code:"TAB-B-207",date:"2026-10-07"},
+  {name:"Evan Smith",code:"TAB-B-108",date:"2026-10-07"},
+  {name:"Chad Lorenz",code:"TAB-B-108",date:"2026-10-08"},
+  {name:"Sebastian Rosado",code:"TAB-B-104",date:"2026-10-08"},
+  {name:"Sebastian Rosado",code:"TAB-B-105",date:"2026-10-08"},
+  {name:"Paul Samuelson",code:"TAB-B-301",date:"2026-10-08"},
+  {name:"Cameron Smith",code:"TAB-A-203",date:"2026-10-08"},
+  {name:"Bilardo Artiga",code:"TAB-B-109",date:"2026-10-13"},
+  {name:"Clinton Duru",code:"TAB-B-111",date:"2026-10-14"},
+  {name:"Derrick Jackson",code:"TAB-B-108",date:"2026-10-14"},
+  {name:"Chad Lorenz",code:"TAB-B-108",date:"2026-10-15"},
+  {name:"Jason Chinchilla",code:"TAB-B-107",date:"2026-10-15"},
+  {name:"Paul Samuelson",code:"TAB-B-301",date:"2026-10-16"},
+  {name:"Austin Annunziata",code:"TAB-B-108",date:"2026-10-16"},
+  {name:"Ryan Dinger",code:"TAB-B-307",date:"2026-10-18"},
+  {name:"Evan Smith",code:"TAB-B-110",date:"2026-10-20"},
+  {name:"Austin Annunziata",code:"TAB-B-108",date:"2026-10-20"},
+  {name:"Clinton Duru",code:"TAB-B-203",date:"2026-10-20"},
+  {name:"Cameron Smith",code:"TAB-A-301",date:"2026-10-20"},
+  {name:"Sean Sutherland",code:"TAB-A-301",date:"2026-10-21"},
+  {name:"Nathan Cline",code:"TAB-B-107",date:"2026-10-21"},
+  {name:"Jason Chinchilla",code:"TAB-B-107",date:"2026-10-21"},
+  {name:"Sean Sutherland",code:"TAB-A-302",date:"2026-10-22"},
+  {name:"David Summiel",code:"TAB-B-204",date:"2026-10-22"}
+];
+function ataResetLogFor(tech){
+  const n=String((tech&&tech.name)||'').trim().toLowerCase();
+  if(!n)return [];
+  return ATA_RESET_LOG.filter(r=>r.name.toLowerCase()===n);
+}
+function ataLogExtra(tech,code){
+  const rows=ataResetLogFor(tech).filter(r=>r.code===code);
+  if(!rows.length)return {total:0,window:0};
+  const i=ataAttemptInfo(tech,code)||{};
+  const rolling=ataUsesRollingResets(tech);
+  const today=ataToday();
+  const cutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
+  const inWindow=rows.filter(r=>{
+    const d=parseDateOnly(r.date);
+    if(!d)return false;
+    if(rolling)return d>=cutoff;
+    return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth();
+  }).length;
+  const manualWindow=rolling?(i.manual_30||0):(i.manual_month||0);
+  return {
+    total:Math.max(0, rows.length-(i.manual_total||0)),
+    window:Math.max(0, inWindow-manualWindow)
+  };
+}
 // True once the roster includes a rolling 30-day count. Until then, use this calendar month.
 function ataUsesRollingResets(tech){
   const attempts=(tech&&tech.attempts)||{};
@@ -4789,22 +4888,24 @@ function ataResetWindowPhrase(tech){
 }
 // Resets in the window = auto retakes (attempts in the window - 1, min 0) + manual resets in that window.
 function ataResetsThisMonth(tech,code){
+  const extra=ataLogExtra(tech,code).window;
   const i=ataAttemptInfo(tech,code);
-  if(!i)return 0;
+  if(!i)return extra;
   const rolling=ataUsesRollingResets(tech);
   const attempts=rolling?(i.days30_count||0):(i.month_count||0);
   const manual=rolling?(i.manual_30||0):(i.manual_month||0);
   let n=Math.max(0,attempts-1)+manual;
   if(n===0&&ataImpliedRetake(tech,code)&&attempts>0)n=1;
-  return n;
+  return n+extra;
 }
 // Total resets ever = auto retakes (total attempts - 1, min 0) + manual resets logged all-time.
 function ataResetsTotal(tech,code){
+  const extra=ataLogExtra(tech,code).total;
   const i=ataAttemptInfo(tech,code);
-  if(!i)return 0;
+  if(!i)return extra;
   let n=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
   if(n===0&&ataImpliedRetake(tech,code))n=1;
-  return n;
+  return n+extra;
 }
 // Continuous week number (1..88) across the three modules, in curriculum order.
 function ataGlobalWeeks(){
@@ -5119,7 +5220,7 @@ function ataTechResetCounts(tech){
   });
   return {month,total,atLimit};
 }
-// Book with Brenda at 3 resets in the window, or when 3 lessons are behind.
+// Reset totals for the open report. No call reminder.
 function ataBrendaReminder(tech){
   const phrase=ataResetWindowPhrase(tech);
   const summary=ataTechSummary(tech);
@@ -5130,12 +5231,7 @@ function ataBrendaReminder(tech){
   if(behind>=3)reasons.push(behind+' lesson'+(behind===1?'':'s')+' behind');
   return {resets,behind,phrase,book:reasons.length>0,reasons};
 }
-function ataBrendaListHtml(tech,active){
-  if(!userIsAdmin||!active||!tech)return '';
-  const b=ataBrendaReminder(tech);
-  if(!b.book)return '';
-  return ` <span title="${adminEsc(b.reasons.join(' · '))}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">Book Brenda</span>`;
-}
+function ataBrendaListHtml(){return '';}
 function ataRenderBrendaNote(){
   const el=document.getElementById('ata-brenda-note');
   if(!el)return;
@@ -5143,9 +5239,10 @@ function ataRenderBrendaNote(){
   const tech=ataFindTech(ataReportTechId);
   if(!tech){el.style.display='none';el.innerHTML='';return;}
   const b=ataBrendaReminder(tech);
-  el.style.display='flex';
-  const pill=b.book?`<span title="${adminEsc(b.reasons.join(' · '))}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">Book with Brenda</span>`:'';
-  el.innerHTML=`<span>Resets ${adminEsc(b.phrase)}: <b style="color:#1B3A6B">${b.resets}</b></span>${pill}`;
+  const log=ataResetLogFor(tech);
+  el.style.display='block';
+  const hist=log.length?`<div style="margin-top:4px;font-size:12px;color:#666;line-height:1.45">Reset history: ${log.map(r=>adminEsc(fmtDate(r.date)+' · '+r.code)).join(' &nbsp; ')}</div>`:'';
+  el.innerHTML=`<span>Resets ${adminEsc(b.phrase)}: <b style="color:#1B3A6B">${b.resets}</b></span>${hist}`;
 }
 function ataResetDisplay(lr){
   const rm=lr.resets||0,tot=lr.resetsTotal||0;
@@ -5837,7 +5934,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
         String(s.totalFailed||0),
-        pdfSafeText(String(b.resets||0)+(userIsAdmin&&b.book?' - Book Brenda':''))
+        pdfSafeText(String(b.resets||0))
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -5849,7 +5946,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
         else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
-        else if(i===7&&userIsAdmin&&(b.book||b.resets>0))doc.setTextColor(192,57,43);
+        else if(i===7&&(b.resets||0)>0)doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
@@ -5939,19 +6036,10 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // One line for admins: reset count, and Book Brenda only when it applies.
+  // Reset count for admins. No call reminder.
   const brenda=ataBrendaReminder(tech);
-  doc.setFontSize(9);doc.setFont('helvetica','bold');
-  if(userIsAdmin&&brenda.book){
-    const note=pdfSafeText('Book a call with Brenda - '+brenda.reasons.join(' and ')+(s.totalFailed?('  ·  '+s.totalFailed+' failed'):''));
-    const noteLines=doc.splitTextToSize(note,contentW-20);
-    const noteH=Math.max(22, noteLines.length*12+10);
-    needPage(noteH+8);
-    doc.setFillColor(253,236,234);doc.setTextColor(192,57,43);
-    doc.roundedRect(margin,y,contentW,noteH,4,4,'F');
-    noteLines.forEach((ln,i)=>doc.text(ln,margin+10,y+14+i*12));
-    y+=noteH+10;
-  }else if(userIsAdmin){
+  if(userIsAdmin){
+    doc.setFontSize(9);doc.setFont('helvetica','bold');
     needPage(16);
     doc.setTextColor(80,80,80);
     doc.text(pdfSafeText('Resets '+brenda.phrase+': '+brenda.resets+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
@@ -6029,7 +6117,7 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   If a due Thursday is a holiday, that lesson moves to the next Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month'+(userIsAdmin?'   ·   A 4th reset requires a call with Brenda':'')+'   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   If a due Thursday is a holiday, that lesson moves to the next Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
@@ -6613,9 +6701,7 @@ function renderTechAta(tech){
     const rd=ataResetDisplay(lr);
     if(rd.empty)return '<span style="color:#bbb">—</span>';
     const col=lr.overLimit?'#C0392B':(lr.resets||0)>=2?'#b58900':'#555';
-    let txt=`<span style="color:${col};font-weight:700">${adminEsc(rd.text)}</span>`;
-    if(lr.overLimit&&!(techViewMode==='readonly'&&!userIsAdmin))txt+='<div style="font-size:10px;color:#C0392B;font-weight:700">Schedule a call with Brenda</div>';
-    return txt;
+    return `<span style="color:${col};font-weight:700">${adminEsc(rd.text)}</span>`;
   };
   const stateBadge=(lr)=>{
     const st=ataLessonStatusLabel(lr,today);
@@ -6644,7 +6730,7 @@ function renderTechAta(tech){
     <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due Thursday (holiday Thursdays skip to the next Thursday) · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
     ${s.status==='paused'?'<div style="margin-top:10px;font-size:13px;color:#555">Your schedule is paused, so these lessons are not marked overdue.</div>':''}
-    ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div>${techViewMode==='readonly'&&!userIsAdmin?'':`<div style="font-size:12px;color:#555">Catch up as soon as you can. After ${ATA_MAX_RESETS} resets on a test in one month, schedule a call with Brenda.</div>`}</div>`:''}
+    ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div></div>`:''}
   </div>`;
   body.innerHTML=overall+sections;
 }
