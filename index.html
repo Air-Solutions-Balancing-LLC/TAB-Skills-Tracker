@@ -966,7 +966,7 @@ body.mobile-nav-open{overflow:hidden}
         </svg>
         Sign in with Microsoft
       </button>
-      <div class="auth-out">Use your Airadigm Microsoft account and Authenticator</div>
+      <div class="auth-out">Use your company Microsoft account and Authenticator</div>
     </div>
   </div>
 </div>
@@ -3356,7 +3356,7 @@ let sbClient=null,sbAccessToken=null;
 let weeklyData=null,weeklyLinkToken=null,weeklyLinkRegion=null,weeklyPublicMode=false;
 
 // Company Microsoft domains allowed to sign in
-const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com'];
+const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com','usabalancing.com'];
 function isAllowedEmail(email){
   const d=(email||'').trim().toLowerCase().split('@')[1]||'';
   return ALLOWED_EMAIL_DOMAINS.includes(d);
@@ -3562,7 +3562,7 @@ async function handleSession(session){
   const email=sessionEmail(session);
   if(!email){err.textContent='Could not read your Microsoft account email.';err.style.display='block';return;}
   if(!isAllowedEmail(email)){
-    err.textContent='Only Airadigm or Kitchen Energy Solutions company accounts can sign in.';
+    err.textContent='Only Airadigm, Kitchen Energy Solutions, or USA Balancing company accounts can sign in.';
     err.style.display='block';
     try{await sbClient.auth.signOut();}catch(e){console.warn(e);}
     return;

@@ -19,7 +19,8 @@ IMMUTABLE
 AS $$
   SELECT lower(split_part(trim(p_email), '@', 2)) IN (
     'airadigmsolutions.com',
-    'kitchenenergysolutions.com'
+    'kitchenenergysolutions.com',
+    'usabalancing.com'
   );
 $$;
 
