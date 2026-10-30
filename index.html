@@ -4724,10 +4724,13 @@ function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program
 const ATA_PASS_PCT=80;
 const ATA_MAX_RESETS=3;
 // Passed only when the best recorded score is at least 80%.
-// A Teachable "complete" flag, or a lesson with no grade, is not a pass.
+// Teachable can also mark a lesson complete with no quiz percent. That counts as done.
+// A score under 80% does not.
 function ataIsDone(tech,code){
   const best=ataBestScore(tech,code);
-  return best!=null&&Number(best)>=ATA_PASS_PCT;
+  if(best!=null)return Number(best)>=ATA_PASS_PCT;
+  const c=ataCompletionFor(tech,code);
+  return !!(c&&c.passed===true);
 }
 // A reset was already used when Teachable marked the lesson complete, a manual
 // reset was logged, or there is more than one graded attempt.
@@ -4896,9 +4899,8 @@ function ataBestScore(tech,code){
   if(a&&a.best!=null)vals.push(Number(a.best));
   return vals.length?Math.max.apply(null,vals):null;
 }
-// Teachable does not yet offer these Advanced 400/500 items (no Advanced 500
-// course, and Advanced 400 has no A-406 final). Keep them on the 88-week
-// schedule, but don't mark them Due soon / Behind / incomplete.
+// Teachable does not publish these yet. TAB-A-405 is the last Advanced lesson that counts.
+// Later lessons stay on the report, but they do not change the percent or overdue count.
 const ATA_UNTRACKED_LESSON_CODES=new Set(['TAB-A-406','TAB-A-501','TAB-A-502','TAB-A-503','TAB-A-504','TAB-A-505','TAB-A-506','TAB-A-507']);
 function ataLessonIsTracked(code){return !ATA_UNTRACKED_LESSON_CODES.has(String(code||'').toUpperCase());}
 
@@ -5244,6 +5246,7 @@ function ataLessonDisplay(lr,today){
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
   if(lr.done&&lr.best!=null&&Number(lr.best)>=ATA_PASS_PCT)return {t:'Passed',c:'#0F6E56'};
+  if(lr.done&&lr.best==null)return {t:'Complete',c:'#0F6E56'};
   if(lr.resetUsed||lr.state==='reset')return {t:'—',c:'#bbbbbb'};
   if(lr.state==='paused')return {t:'Paused',c:'#6b7280'};
   if(lr.failed)return {t:'Failed',c:'#C0392B'};
