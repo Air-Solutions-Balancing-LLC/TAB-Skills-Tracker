@@ -733,15 +733,25 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .tech-tenure-view-links .admin-chrome-btn{padding:6px 12px;font-size:12px;border-radius:10px}
 .tech-tenure-view-links .admin-chrome-btn:disabled{opacity:.45;cursor:default}
 .pm-preboot-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:12px;overflow:hidden}
-.pm-preboot-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;user-select:none}
-.pm-preboot-card-h:hover{background:#f8faff}
+.pm-preboot-card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;user-select:none}
+.pm-preboot-card-toggle{flex:1;min-width:0;cursor:pointer;border-radius:8px;padding:2px 4px;margin:-2px -4px}
+.pm-preboot-card-toggle:hover{background:#f8faff}
 .pm-preboot-card-name{font-size:14px;font-weight:800;color:#1B3A6B}
 .pm-preboot-card-meta{font-size:11px;color:#888;margin-top:2px}
+.pm-preboot-card-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .pm-preboot-card-pct{font-size:13px;font-weight:800;color:#1B3A6B;white-space:nowrap}
+.pm-preboot-card-pdf{padding:6px 10px;font-size:11px;font-weight:700;white-space:nowrap}
 .pm-preboot-card-body{display:none;border-top:1px solid #eef1f6;padding:0;overflow-x:auto}
 .pm-preboot-card.is-open .pm-preboot-card-body{display:block}
 .pm-preboot-card.is-open .pm-preboot-chev{transform:rotate(90deg)}
 .pm-preboot-chev{display:inline-block;color:#4A90D9;font-size:11px;margin-right:8px;transition:transform .15s}
+.pm-preboot-dl-wrap{position:relative;display:inline-flex}
+.pm-preboot-pdf-menu{display:none;position:absolute;z-index:50;top:calc(100% + 4px);right:0;min-width:240px;max-width:min(360px,92vw);max-height:320px;overflow:auto;background:#fff;border:1.5px solid #d8e0ec;border-radius:10px;box-shadow:0 8px 24px rgba(27,58,107,0.14);padding:6px 0}
+.pm-preboot-pdf-menu.open{display:block}
+.pm-preboot-pdf-menu-title{padding:8px 12px 6px;font-size:10px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.35px}
+.pm-preboot-pdf-menu button{display:block;width:100%;text-align:left;border:none;background:transparent;padding:9px 12px;font-size:13px;font-weight:600;color:#1B3A6B;cursor:pointer;font-family:inherit}
+.pm-preboot-pdf-menu button:hover{background:#f5f8ff}
+.pm-preboot-pdf-menu-empty{padding:12px;font-size:12px;color:#888}
 .pm-preboot-table{width:100%;border-collapse:collapse;font-size:12px}
 .pm-preboot-table th{text-align:left;padding:8px 12px;background:#EEF4FF;color:#1B3A6B;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}
 .pm-preboot-table td{padding:8px 12px;border-top:1px solid #f0f2f5;vertical-align:top;color:#333}
@@ -1163,6 +1173,10 @@ body.mobile-nav-open{overflow:hidden}
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-tasks-filter-btn" onclick="toggleAdminPreBootTasksFilter()">Show All Tasks</button>
+                <div class="pm-preboot-dl-wrap">
+                  <button type="button" class="btn" id="admin-preboot-tasks-download-btn" onclick="togglePreBootTechPdfMenu(event,'admin')">⬇ Download PDF</button>
+                  <div class="pm-preboot-pdf-menu" id="admin-preboot-tasks-pdf-menu" role="menu" aria-label="Choose technician for PDF"></div>
+                </div>
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootTasksReport()">Refresh</button>
               </div>
             </div>
@@ -1621,6 +1635,10 @@ body.mobile-nav-open{overflow:hidden}
             <div class="topbar-sub">Technicians with Pre-Bootcamp selected — tasks and mastery level</div>
           </div>
           <button type="button" class="admin-chrome-btn" id="pm-preboot-filter-btn" style="padding:7px 12px;font-size:12px" onclick="togglePmPreBootTaskFilter()">Show All Tasks</button>
+          <div class="pm-preboot-dl-wrap">
+            <button type="button" class="admin-chrome-btn" id="pm-preboot-download-btn" style="padding:7px 12px;font-size:12px" onclick="togglePreBootTechPdfMenu(event,'pm')">⬇ Download PDF</button>
+            <div class="pm-preboot-pdf-menu" id="pm-preboot-pdf-menu" role="menu" aria-label="Choose technician for PDF"></div>
+          </div>
           <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmPreBootReport()">Refresh</button>
         </div>
         <div class="page-body">
@@ -9551,9 +9569,17 @@ function weeklyReadRatings(form,techId){
   }
   return out;
 }
+function weeklyOpenTechIdsFromDom(wrap){
+  if(!wrap)return new Set();
+  return new Set([...wrap.querySelectorAll('.weekly-card.is-open')].map(el=>String(el.getAttribute('data-tech')||'')));
+}
+function weeklyRosterWrap(){
+  return document.getElementById(weeklyPublicMode?'weekly-public-wrap':'pm-weekly-wrap');
+}
 function buildWeeklyRosterHtml(data,opts){
   opts=opts||{};
   const canManageRoster=!!opts.canManageRoster;
+  const openTechIds=opts.openTechIds instanceof Set?opts.openTechIds:new Set(opts.openTechIds||[]);
   const techs=data&&data.techs||[];
   const roster=data&&data.roster||[];
   if(!roster.length){
@@ -9577,7 +9603,8 @@ function buildWeeklyRosterHtml(data,opts){
     </tr>`).join('')
       :`<tr><td colspan="11" style="color:#999">No evaluations yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
-    return`<div class="weekly-card" data-tech="${r.tech_id}">
+    const isOpen=openTechIds.has(String(r.tech_id));
+    return`<div class="weekly-card${isOpen?' is-open':''}" data-tech="${r.tech_id}">
       <div class="weekly-card-h" role="button" tabindex="0" onclick="toggleWeeklyCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeeklyCard(this);}">
         <div>
           <div class="weekly-card-name"><span class="weekly-chev">▶</span>${adminEsc(r.name)}</div>
@@ -9612,6 +9639,20 @@ function buildWeeklyRosterHtml(data,opts){
 function toggleWeeklyCard(el){
   const card=el&&el.closest('.weekly-card');
   if(card)card.classList.toggle('is-open');
+}
+/** Re-render roster while keeping expanded tech cards open (and optionally force one open). */
+function weeklyRerenderRoster(opts){
+  opts=opts||{};
+  const wrap=weeklyRosterWrap();
+  const openIds=weeklyOpenTechIdsFromDom(wrap);
+  if(opts.keepOpenTechId!=null&&opts.keepOpenTechId!=='')openIds.add(String(opts.keepOpenTechId));
+  if(weeklyPublicMode){
+    weeklyFillAddSelect('weekly-public-add-tech',weeklyData);
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:false,openTechIds:openIds});
+  }else{
+    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true,openTechIds:openIds});
+  }
 }
 function weeklyFillAddSelect(selectId,data,rosterOnly){
   const el=document.getElementById(selectId);if(!el)return;
@@ -9655,9 +9696,7 @@ async function weeklyAddTech(){
   if(!id){alert('Select a technician to add or restore.');return;}
   try{
     weeklyData=await rpc('app_weekly_add_tech',{p_token:currentToken,p_tech_id:id});
-    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
-    const wrap=document.getElementById('pm-weekly-wrap');
-    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+    weeklyRerenderRoster({keepOpenTechId:id});
   }catch(e){
     alert('Could not add or restore technician. '+(e.message||'Try again.'));
   }
@@ -9666,9 +9705,7 @@ async function weeklyArchiveTech(techId){
   if(!confirm('Archive this technician on Weekly Evaluations? Past notes are kept. Select them under Add / Restore to bring them back.'))return;
   try{
     weeklyData=await rpc('app_weekly_remove_tech',{p_token:currentToken,p_tech_id:techId});
-    weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
-    const wrap=document.getElementById('pm-weekly-wrap');
-    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
+    weeklyRerenderRoster();
   }catch(e){
     alert('Could not archive technician. '+(e.message||'Try again.'));
   }
@@ -9700,30 +9737,23 @@ async function weeklySubmitUpdate(ev,techId){
       p_action_plan:plan,
       p_ratings:ratings
     });
-    if(weeklyPublicMode)renderPublicWeekly();
-    else{
-      weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
-      const wrap=document.getElementById('pm-weekly-wrap');
-      if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
-    }
+    weeklyRerenderRoster({keepOpenTechId:techId});
   }catch(e){
     alert('Could not save update. '+(e.message||'Try again.'));
   }
 }
 async function weeklyDeleteUpdate(updateId){
   if(!confirm('Delete this Weekly Evaluation entry?'))return;
+  const wrap=weeklyRosterWrap();
+  const openCard=wrap&&wrap.querySelector(`.weekly-card.is-open`);
+  const keepId=openCard?openCard.getAttribute('data-tech'):null;
   try{
     weeklyData=await rpc('app_weekly_delete_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
       p_link_token:weeklyPublicMode?weeklyLinkToken:null,
       p_update_id:updateId
     });
-    if(weeklyPublicMode)renderPublicWeekly();
-    else{
-      weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
-      const wrap=document.getElementById('pm-weekly-wrap');
-      if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true});
-    }
+    weeklyRerenderRoster({keepOpenTechId:keepId});
   }catch(e){
     alert('Could not delete update. '+(e.message||'Try again.'));
   }
@@ -9733,9 +9763,7 @@ function renderPublicWeekly(){
   if(sub)sub.textContent=(regionLabel(weeklyData&&weeklyData.region||weeklyLinkRegion)||'Region')+' — add weekly notes for technicians on the list';
   const addRow=document.getElementById('weekly-public-add-row');
   if(addRow)addRow.style.display='flex';
-  weeklyFillAddSelect('weekly-public-add-tech',weeklyData);
-  const wrap=document.getElementById('weekly-public-wrap');
-  if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:false,sessionToken:null,linkToken:weeklyLinkToken});
+  weeklyRerenderRoster();
 }
 async function loadPublicWeeklyUpdates(){
   weeklyShowErr('weekly-public-err','');
@@ -9792,9 +9820,10 @@ function buildPreBootTasksReportHtml(rows,opts){
   opts=opts||{};
   const neededOnly=!!opts.neededOnly;
   const showRegion=!!opts.showRegion;
+  const source=opts.source==='admin'?'admin':'pm';
   const emptyMsg=opts.emptyMsg||'No technicians have Pre-Bootcamp selected.';
   if(!rows.length)return'<div class="admin-empty" style="padding:16px">'+adminEsc(emptyMsg)+'</div>';
-  return rows.map((r,idx)=>{
+  return rows.map((r)=>{
     const completed=parseChecklistCompleted(r.checklist_completed);
     const allTasks=pmPreBootSkillRows(completed);
     const needCount=allTasks.filter(t=>isPreBootTaskNeeded(t.level)).length;
@@ -9812,13 +9841,17 @@ function buildPreBootTasksReportHtml(rows,opts){
     const emptyTasks=neededOnly
       ?'<tr><td colspan="3" style="color:#0F6E56;font-weight:600">All tasks mastered (Can Perform Independently).</td></tr>'
       :'<tr><td colspan="3" style="color:#999">No Pre-Bootcamp tasks available.</td></tr>';
-    return`<div class="pm-preboot-card${open}" data-tech="${r.tech_id}">
-      <div class="pm-preboot-card-h" role="button" tabindex="0" onclick="togglePmPreBootCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePmPreBootCard(this);}">
-        <div>
+    const techId=Number(r.tech_id);
+    return`<div class="pm-preboot-card${open}" data-tech="${techId}">
+      <div class="pm-preboot-card-h">
+        <div class="pm-preboot-card-toggle" role="button" tabindex="0" onclick="togglePmPreBootCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePmPreBootCard(this);}">
           <div class="pm-preboot-card-name"><span class="pm-preboot-chev">▶</span>${adminEsc(r.name)}</div>
           <div class="pm-preboot-card-meta">${regionBit}${adminEsc(boot)} · ${adminEsc(last)} · ${needCount} task${needCount===1?'':'s'} still to master</div>
         </div>
-        <div class="pm-preboot-card-pct">${pct}%</div>
+        <div class="pm-preboot-card-actions">
+          <button type="button" class="admin-chrome-btn pm-preboot-card-pdf" title="Download open tasks PDF for ${adminEsc(r.name)}" onclick="downloadPreBootOpenTasksPdf(${techId},'${source}')">⬇ PDF</button>
+          <div class="pm-preboot-card-pct">${pct}%</div>
+        </div>
       </div>
       <div class="pm-preboot-card-body">
         <table class="pm-preboot-table">
@@ -9833,10 +9866,160 @@ function togglePmPreBootCard(el){
   const card=el&&el.closest('.pm-preboot-card');
   if(card)card.classList.toggle('is-open');
 }
+function preBootRowsForPdfSource(source){
+  if(source==='admin')return filteredAdminPreBootTasksRows();
+  return Array.isArray(pmPreBootRows)?pmPreBootRows:[];
+}
+function findPreBootTechRow(techId,source){
+  return preBootRowsForPdfSource(source).find(r=>String(r.tech_id)===String(techId))||null;
+}
+function preBootOpenTasksPdfFilename(r){
+  const iso=new Date().toISOString().slice(0,10);
+  const name=pdfSafeText(r&&r.name||'technician').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'technician';
+  return 'Pre-Bootcamp-Open-Tasks-'+name+'-'+iso+'.pdf';
+}
+function buildPreBootOpenTasksPdfDoc(r){
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
+  const margin=44;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const lh=13;
+  const completed=parseChecklistCompleted(r.checklist_completed);
+  const allTasks=pmPreBootSkillRows(completed);
+  const openTasks=allTasks.filter(t=>isPreBootTaskNeeded(t.level));
+  const pct=allTasks.length?Math.round(allTasks.reduce((s,t)=>s+checklistItemPct(t.level),0)/allTasks.length):0;
+  const cols=[
+    {label:'Category',w:contentW*0.24},
+    {label:'Task',w:contentW*0.48},
+    {label:'Current level',w:contentW*0.28}
+  ];
+  function needPage(h){
+    if(y+h>pageH-margin){doc.addPage();y=margin;return true;}
+    return false;
+  }
+  function drawTableHeader(){
+    needPage(26);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-8,contentW,20,'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    let x=margin+4;
+    cols.forEach(c=>{doc.text(c.label,x,y+5,{maxWidth:c.w-8});x+=c.w;});
+    y+=20;
+  }
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,58,107);
+  doc.text('Pre-Bootcamp Open Tasks',margin,y);
+  y+=20;
+  doc.setFontSize(13);
+  doc.setTextColor(26,26,46);
+  doc.text(pdfSafeText(r.name||'Technician'),margin,y);
+  y+=16;
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
+  const meta=[
+    'Generated: '+fmtDateFull(new Date().toISOString().slice(0,10)),
+    r.region?('Region: '+regionLabel(r.region)):'',
+    r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set',
+    r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet',
+    'Progress: '+pct+'%',
+    openTasks.length+' open task'+(openTasks.length===1?'':'s')+' (not yet Can Perform Independently)'
+  ].filter(Boolean).join('  ·  ');
+  doc.splitTextToSize(pdfSafeText(meta),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
+  y+=12;
+  if(!openTasks.length){
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(15,110,86);
+    doc.text('All Pre-Bootcamp tasks are mastered (Can Perform Independently).',margin,y);
+    return doc;
+  }
+  drawTableHeader();
+  openTasks.forEach((t,idx)=>{
+    const values=[pdfSafeText(t.cat),pdfSafeText(t.name),pdfSafeText(t.label)];
+    doc.setFontSize(9);
+    const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+    const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*11+8;
+    if(needPage(rowH+4))drawTableHeader();
+    if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-6,contentW,rowH,'F');}
+    let x=margin+4;
+    lineSets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===1?'normal':'normal');
+      if(i===2){
+        const lvl=Number(t.level||0);
+        if(lvl<=0)doc.setTextColor(192,57,43);
+        else if(lvl===1)doc.setTextColor(232,119,34);
+        else doc.setTextColor(74,144,217);
+      }else doc.setTextColor(40,40,40);
+      lines.forEach((line,li)=>{doc.text(line,x,y+li*11,{maxWidth:cols[i].w-8});});
+      x+=cols[i].w;
+    });
+    y+=rowH;
+    doc.setDrawColor(230,230,230);
+    doc.line(margin,y-4,margin+contentW,y-4);
+  });
+  return doc;
+}
+async function downloadPreBootOpenTasksPdf(techId,source){
+  closePreBootTechPdfMenus();
+  const r=findPreBootTechRow(techId,source);
+  if(!r){
+    alert('Technician not found in the current Pre-Bootcamp list. Refresh and try again.');
+    return;
+  }
+  const btnId=source==='admin'?'admin-preboot-tasks-download-btn':'pm-preboot-download-btn';
+  try{
+    await withAdminPdfBusy(btnId,'Generating PDF…',async()=>{
+      await ensureJsPdf();
+      const doc=buildPreBootOpenTasksPdfDoc(r);
+      doc.save(preBootOpenTasksPdfFilename(r));
+    });
+  }catch(e){
+    console.error('Pre-Bootcamp open tasks PDF failed:',e);
+    alert('Could not create PDF. Please try again.');
+  }
+}
+function closePreBootTechPdfMenus(){
+  document.querySelectorAll('.pm-preboot-pdf-menu.open').forEach(el=>el.classList.remove('open'));
+}
+function togglePreBootTechPdfMenu(ev,source){
+  if(ev){ev.preventDefault();ev.stopPropagation();}
+  const menuId=source==='admin'?'admin-preboot-tasks-pdf-menu':'pm-preboot-pdf-menu';
+  const menu=document.getElementById(menuId);
+  if(!menu)return;
+  const wasOpen=menu.classList.contains('open');
+  closePreBootTechPdfMenus();
+  if(wasOpen)return;
+  const rows=preBootRowsForPdfSource(source).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),undefined,{sensitivity:'base'}));
+  if(!rows.length){
+    menu.innerHTML='<div class="pm-preboot-pdf-menu-empty">Load the report first, or no technicians match.</div>';
+  }else{
+    menu.innerHTML='<div class="pm-preboot-pdf-menu-title">Download open tasks for</div>'+rows.map(r=>{
+      const need=pmPreBootSkillRows(parseChecklistCompleted(r.checklist_completed)).filter(t=>isPreBootTaskNeeded(t.level)).length;
+      return`<button type="button" role="menuitem" onclick="downloadPreBootOpenTasksPdf(${Number(r.tech_id)},'${source}')">${adminEsc(r.name)} <span style="color:#888;font-weight:600">(${need} open)</span></button>`;
+    }).join('');
+  }
+  menu.classList.add('open');
+}
+if(!window.__preBootPdfMenuDocClick){
+  window.__preBootPdfMenuDocClick=true;
+  document.addEventListener('click',e=>{
+    if(e.target&&e.target.closest&&e.target.closest('.pm-preboot-dl-wrap'))return;
+    closePreBootTechPdfMenus();
+  });
+}
 function renderPmPreBootReport(){
   const wrap=document.getElementById('pm-preboot-wrap');
   const hint=document.getElementById('pm-preboot-hint');
   if(!wrap)return;
+  closePreBootTechPdfMenus();
   syncPreBootTaskFilterBtn('pm-preboot-filter-btn',pmPreBootShowNeededOnly);
   if(hint){
     const mode=pmPreBootShowNeededOnly?'Showing tasks still needed (not yet Can Perform Independently). ':'Showing all tasks. ';
@@ -9846,6 +10029,7 @@ function renderPmPreBootReport(){
   }
   wrap.innerHTML=buildPreBootTasksReportHtml(pmPreBootRows,{
     neededOnly:pmPreBootShowNeededOnly,
+    source:'pm',
     emptyMsg:'No technicians in this region have Pre-Bootcamp selected.'
   });
 }
@@ -9885,6 +10069,7 @@ function renderAdminPreBootTasksReport(){
   const wrap=document.getElementById('admin-preboot-tasks-wrap');
   const hint=document.getElementById('admin-preboot-tasks-hint');
   if(!wrap)return;
+  closePreBootTechPdfMenus();
   syncPreBootTaskFilterBtn('admin-preboot-tasks-filter-btn',adminPreBootTasksShowNeededOnly);
   const filtered=filteredAdminPreBootTasksRows();
   if(hint){
@@ -9899,6 +10084,7 @@ function renderAdminPreBootTasksReport(){
   wrap.innerHTML=buildPreBootTasksReportHtml(filtered,{
     neededOnly:adminPreBootTasksShowNeededOnly,
     showRegion:true,
+    source:'admin',
     emptyMsg:adminPreBootTasksRows.length?'No technicians match the current filters.':'No technicians have Pre-Bootcamp selected.'
   });
 }
