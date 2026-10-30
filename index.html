@@ -509,6 +509,10 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .mod-skills{background:#fff;border:2px solid #E6EEF8;border-top:none;border-radius:0 0 12px 12px;padding:4px 16px 12px;display:none}
 .mod-skills.open{display:block}
 .skill-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.skill-row-project-edit{flex-wrap:wrap;align-items:center}
+.skill-row-project-edit .skill-name{flex:1 1 100%}
+.skill-row-project-edit .q-project-job{flex:1 1 160px;min-width:0;margin:0}
+.skill-row-project-edit .q-project-complete{flex:0 0 auto;min-width:110px;padding:8px 12px}
 .skill-row:last-child{border-bottom:none}
 .skill-name{font-size:12px;color:#333;flex:1;line-height:1.5;font-weight:500}
 .skill-cat{display:block;font-size:10px;color:#4A90D9;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:1px}
@@ -1850,6 +1854,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="tech-results-body" id="tech-results-body"></div>
   <div class="tech-results-footer">
     <button type="button" class="btn btn-outline" onclick="closeTechResultsView()">Close</button>
+    <button type="button" class="btn" id="tech-results-save-projects" style="display:none" onclick="saveResultsProjectEdits()">Save projects</button>
     <button type="button" class="btn" id="tech-download-btn" onclick="exportTechAssessmentPdf()">Download PDF</button>
   </div>
 </div>
@@ -8789,11 +8794,22 @@ function requiredSectionsListHtml(t){
   }
   // Assessment start modal: only sections the tech still needs (not already 100%).
   const pending=visibleQuestionnaireSections(t);
-  const labels=pending.map(sec=>sec.section||proficiencyCategoryLabel(sec.key));
-  if(!labels.length){
+  const last=lastAssessmentForCompletion(t);
+  const updateSecs=pending.filter(sec=>isProjectsSection(sec)&&sectionIsComplete100(last,sec));
+  const todo=pending.filter(sec=>!updateSecs.includes(sec));
+  const todoLabels=todo.map(sec=>sec.section||proficiencyCategoryLabel(sec.key));
+  const updateLabels=updateSecs.map(sec=>sec.section||proficiencyCategoryLabel(sec.key));
+  if(!todoLabels.length&&!updateLabels.length){
     return`<div class="assess-req-title">Sections to complete</div><div class="assess-req-empty">No sections left — everything required is already at 100%.</div>`;
   }
-  return`<div class="assess-req-title">Sections to complete</div><ul class="assess-req-list">${labels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
+  let html='';
+  if(todoLabels.length){
+    html+=`<div class="assess-req-title">Sections to complete</div><ul class="assess-req-list">${todoLabels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
+  }
+  if(updateLabels.length){
+    html+=`<div class="assess-req-title"${todoLabels.length?' style="margin-top:10px"':''}>Project sections you can update</div><ul class="assess-req-list">${updateLabels.map(l=>`<li>${adminEsc(l)}</li>`).join('')}</ul>`;
+  }
+  return html;
 }
 function lastAssessmentWithRawScores(t){
   const assessments=t&&t.assessments;
@@ -8843,14 +8859,15 @@ function requiredQuestionnaireSections(t){
 function complete100QuestionnaireSections(t){
   const last=lastAssessmentForCompletion(t||currentTechData);
   if(!last)return[];
-  return requiredQuestionnaireSections(t).filter(sec=>sectionIsComplete100(last,sec));
+  // Project sections stay on the form so the tech can change the job name.
+  return requiredQuestionnaireSections(t).filter(sec=>!isProjectsSection(sec)&&sectionIsComplete100(last,sec));
 }
 function visibleQuestionnaireSections(t){
   const secs=requiredQuestionnaireSections(t);
   if(qForceRerateComplete)return secs;
   const last=lastAssessmentForCompletion(t||currentTechData);
   if(!last)return secs;
-  return secs.filter(sec=>!sectionIsComplete100(last,sec));
+  return secs.filter(sec=>isProjectsSection(sec)||!sectionIsComplete100(last,sec));
 }
 function filterAnswersToVisibleSections(raw,t){
   const filled={};
@@ -10339,10 +10356,17 @@ function skillCatalogLabelText(sk){
   if(!sk)return'';
   return sk.cat?`${sk.cat}: ${sk.name||''}`:(sk.name||'');
 }
-function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend){
+function buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend,editProjects){
   if(isProjectsSection(sec)){
     const done=Number(rawScores[sk.id])===1||rawScores[sk.id]===true;
     const job=String(rawScores[projectJobKey(sk.id)]||'').trim();
+    if(editProjects){
+      return`<div class="skill-row skill-row-project-edit" id="res-project-${sk.id}">
+        <span class="skill-name">${skillCatalogLabelHtml(sk)}</span>
+        <input class="q-project-job" type="text" placeholder="Enter job name" value="${adminEsc(job)}" aria-label="Job name for ${adminEsc(sk.name||'project')}" oninput="setResultsProjectJob('${sk.id}',this.value)">
+        <button type="button" class="q-project-complete${done?' done':''}" onclick="toggleResultsProjectComplete('${sk.id}')">${done?'✓ Complete':'Complete'}</button>
+      </div>`;
+    }
     const prevDone=prevRawScores?(Number(prevRawScores[sk.id])===1||prevRawScores[sk.id]===true):false;
     const trend=showTrend?(done&&!prevDone?'<span class="skill-trend-icon trend-up">↑</span>':(!done&&prevDone?'<span class="skill-trend-icon trend-dn">↓</span>':'<span class="skill-trend-icon trend-eq">=</span>')):'';
     const label=done?'Complete':'Not complete';
@@ -10406,7 +10430,8 @@ function buildAssessmentModulesHtml(assessment,prevAssessment,opts){
         return va-vb;
       });
     }
-    const skillRows=skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend)).join('');
+    const editProjects=!!opts.editProjects&&isProjectsSection(sec);
+    const skillRows=(editProjects?'<div class="q-section-sub" style="padding:8px 0 4px">Update the job name, then tap Save projects.</div>':'')+skills.map(sk=>buildAssessmentSkillRow(sk,sec,rawScores,prevRawScores,showTrend,editProjects)).join('');
     const openCls=(startOpen||expandIfFiltered)?' open':'';
     const togChar=(startOpen||expandIfFiltered)?'▼':'▶';
     return`<div class="mod-section" id="res-sec-${modId}">
@@ -10471,6 +10496,7 @@ function buildAssessmentResultsContent(assessment,prevAssessment,opts){
 function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
   opts=opts||{};
   const focusSection=opts.focusSection||opts.sectionFilter||null;
+  const editProjects=techCanEditSubmittedProjects(assessment)&&(!focusSection||isProjectsSection(QUESTIONNAIRE.find(s=>s.key===focusSection)));
   const modules=buildAssessmentModulesHtml(assessment,prevAssessment,{
     idPrefix:'tech-res-',
     startOpen:true,
@@ -10478,7 +10504,8 @@ function buildTechAssessmentResultsHtml(t,assessment,prevAssessment,opts){
     sortByRating:false,
     ratingFilter:opts.ratingFilter,
     sectionFilter:focusSection,
-    showTrend:!!prevAssessment
+    showTrend:!!prevAssessment,
+    editProjects:editProjects
   });
   const comment=!focusSection&&assessment.comment?`<div class="tech-res-comment"><strong>Assessment comment:</strong> "${assessment.comment}"</div>`:'';
   const submittedNote=opts.submittedNote?`<div class="success-box" style="margin-bottom:14px">${opts.submittedNote}</div>`:'';
@@ -10734,6 +10761,111 @@ function setTechResultsRatingFilter(rating){
   refreshTechResultsView();
 }
 
+function techCanEditSubmittedProjects(assessment){
+  if(!currentToken||currentRole!=='tech'||techViewMode==='readonly')return false;
+  if(!assessment||!currentTechData)return false;
+  const list=currentTechData.assessments||[];
+  const latest=list[list.length-1];
+  return !!latest&&String(latest.date).slice(0,10)===String(assessment.date).slice(0,10);
+}
+function resultsViewIncludesProjects(){
+  if(!techResultsFocusSection)return true;
+  const sec=QUESTIONNAIRE.find(s=>s.key===techResultsFocusSection);
+  return isProjectsSection(sec);
+}
+function syncResultsProjectSaveBtn(){
+  const btn=document.getElementById('tech-results-save-projects');
+  if(!btn)return;
+  const show=techCanEditSubmittedProjects(techResultsAssessment)&&resultsViewIncludesProjects();
+  btn.style.display=show?'':'none';
+  if(show&&btn.textContent!=='Saving...')btn.textContent='Save projects';
+}
+function ensureResultsRaw(){
+  const a=techResultsAssessment;
+  if(!a)return {};
+  let raw=rawOf(a);
+  if(!raw)raw={};
+  if(a.raw_scores!==raw)a.raw_scores=raw;
+  return a.raw_scores;
+}
+function setResultsProjectJob(id,val){
+  const raw=ensureResultsRaw();
+  const v=String(val||'').trim();
+  if(v)raw[projectJobKey(id)]=v;
+  else delete raw[projectJobKey(id)];
+}
+function toggleResultsProjectComplete(id){
+  const raw=ensureResultsRaw();
+  if(Number(raw[id])===1||raw[id]===true){
+    delete raw[id];
+  }else{
+    const job=String(raw[projectJobKey(id)]||'').trim();
+    if(!job){
+      alert('Enter the Job Name before marking Complete.');
+      const row=document.getElementById('res-project-'+id);
+      const input=row&&row.querySelector('input');
+      if(input)input.focus();
+      return;
+    }
+    raw[id]=1;
+  }
+  refreshTechResultsView();
+}
+async function saveResultsProjectEdits(){
+  const a=techResultsAssessment;
+  if(!a||!currentToken||!techCanEditSubmittedProjects(a))return;
+  const raw=ensureResultsRaw();
+  let missing=false;
+  QUESTIONNAIRE.filter(isProjectsSection).forEach(sec=>{
+    (sec.skills||[]).forEach(sk=>{
+      const done=Number(raw[sk.id])===1||raw[sk.id]===true;
+      const job=String(raw[projectJobKey(sk.id)]||'').trim();
+      if(done&&!job)missing=true;
+    });
+  });
+  if(missing){
+    alert('Enter a job name for every completed project.');
+    return;
+  }
+  const btn=document.getElementById('tech-results-save-projects');
+  const focus=techResultsFocusSection;
+  const date=String(a.date).slice(0,10);
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  try{
+    const payload={date:date,comment:a.comment||null,raw_scores:raw};
+    ['safety_avg','basic_avg','intermediate_avg','advanced_avg','survey_avg','national_accounts_avg'].forEach(k=>{
+      if(a[k]!=null&&a[k]!=='')payload[k]=a[k];
+    });
+    await rpc('app_submit_assessment',{p_token:currentToken,p_payload:payload});
+    await loadTechHome();
+    const next=(currentTechData.assessments||[]).find(x=>String(x.date).slice(0,10)===date)||null;
+    if(next){
+      techResultsAssessment=next;
+      techResultsFocusSection=focus;
+      const body=document.getElementById('tech-results-body');
+      if(body){
+        const assessments=currentTechData.assessments||[];
+        const idx=assessments.indexOf(next);
+        const prev=idx>0?assessments[idx-1]:null;
+        body.innerHTML=buildAssessmentResultsContent(next,prev,{
+          ratingFilter:techResultsRatingFilter,
+          focusSection:focus,
+          tech:currentTechData,
+          submittedNote:'✅ Project names saved.'
+        });
+      }
+      syncResultsProjectSaveBtn();
+    }
+  }catch(e){
+    const rawMsg=(e&&e.message)||'';
+    alert(rawMsg.includes('ALREADY_SUBMITTED')
+      ?'This month is already submitted, and the server is not allowing an update yet.'
+      :'Could not save the project names. Please try again.');
+    console.error('saveResultsProjectEdits',e);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save projects';}
+  }
+}
 function refreshTechResultsView(){
   if(!techResultsAssessment||!currentTechData)return;
   const assessments=currentTechData.assessments||[];
@@ -10749,6 +10881,7 @@ function refreshTechResultsView(){
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
+  syncResultsProjectSaveBtn();
 }
 
 function viewLatestAssessment(){
@@ -10804,6 +10937,7 @@ async function openTechResultsView(assessment,opts){
     body.scrollTop=0;
   }
   updateTechResultsFilterUi();
+  syncResultsProjectSaveBtn();
   const overlay=document.getElementById('tech-results-overlay');
   if(overlay){
     overlay.classList.add('visible');
@@ -10817,6 +10951,7 @@ function closeTechResultsView(opts){
   techResultsRatingFilter=null;
   techResultsFocusSection=null;
   techResultsAssessment=null;
+  syncResultsProjectSaveBtn();
   const titleEl=document.getElementById('tech-results-title');
   if(titleEl)titleEl.textContent='Assessment Results';
   if(overlay)overlay.classList.remove('visible');
@@ -11338,7 +11473,7 @@ function renderQuestionnaire(){
     const hasToolsSkill=sec.skills.some(isToolsSkill);
     let secSub,skillHtml;
     if(isProjectsSection(sec)){
-      secSub='Mark each project Complete when finished. Enter the job name for every completed project. Category score = completed projects out of '+sec.skills.length+'.';
+      secSub='Mark each project Complete when finished. Enter the job name for every completed project. You can change a job name even if the project is already complete. Category score = completed projects out of '+sec.skills.length+'.';
       skillHtml=projectsSectionHtml(sec);
     }else if(isJobAccountsSection(sec)){
       secSub=jobAccountsSectionSub(sec);
