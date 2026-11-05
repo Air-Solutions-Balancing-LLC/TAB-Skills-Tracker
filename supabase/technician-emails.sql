@@ -68,7 +68,7 @@ FROM (VALUES
   ('Henry Boyle',           'henry.boyle@airadigmsolutions.com'),
   ('Joe Figone',            'joe.figone@airadigmsolutions.com'),
   ('Josh Earle',            'josh.earle@airadigmsolutions.com'),
-  ('Josh Stepnick',         'josh.stepnick@airadigmsolutions.com'),
+  ('Josh Stepnick',         'josh.stepnick@usabalancing.com'),
   ('Justin Bowman',         'justin.bowman@airadigmsolutions.com'),
   ('Nicholas Gray',         'nicholas.gray@airadigmsolutions.com'),
   ('Stranten Seui-Purdy',   'stranten.seui-purdy@airadigmsolutions.com'),
