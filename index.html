@@ -404,6 +404,14 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .sp-ata{font-size:11px;background:#EEF4FF;border:1px solid #b8d0f5;border-radius:20px;padding:4px 10px;color:#1B3A6B;font-weight:700;white-space:nowrap}
 .ata-report-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.2;color:#fff;background:#4A90D9;border:none;cursor:pointer;white-space:nowrap;font-family:inherit}
 .ata-report-chip:hover{background:#3a7bc0}
+.ata-reset-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;line-height:1.4;color:#fff;background:#C0392B;white-space:nowrap;vertical-align:middle}
+.ata-reset-card{border:1px solid #e2e6ee;border-radius:10px;padding:10px 12px;background:#fafbfe}
+.ata-reset-card.is-alert{border-color:#e7b4ae;background:#fff6f5}
+.ata-reset-card details{margin-top:8px}
+.ata-reset-card summary{cursor:pointer;font-size:12px;font-weight:700;color:#1B3A6B}
+.ata-reset-list{margin:6px 0 0;padding:0;list-style:none}
+.ata-reset-list li{font-size:12px;color:#333;padding:5px 0;border-top:1px solid #eef1f6;line-height:1.35}
+.ata-reset-msg{margin-top:8px;padding:10px 12px;background:#fff;border:1px solid #e7d7b8;border-radius:8px;font-size:13px;line-height:1.45;white-space:pre-wrap;color:#222}
 .sp-ata-muted{font-size:11px;color:#bbb;font-weight:600}
 .sp-focus{font-size:11px;background:#FFF8E6;border:1px solid #e6c200;border-radius:20px;padding:4px 10px;color:#7a5d00;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sp-focus-dates{font-size:11px;color:#888;font-weight:600;white-space:nowrap}
@@ -1374,6 +1382,7 @@ body.mobile-nav-open{overflow:hidden}
             <button type="button" class="btn" id="ata-curriculum-toggle" style="background:#6b4fa0" onclick="ataToggleCurriculumPanel()">📚 Master course list</button>
             <a class="btn" href="https://joe-balancer.teachable.com/admin/users/students?name_or_email_cont=___" target="_blank" rel="noopener noreferrer" style="background:#E87722;text-decoration:none">Teachables</a>
             <a class="btn" href="https://docs.google.com/spreadsheets/d/1gsDfKRFfEmLi87UT7UaahWQW_zJ5AcjV0LPD1I18F00/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" style="background:#0F9D58;text-decoration:none">ATA Google Doc</a>
+            <button type="button" class="btn btn-outline" id="ata-refresh-btn" style="padding:8px 14px;font-size:13px" onclick="ataRefreshProgress()">↻ Refresh</button>
             <span id="ata-last-import" style="font-size:11px;color:#888"></span>
           </div>
           <div id="ata-curriculum-panel" style="display:none;border:1px solid #ddd6f3;border-radius:12px;padding:12px 14px;margin:0 0 12px;background:#faf8ff">
@@ -1929,7 +1938,7 @@ body.mobile-nav-open{overflow:hidden}
 <div class="assess-modal-overlay" id="ata-report-modal" role="dialog" aria-modal="true" aria-labelledby="ata-report-title" onclick="if(event.target===this)ataCloseReport()">
   <div class="assess-modal" style="max-width:920px;width:96%;max-height:94vh;padding:20px;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
-      <h3 id="ata-report-title" style="margin:0;font-size:17px">ATA Report</h3>
+      <h3 id="ata-report-title" style="margin:0;font-size:17px;display:flex;align-items:center;flex-wrap:wrap;gap:8px"><span id="ata-report-title-text">ATA Report</span><span id="ata-report-alert"></span></h3>
       <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="ataCloseReport()">Close</button>
     </div>
     <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Use <strong>Edit</strong> for scores / pass / dates, <strong>Manage resets</strong> for retakes, or <strong>Report</strong> to preview and download the PDF.</p>
@@ -1944,7 +1953,7 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
       <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
-    <div id="ata-brenda-note" style="display:none;align-items:center;gap:8px;margin:0 0 8px;font-size:12px;color:#555"></div>
+    <div id="ata-brenda-note" style="display:none;margin:0 0 10px"></div>
     <div id="ata-schedule-hold" style="display:none;border:1px solid #e7d7b8;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fffaf1"></div>
     <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
@@ -5232,17 +5241,103 @@ function ataBrendaReminder(tech){
   return {resets,behind,phrase,book:reasons.length>0,reasons};
 }
 function ataBrendaListHtml(){return '';}
+const ATA_BRENDA_BOOKING='https://bookings.cloud.microsoft/bookwithme/user/138dc34797134102ae638152f812626c%40airadigmsolutions.com?anonymous&ismsaljsauthenabled=true';
+function ataLessonLabel(code){
+  const hit=(ataCurriculum||[]).find(l=>String(l.lesson_code)===String(code));
+  const name=hit&&hit.lesson_name?String(hit.lesson_name).trim():'';
+  return name?(code+' — '+name):String(code||'');
+}
+function ataResetWindowInfo(tech){
+  const today=ataToday();
+  const cutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
+  const all=ataResetLogFor(tech).map(r=>{
+    const at=parseDateOnly(r.date);
+    return at?{code:r.code,date:String(r.date).slice(0,10),at}:null;
+  }).filter(Boolean).sort((a,b)=>a.at-b.at||String(a.code).localeCompare(String(b.code)));
+  const recent=all.filter(r=>r.at>=cutoff&&r.at<=today);
+  const older=all.filter(r=>r.at<cutoff);
+  const oldest=recent[0]||null;
+  const leaves=oldest?new Date(oldest.at.getFullYear(),oldest.at.getMonth(),oldest.at.getDate()+31):null;
+  return {recent,older,leaves,oldest,hit:recent.length>=ATA_MAX_RESETS};
+}
+function ataResetLeavesSentence(info){
+  if(!info||!info.oldest||!info.leaves)return '';
+  return ataLessonLabel(info.oldest.code)+' from '+fmtDate(info.oldest.date)+' drops out of this count on '+fmtDate(ataDateKey(info.leaves))+'.';
+}
+function ataResetRowHtml(r){
+  return '<li><b>'+adminEsc(fmtDate(r.date))+'</b> · '+adminEsc(ataLessonLabel(r.code))+'</li>';
+}
+function ataResetMessageText(tech){
+  const name=String((tech&&tech.name)||'').trim()||'there';
+  return 'Hi '+name+', your latest quiz reset is your third request in 30 days. As you know, we are very interested in your progress and your learning comprehension. In order to increase the efficiency of passing the quizzes, we would like for you to schedule a 30-minute meeting with Brenda within the next 5 days. Together, you\'ll be able to discuss challenges and identify adjustments that will help you move forward with confidence. Thank you!\n\nBook time with Brenda Zwickau: ATA Check-in '+ATA_BRENDA_BOOKING;
+}
+function ataResetAlertPill(tech){
+  const info=ataResetWindowInfo(tech);
+  if(!info.hit)return '';
+  const tip=info.recent.map(r=>fmtDate(r.date)+' · '+r.code).join('; ')+(info.leaves?('. Oldest drops off '+fmtDate(ataDateKey(info.leaves))+'.'):'');
+  return '<span class="ata-reset-pill" title="'+adminEsc(tip)+'">'+info.recent.length+' resets in 30 days</span>';
+}
+function ataResetCardHtml(tech){
+  const info=ataResetWindowInfo(tech);
+  const n=info.recent.length;
+  const head=info.hit
+    ?'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ata-reset-pill">'+n+' resets in 30 days</span><span style="font-size:13px;font-weight:700;color:#1B3A6B">Send the Teams message below</span></div>'
+    :'<div style="font-size:13px;font-weight:700;color:#1B3A6B">Quiz resets <span style="font-weight:800">'+n+' of 3</span> <span style="font-weight:600;color:#555">in the last 30 days</span></div>';
+  const recent=n
+    ?'<details open><summary>Quizzes in the last 30 days ('+n+')</summary><ul class="ata-reset-list">'+info.recent.slice().reverse().map(ataResetRowHtml).join('')+'</ul><div style="font-size:12px;color:#555;margin-top:6px">'+adminEsc(ataResetLeavesSentence(info))+'</div></details>'
+    :'<div style="font-size:12px;color:#666;margin-top:4px">No quiz resets in the last 30 days.</div>';
+  const msg=info.hit
+    ?'<details open><summary>Message to send in Teams</summary><div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" class="btn" id="ata-reset-copy" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataCopyResetMessage()">Copy message</button></div><div class="ata-reset-msg">'+adminEsc(ataResetMessageText(tech))+'</div></details>'
+    :'';
+  const older=info.older.length
+    ?'<details><summary>Older resets ('+info.older.length+')</summary><ul class="ata-reset-list">'+info.older.slice().reverse().map(ataResetRowHtml).join('')+'</ul></details>'
+    :'';
+  return '<div class="ata-reset-card'+(info.hit?' is-alert':'')+'">'+head+recent+msg+older+'</div>';
+}
+function ataCopyResetMessage(){
+  const tech=ataFindTech(ataReportTechId);
+  if(!tech)return;
+  const text=ataResetMessageText(tech);
+  const done=()=>{
+    const btn=document.getElementById('ata-reset-copy');
+    if(!btn)return;
+    btn.textContent='Copied';
+    setTimeout(()=>{if(btn)btn.textContent='Copy message';},1600);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{ataCopyResetFallback(text);done();});
+    return;
+  }
+  ataCopyResetFallback(text);
+  done();
+}
+function ataCopyResetFallback(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.setAttribute('readonly','');
+  ta.style.position='fixed';
+  ta.style.left='-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  ta.remove();
+}
 function ataRenderBrendaNote(){
   const el=document.getElementById('ata-brenda-note');
+  const badge=document.getElementById('ata-report-alert');
   if(!el)return;
-  if(!userIsAdmin){el.style.display='none';el.innerHTML='';return;}
   const tech=ataFindTech(ataReportTechId);
-  if(!tech){el.style.display='none';el.innerHTML='';return;}
-  const b=ataBrendaReminder(tech);
-  const log=ataResetLogFor(tech);
+  const canSee=!!(userIsAdmin||currentRole==='pm');
+  if(!canSee||!tech){
+    el.style.display='none';
+    el.innerHTML='';
+    if(badge)badge.innerHTML='';
+    return;
+  }
+  const info=ataResetWindowInfo(tech);
   el.style.display='block';
-  const hist=log.length?`<div style="margin-top:4px;font-size:12px;color:#666;line-height:1.45">Reset history: ${log.map(r=>adminEsc(fmtDate(r.date)+' · '+r.code)).join(' &nbsp; ')}</div>`:'';
-  el.innerHTML=`<span>Resets ${adminEsc(b.phrase)}: <b style="color:#1B3A6B">${b.resets}</b></span>${hist}`;
+  el.innerHTML=ataResetCardHtml(tech);
+  if(badge)badge.innerHTML=info.hit?ataResetAlertPill(tech):'';
 }
 function ataResetDisplay(lr){
   const rm=lr.resets||0,tot=lr.resetsTotal||0;
@@ -5619,6 +5714,12 @@ function ataImportFromFile(input){
 }
 
 // ── Admin ATA data + rendering ───────────────────────────────────────────────
+async function ataRefreshProgress(){
+  const btn=document.getElementById('ata-refresh-btn');
+  if(btn){btn.disabled=true;btn.textContent='Refreshing…';}
+  try{await ataLoadAdmin();}
+  finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh';}}
+}
 async function ataLoadAdmin(){
   const wrap=document.getElementById('ata-roster-wrap');
   if(wrap&&!ataAdminData)wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
@@ -5736,7 +5837,7 @@ function ataRenderAdmin(){
     const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return `<tr>
       <td><input type="checkbox" ${ataSelected[t.id]?'checked':''} onchange="ataToggleSelect(${t.id},this.checked)" aria-label="Select ${adminEsc(t.name)}"></td>
-      <td style="font-weight:700;color:#1B3A6B">${adminEsc(t.name)}</td>
+      <td style="font-weight:700;color:#1B3A6B"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${adminEsc(t.name)}${ataResetAlertPill(t)}</span></td>
       <td>${adminEsc(regionLabel(t.region))}</td>
       ${ataStartCell(s,'basic')}
       ${ataStartCell(s,'intermediate')}
@@ -6037,13 +6138,13 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // Reset count for admins. No call reminder.
-  const brenda=ataBrendaReminder(tech);
+  // Person-level quiz resets in the last 30 days. No call reminder.
+  const resetWin=ataResetWindowInfo(tech);
   if(userIsAdmin){
     doc.setFontSize(9);doc.setFont('helvetica','bold');
     needPage(16);
     doc.setTextColor(80,80,80);
-    doc.text(pdfSafeText('Resets '+brenda.phrase+': '+brenda.resets+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
+    doc.text(pdfSafeText('Quiz resets in the last 30 days: '+resetWin.recent.length+' of 3'+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
     y+=16;
   }
 
@@ -6164,7 +6265,7 @@ function ataOpenReport(techId){
   const tech=ataFindTech(techId);
   if(!tech)return;
   ataReportTechId=techId;
-  const title=document.getElementById('ata-report-title');
+  const title=document.getElementById('ata-report-title-text');
   if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
   document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
@@ -6563,7 +6664,7 @@ function renderPmAta(){
     const cat=s.category||ataCategory(s.tech);
     const pctLine=cat==='active'?ataPctLineHtml(s):'';
     return`<tr>
-    <td style="font-weight:700;color:#1B3A6B">${adminEsc(s.tech.name)}</td>
+    <td style="font-weight:700;color:#1B3A6B"><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${adminEsc(s.tech.name)}${ataResetAlertPill(s.tech)}</span></td>
     <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:#C0392B">✕ ${s.totalFailed} failed</div>`:''}</td>
     <td>${cell(s,'basic')}</td>
     <td>${cell(s,'intermediate')}</td>
