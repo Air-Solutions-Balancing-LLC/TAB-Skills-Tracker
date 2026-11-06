@@ -6084,6 +6084,44 @@ async function ataDownloadWeeklyReport(scope){
   }catch(e){console.error('ATA report PDF failed',e);alert('Could not create the PDF. Please try again.');}
 }
 
+// Compact reset block for the downloaded schedule. Recent quizzes stay listed.
+// Older resets share one line so the PDF does not repeat the full history.
+function ataDrawResetPdfSummary(doc,tech,margin,contentW,y,needPage){
+  const info=ataResetWindowInfo(tech);
+  const n=info.recent.length;
+  const recent=info.recent.slice().reverse();
+  const drop=info.oldest&&info.leaves?(fmtDate(info.oldest.date)+' drops out of this count on '+fmtDate(ataDateKey(info.leaves))+'.'):'';
+  const olderText=info.older.length?('Older: '+info.older.slice().reverse().map(r=>fmtDate(r.date)+' - '+r.code).join(' | ')):'';
+  doc.setFontSize(8);
+  const dropLines=drop?doc.splitTextToSize(pdfSafeText(drop),contentW-24):[];
+  const olderLines=olderText?doc.splitTextToSize(pdfSafeText(olderText),contentW-24):[];
+  const lineH=11;
+  const h=22+recent.length*lineH+dropLines.length*lineH+olderLines.length*lineH+6;
+  needPage(h);
+  const top=y-8;
+  if(info.hit){doc.setFillColor(255,246,245);doc.setDrawColor(231,180,174);}
+  else{doc.setFillColor(248,250,253);doc.setDrawColor(225,230,238);}
+  doc.roundedRect(margin,top,contentW,h-2,4,4,'FD');
+  doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.setTextColor(info.hit?192:27,info.hit?57:58,info.hit?43:107);
+  doc.text(pdfSafeText('Quiz resets   '+n+' of 3 in the last 30 days'),margin+10,y+4);
+  y+=16;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(45,45,45);
+  recent.forEach(r=>{
+    doc.text(pdfSafeText(fmtDate(r.date)+' - '+r.code),margin+10,y);
+    y+=lineH;
+  });
+  if(dropLines.length){
+    doc.setTextColor(110,110,110);
+    dropLines.forEach(ln=>{doc.text(ln,margin+10,y);y+=lineH;});
+  }
+  if(olderLines.length){
+    doc.setTextColor(130,130,130);
+    olderLines.forEach(ln=>{doc.text(ln,margin+10,y);y+=lineH;});
+  }
+  return y+10;
+}
+
 // ── PDF: single technician schedule ──────────────────────────────────────────
 function buildAtaTechDoc(tech,opts){
   opts=opts||{};
@@ -6138,15 +6176,7 @@ function buildAtaTechDoc(tech,opts){
   });
   y+=84;
 
-  // Person-level quiz resets in the last 30 days. No call reminder.
-  const resetWin=ataResetWindowInfo(tech);
-  if(userIsAdmin){
-    doc.setFontSize(9);doc.setFont('helvetica','bold');
-    needPage(16);
-    doc.setTextColor(80,80,80);
-    doc.text(pdfSafeText('Quiz resets in the last 30 days: '+resetWin.recent.length+' of 3'+(s.totalFailed?('   ·   '+s.totalFailed+' failed'):'')),margin,y);
-    y+=16;
-  }
+  y=ataDrawResetPdfSummary(doc,tech,margin,contentW,y,needPage);
 
   // Lesson tables per program — every lesson is one week (88 weeks across the 3 modules).
   const cols=[
