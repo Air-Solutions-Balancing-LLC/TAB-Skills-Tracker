@@ -4883,26 +4883,31 @@ function ataResetLogFor(tech){
   if(!n)return [];
   return ATA_RESET_LOG.filter(r=>r.name.toLowerCase()===n);
 }
+/** Rolling 30-day cutoff used by the summary card and the Resets column (must stay in sync). */
+function ataResetWindowCutoff(today){
+  today=today||ataToday();
+  return new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
+}
 function ataLogExtra(tech,code){
   const rows=ataResetLogFor(tech).filter(r=>r.code===code);
   if(!rows.length)return {total:0,window:0};
   const i=ataAttemptInfo(tech,code)||{};
-  const rolling=ataUsesRollingResets(tech);
   const today=ataToday();
-  const cutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
+  const cutoff=ataResetWindowCutoff(today);
+  // Always rolling 30 days — never calendar month — so the column matches the top summary.
   const inWindow=rows.filter(r=>{
     const d=parseDateOnly(r.date);
-    if(!d)return false;
-    if(rolling)return d>=cutoff;
-    return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth();
+    return !!(d&&d>=cutoff&&d<=today);
   }).length;
-  const manualWindow=rolling?(i.manual_30||0):(i.manual_month||0);
+  // Subtract DB manual resets already counted so imported Quiz Reset Log rows are not double-counted.
+  const manualWindow=Number(i.manual_30||0);
+  const manualTotal=Number(i.manual_total||0);
   return {
-    total:Math.max(0, rows.length-(i.manual_total||0)),
+    total:Math.max(0, rows.length-manualTotal),
     window:Math.max(0, inWindow-manualWindow)
   };
 }
-// True once the roster includes a rolling 30-day count. Until then, use this calendar month.
+// True when attempt JSON includes rolling 30-day fields from the server.
 function ataUsesRollingResets(tech){
   const attempts=(tech&&tech.attempts)||{};
   for(const k in attempts){
@@ -4912,16 +4917,19 @@ function ataUsesRollingResets(tech){
   return false;
 }
 function ataResetWindowPhrase(tech){
-  return ataUsesRollingResets(tech)?'in the last 30 days':'this month';
+  return 'in the last 30 days';
 }
-// Resets in the window = auto retakes (attempts in the window - 1, min 0) + manual resets in that window.
+// Resets in the last 30 days = auto retakes in that window + manual resets + Quiz Reset Log extras.
 function ataResetsThisMonth(tech,code){
   const extra=ataLogExtra(tech,code).window;
   const i=ataAttemptInfo(tech,code);
   if(!i)return extra;
-  const rolling=ataUsesRollingResets(tech);
-  const attempts=rolling?(i.days30_count||0):(i.month_count||0);
-  const manual=rolling?(i.manual_30||0):(i.manual_month||0);
+  // Prefer rolling 30-day attempt stats so the column matches the top summary.
+  // Legacy RPCs without days30/manual_30 still get Quiz Reset Log extras (30-day) plus any
+  // Manage-resets counted in manual_month until supabase/ata-reset-window-30.sql is applied.
+  const hasRolling=i.days30_count!=null||i.manual_30!=null;
+  const attempts=hasRolling?Number(i.days30_count||0):0;
+  const manual=hasRolling?Number(i.manual_30||0):Number(i.manual_month||0);
   let n=Math.max(0,attempts-1)+manual;
   if(n===0&&ataImpliedRetake(tech,code)&&attempts>0)n=1;
   return n+extra;
@@ -5267,7 +5275,7 @@ function ataLessonLabel(code){
 }
 function ataResetWindowInfo(tech){
   const today=ataToday();
-  const cutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
+  const cutoff=ataResetWindowCutoff(today);
   const all=ataResetLogFor(tech).map(r=>{
     const at=parseDateOnly(r.date);
     return at?{code:r.code,date:String(r.date).slice(0,10),at}:null;
@@ -5295,18 +5303,28 @@ function ataResetAlertPill(tech){
   const tip=info.recent.map(r=>fmtDate(r.date)+' · '+r.code).join('; ')+(info.leaves?('. Oldest drops off '+fmtDate(ataDateKey(info.leaves))+'.'):'');
   return '<span class="ata-reset-pill" title="'+adminEsc(tip)+'">'+info.recent.length+' resets in 30 days</span>';
 }
-function ataResetCardHtml(tech){
+/** Reset summary card. opts.includeTeamsMsg (admin/PM only) adds the Brenda Teams copy block. */
+function ataResetCardHtml(tech,opts){
+  opts=opts||{};
+  const includeTeamsMsg=!!opts.includeTeamsMsg;
   const info=ataResetWindowInfo(tech);
   const n=info.recent.length;
-  const head=info.hit
-    ?'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ata-reset-pill">'+n+' resets in 30 days</span><span style="font-size:13px;font-weight:700;color:#1B3A6B">Send the Teams message below</span></div>'
-    :'<div style="font-size:13px;font-weight:700;color:#1B3A6B">Quiz resets <span style="font-weight:800">'+n+' of 3</span> <span style="font-weight:600;color:#555">in the last 30 days</span></div>';
+  let head;
+  if(info.hit){
+    head=includeTeamsMsg
+      ?'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ata-reset-pill">'+n+' resets in 30 days</span><span style="font-size:13px;font-weight:700;color:#1B3A6B">Send the Teams message below</span></div>'
+      :'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ata-reset-pill">'+n+' resets in 30 days</span><span style="font-size:13px;font-weight:700;color:#1B3A6B">Please schedule a 30-minute check-in with Brenda</span></div>';
+  }else{
+    head='<div style="font-size:13px;font-weight:700;color:#1B3A6B">Quiz resets <span style="font-weight:800">'+n+' of 3</span> <span style="font-weight:600;color:#555">in the last 30 days</span></div>';
+  }
   const recent=n
     ?'<details open><summary>Quizzes in the last 30 days ('+n+')</summary><ul class="ata-reset-list">'+info.recent.slice().reverse().map(ataResetRowHtml).join('')+'</ul><div style="font-size:12px;color:#555;margin-top:6px">'+adminEsc(ataResetLeavesSentence(info))+'</div></details>'
     :'<div style="font-size:12px;color:#666;margin-top:4px">No quiz resets in the last 30 days.</div>';
-  const msg=info.hit
+  const msg=(info.hit&&includeTeamsMsg)
     ?'<details open><summary>Message to send in Teams</summary><div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" class="btn" id="ata-reset-copy" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataCopyResetMessage()">Copy message</button></div><div class="ata-reset-msg">'+adminEsc(ataResetMessageText(tech))+'</div></details>'
-    :'';
+    :(info.hit&&!includeTeamsMsg
+      ?'<div style="margin-top:8px;font-size:12px;color:#555;line-height:1.4">Book time with Brenda Zwickau: <a href="'+adminEsc(ATA_BRENDA_BOOKING)+'" target="_blank" rel="noopener">ATA Check-in</a></div>'
+      :'');
   const older=info.older.length
     ?'<details><summary>Older resets ('+info.older.length+')</summary><ul class="ata-reset-list">'+info.older.slice().reverse().map(ataResetRowHtml).join('')+'</ul></details>'
     :'';
@@ -5354,7 +5372,7 @@ function ataRenderBrendaNote(){
   }
   const info=ataResetWindowInfo(tech);
   el.style.display='block';
-  el.innerHTML=ataResetCardHtml(tech);
+  el.innerHTML=ataResetCardHtml(tech,{includeTeamsMsg:true});
   if(badge)badge.innerHTML=info.hit?ataResetAlertPill(tech):'';
 }
 function ataResetDisplay(lr){
@@ -6204,7 +6222,7 @@ function buildAtaTechDoc(tech,opts){
     {label:'Due Thursday',w:contentW*0.13},
     {label:'Score',w:contentW*0.09},
     {label:'Status',w:contentW*0.12},
-    {label:'Resets (mo·tot)',w:contentW*0.16}
+    {label:'Resets (30d·tot)',w:contentW*0.16}
   ];
   function drawLessonHeader(){
     needPage(24);
@@ -6639,8 +6657,8 @@ function ataRenderResetPanel(){
   const progs=ataReportSelectedPrograms();
   if(!progs.length){rp.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to manage its resets.</div>';return;}
   const gw=ataGlobalWeeks();
-  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — click <b>+ reset</b> when a retake is approved. Max '+ATA_MAX_RESETS+'/month.</div>'
-    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (mo·tot)</th><th style="width:130px">Action</th></tr></thead><tbody>';
+  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — click <b>+ reset</b> when a retake is approved. Max '+ATA_MAX_RESETS+' in the last 30 days.</div>'
+    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (30d·tot)</th><th style="width:130px">Action</th></tr></thead><tbody>';
   progs.forEach(pr=>{
     ataLessonsByProgram(pr).forEach(l=>{
       const rm=ataResetsThisMonth(tech,l.lesson_code),rt=ataResetsTotal(tech,l.lesson_code);
@@ -6847,8 +6865,14 @@ function renderTechAtaHomeCard(tech){
   }
   const s=ataTechSummary(tech);
   const clickable=ataIsActiveLearner(tech);
+  const resetInfo=ataResetWindowInfo(tech);
   const failBadge=s.totalFailed
     ?`<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`
+    :'';
+  const resetBadge=resetInfo.recent.length
+    ?(resetInfo.hit
+      ?ataResetAlertPill(tech)
+      :`<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#1B3A6B;background:#EEF4FF">${resetInfo.recent.length} of 3 resets · 30 days</span>`)
     :'';
   const programCells=ATA_PROGRAMS.filter(p=>ataProgramRequired(tech,p)).map(p=>ataHomeProgramCell(s,p)).join('');
   const statusHtml=ataStatusDisplayHtml(tech)||ataCategoryChip('active');
@@ -6856,7 +6880,7 @@ function renderTechAtaHomeCard(tech){
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0">
         <div class="detail-name">ATA Progress</div>
-        <div class="score-row">${statusHtml}${failBadge}</div>
+        <div class="score-row">${statusHtml}${failBadge}${resetBadge}</div>
       </div>
       ${clickable?`<button type="button" class="admin-chrome-btn" onclick="event.stopPropagation();showTechAta()">ATA Report</button>`:''}
     </div>
@@ -6875,6 +6899,10 @@ function renderTechAta(tech){
     return;
   }
   const today=ataToday();
+  const resetInfo=ataResetWindowInfo(tech);
+  const resetCard=(resetInfo.recent.length||resetInfo.older.length)
+    ?('<div style="margin:0 0 12px">'+ataResetCardHtml(tech,{includeTeamsMsg:false})+'</div>')
+    :'';
   const resetCell=(lr)=>{
     const rd=ataResetDisplay(lr);
     if(rd.empty)return '<span style="color:#bbb">—</span>';
@@ -6899,18 +6927,19 @@ function renderTechAta(tech){
     </tr>`;
     }).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (this mo. · total)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (30d · tot)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
   if(s.totalFailed)alerts.push(`❌ ${s.totalFailed} failed (need ≥${ATA_PASS_PCT}% to pass)`);
+  if(resetInfo.hit)alerts.push(`🔄 ${resetInfo.recent.length} quiz resets in the last 30 days`);
   const overall=`<div class="my-scores"><div style="display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap">
-    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due every Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets/month · scores &amp; resets show even before the due date</div></div>
+    <div><div class="detail-name">My ATA Progress</div><div class="detail-sub">One lesson per week · due every Thursday · pass = ${ATA_PASS_PCT}% · max ${ATA_MAX_RESETS} resets in 30 days · scores &amp; resets show even before the due date</div></div>
     ${ataStatusChip(s.status)}</div>
     ${s.status==='paused'?'<div style="margin-top:10px;font-size:13px;color:#555">Your schedule is paused, so these lessons are not marked overdue.</div>':''}
     ${alerts.length?`<div class="stalled-box" style="margin-top:12px"><div class="stalled-title">${alerts.join(' · ')}</div></div>`:''}
   </div>`;
-  body.innerHTML=overall+sections;
+  body.innerHTML=overall+resetCard+sections;
 }
 
 async function loadAdminActivityReport(){

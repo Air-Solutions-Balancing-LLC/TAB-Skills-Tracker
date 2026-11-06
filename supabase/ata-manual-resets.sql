@@ -2,17 +2,22 @@
 -- the automatic Teachable/Zapier feed misses a retake.
 --
 -- Run in Supabase → SQL Editor AFTER supabase/ata-attempts.sql. Safe to re-run.
+-- IMPORTANT: After this file, also run supabase/ata-reset-window-30.sql (or
+-- ata-schedule-hold.sql) so roster/tech JSON keep days30_count / manual_30 and
+-- schedule-hold fields. This file's roster/tech definitions are intentionally
+-- minimal for the write helpers below.
 --
 -- How it works:
 --   * A manual reset is stored as one row in ata_attempts with source='manual_reset'
 --     (score NULL, passed false). It does NOT touch ata_completions, so it never
 --     changes a lesson's pass/score — it only bumps the reset counter.
---   * The roster / tech JSON now returns AUTO attempt stats (count, best, last_score,
---     month_count) EXCLUDING manual_reset rows, plus two new fields per lesson:
+--   * The roster / tech JSON returns AUTO attempt stats (count, best, last_score,
+--     month_count, days30_count) EXCLUDING manual_reset rows, plus:
 --       manual_month  — manual resets logged this calendar month
+--       manual_30     — manual resets in the last 30 days
 --       manual_total  — manual resets logged all-time
---   * The browser shows:  resets = (auto attempts − 1, min 0) + manual resets.
---     So each "+ reset" click adds exactly one to the displayed count.
+--   * The browser shows:  resets = (auto attempts in 30 days − 1, min 0) + manual_30
+--     (+ Quiz Reset Log extras). So each "+ reset" click adds exactly one.
 
 -- ── Roster JSON (auto stats exclude manual_reset; expose manual counts) ────────
 CREATE OR REPLACE FUNCTION public.app_ata_roster_json(p_region text DEFAULT NULL)
@@ -45,6 +50,10 @@ AS $$
                               AND source IS DISTINCT FROM 'manual_reset'),
                'manual_month', count(*) FILTER (WHERE source = 'manual_reset'
                               AND attempted_at >= date_trunc('month', now())),
+               'days30_count', count(*) FILTER (WHERE attempted_at >= now() - interval '30 days'
+                              AND source IS DISTINCT FROM 'manual_reset'),
+               'manual_30', count(*) FILTER (WHERE source = 'manual_reset'
+                              AND attempted_at >= now() - interval '30 days'),
                'manual_total', count(*) FILTER (WHERE source = 'manual_reset')
              ) AS info
              FROM ata_attempts WHERE tech_id = t.id GROUP BY lesson_code
@@ -104,6 +113,10 @@ BEGIN
                           AND source IS DISTINCT FROM 'manual_reset'),
            'manual_month', count(*) FILTER (WHERE source = 'manual_reset'
                           AND attempted_at >= date_trunc('month', now())),
+           'days30_count', count(*) FILTER (WHERE attempted_at >= now() - interval '30 days'
+                          AND source IS DISTINCT FROM 'manual_reset'),
+           'manual_30', count(*) FILTER (WHERE source = 'manual_reset'
+                          AND attempted_at >= now() - interval '30 days'),
            'manual_total', count(*) FILTER (WHERE source = 'manual_reset')
          ) AS info
          FROM ata_attempts WHERE tech_id = t.id GROUP BY lesson_code
