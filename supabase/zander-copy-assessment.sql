@@ -4,6 +4,7 @@
 -- Run once in Supabase → SQL Editor.
 -- Safe to re-run: already-moved rows stay on the active tech; same-date
 -- conflicts keep the active row and skip the archived duplicate.
+-- Assessments in this database use technician_id only (no tech_id column).
 
 -- ── 1) Preview both Zander rows ───────────────────────────────────────────────
 SELECT
@@ -13,15 +14,7 @@ SELECT
   t.region,
   t.deleted_at,
   CASE WHEN t.deleted_at IS NULL THEN 'ACTIVE' ELSE 'ARCHIVED' END AS status,
-  (
-    SELECT count(*)
-    FROM public.assessments a
-    WHERE a.technician_id = t.id
-       OR (EXISTS (
-             SELECT 1 FROM information_schema.columns
-             WHERE table_schema = 'public' AND table_name = 'assessments' AND column_name = 'tech_id'
-           ) AND a.tech_id = t.id)
-  ) AS assessment_count
+  (SELECT count(*) FROM public.assessments a WHERE a.technician_id = t.id) AS assessment_count
 FROM public.technicians t
 WHERE lower(t.name) LIKE '%zander%'
 ORDER BY t.deleted_at NULLS FIRST, t.id;
@@ -33,7 +26,6 @@ DECLARE
   v_archived bigint;
   v_active_n int;
   v_arch_n   int;
-  v_has_tech_id boolean;
   v_moved    int := 0;
   v_skipped  int := 0;
   r          record;
@@ -71,26 +63,17 @@ BEGIN
     RAISE EXCEPTION 'Could not resolve distinct active/archived Zander ids';
   END IF;
 
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'assessments' AND column_name = 'tech_id'
-  ) INTO v_has_tech_id;
-
   FOR r IN
     SELECT a.id, a.date
     FROM public.assessments a
     WHERE a.technician_id = v_archived
-       OR (v_has_tech_id AND a.tech_id = v_archived)
     ORDER BY a.date, a.id
   LOOP
     SELECT EXISTS (
       SELECT 1
       FROM public.assessments a2
       WHERE a2.date = r.date
-        AND (
-          a2.technician_id = v_active
-          OR (v_has_tech_id AND a2.tech_id = v_active)
-        )
+        AND a2.technician_id = v_active
     ) INTO v_exists;
 
     IF v_exists THEN
@@ -98,16 +81,9 @@ BEGIN
       CONTINUE;
     END IF;
 
-    IF v_has_tech_id THEN
-      UPDATE public.assessments
-         SET technician_id = v_active,
-             tech_id = v_active
-       WHERE id = r.id;
-    ELSE
-      UPDATE public.assessments
-         SET technician_id = v_active
-       WHERE id = r.id;
-    END IF;
+    UPDATE public.assessments
+       SET technician_id = v_active
+     WHERE id = r.id;
 
     v_moved := v_moved + 1;
   END LOOP;
