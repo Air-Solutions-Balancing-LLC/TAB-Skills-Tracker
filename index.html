@@ -1138,7 +1138,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-preboot" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('preboot')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Assessment Report</div>
-                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs with the Pre-Bootcamp category selected. Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs with the Pre-Bootcamp category selected. Last assessment is the latest skills assessment. Last taken is the Pre-Bootcamp checklist. Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootReport()">Refresh</button>
@@ -7153,21 +7153,44 @@ function buildAdminPreBootTableHtml(rows){
     const daysCls=reportPreBootDaysClass(days);
     const pct=adminPreBootProgressLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
+    const assess=lastAssessmentText(r);
     return `<tr>
       <td>${adminEsc(r.name)}</td>
       <td>${adminEsc(regionLabel(r.region))}</td>
       <td>${adminEsc(pct)}</td>
       <td>${adminEsc(boot)}</td>
+      <td>${adminEsc(assess)}</td>
       <td>${adminEsc(last)}</td>
       <td class="${daysCls}">${adminEsc(daysText)}</td>
     </tr>`;
   }).join('');
   return `<table class="report-table">
     <thead><tr>
-      <th>Technician</th><th>Region</th><th>Progress</th><th>Bootcamp start</th><th>Last taken</th><th>Days since</th>
+      <th>Technician</th><th>Region</th><th>Progress</th><th>Bootcamp start</th><th>Last assessment</th><th>Last taken</th><th>Days since</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
+}
+function lastAssessmentText(r){
+  if(!r||!Object.prototype.hasOwnProperty.call(r,'last_assessment_date'))return '—';
+  return r.last_assessment_date?fmtDate(r.last_assessment_date):'Never';
+}
+async function attachLastAssessmentDates(rows){
+  if(!Array.isArray(rows)||!rows.length)return;
+  if(rows.every(r=>r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date')))return;
+  if(!userIsAdmin)return;
+  try{
+    const activity=await rpc('app_admin_technician_activity_report',{})||[];
+    const byId={};
+    activity.forEach(a=>{
+      if(a&&a.tech_id!=null)byId[String(a.tech_id)]=a.last_update_date||null;
+    });
+    rows.forEach(r=>{
+      if(!r||Object.prototype.hasOwnProperty.call(r,'last_assessment_date'))return;
+      const key=r.tech_id!=null?String(r.tech_id):'';
+      r.last_assessment_date=key&&Object.prototype.hasOwnProperty.call(byId,key)?byId[key]:null;
+    });
+  }catch(e){}
 }
 function renderAdminPreBootReport(){
   const wrap=document.getElementById('admin-preboot-report-wrap');
@@ -7187,6 +7210,7 @@ async function loadAdminPreBootReport(){
   if(dateLabel)dateLabel.textContent=fmtDateFull(adminPreBootReportDate.toISOString().slice(0,10));
   try{
     adminPreBootRows=sortAdminReportRows(await rpc('app_admin_pre_bootcamp_report',{})||[]);
+    await attachLastAssessmentDates(adminPreBootRows);
   }catch(e){
     wrap.innerHTML='';
     updateAdminPreBootFilterHint(0,0);
@@ -7217,12 +7241,13 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
   let y=margin;
   const lh=12;
   const cols=[
-    {key:'name',label:'Technician',w:contentW*0.22},
-    {key:'region',label:'Region',w:contentW*0.12},
-    {key:'pct',label:'Progress',w:contentW*0.12},
-    {key:'boot',label:'Bootcamp start',w:contentW*0.16},
-    {key:'last',label:'Last taken',w:contentW*0.18},
-    {key:'days',label:'Days since',w:contentW*0.20}
+    {key:'name',label:'Technician',w:contentW*0.18},
+    {key:'region',label:'Region',w:contentW*0.11},
+    {key:'pct',label:'Progress',w:contentW*0.10},
+    {key:'boot',label:'Bootcamp start',w:contentW*0.14},
+    {key:'assess',label:'Last assessment',w:contentW*0.16},
+    {key:'last',label:'Last taken',w:contentW*0.16},
+    {key:'days',label:'Days since',w:contentW*0.15}
   ];
   function needPage(h){
     if(y+h>pageH-margin){doc.addPage();y=margin;return true;}
@@ -7251,7 +7276,7 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     'Report date: '+reportDateText,
     adminPreBootSearch.trim()?('Search: '+adminPreBootSearch.trim()):'',
     adminPreBootRegion?('Region: '+regionLabel(adminPreBootRegion)):'',
-    'Only techs with Pre-Bootcamp category selected · Untaken = Not Yet · Days red if never or ≥7',
+    'Only techs with Pre-Bootcamp category selected · Last assessment = skills assessment · Last taken = checklist · Untaken = Not Yet · Days red if never or ≥7',
     'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
   ].filter(Boolean).join('  ·  ');
   doc.splitTextToSize(pdfSafeText(filterNote),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
@@ -7263,11 +7288,13 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     const daysText=days===null||days===undefined?'—':String(days);
     const pct=adminPreBootProgressLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
+    const assess=lastAssessmentText(r);
     const values=[
       pdfSafeText(r.name),
       pdfSafeText(regionLabel(r.region)),
       pdfSafeText(pct),
       pdfSafeText(boot),
+      pdfSafeText(assess),
       pdfSafeText(last),
       pdfSafeText(daysText)
     ];
@@ -7279,7 +7306,7 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     let x=margin+4;
     lineSets.forEach((lines,i)=>{
       doc.setFont('helvetica',i===0?'bold':'normal');
-      if(i===5){
+      if(i===6){
         const n=days===null||days===undefined||days===''?null:Number(days);
         if(n===null||Number.isNaN(n)||n>=7)doc.setTextColor(192,57,43);
         else doc.setTextColor(15,110,86);
@@ -9984,8 +10011,15 @@ function buildPreBootTasksReportHtml(rows,opts){
       <td class="pm-preboot-level pm-preboot-level-${t.level}">${adminEsc(t.label)}</td>
     </tr>`).join('');
     const boot=r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set';
+    const assessKnown=r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date');
+    const assess=assessKnown?(r.last_assessment_date?('Last assessment: '+fmtDate(r.last_assessment_date)):'Last assessment: Never'):'';
     const last=r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet';
-    const regionBit=showRegion?(adminEsc(regionLabel(r.region)||r.region||'—')+' · '):'';
+    const metaBits=[];
+    if(showRegion)metaBits.push(regionLabel(r.region)||r.region||'—');
+    metaBits.push(boot);
+    if(assess)metaBits.push(assess);
+    metaBits.push(last);
+    metaBits.push(needCount+' task'+(needCount===1?'':'s')+' still to master');
     const emptyTasks=neededOnly
       ?'<tr><td colspan="3" style="color:#0F6E56;font-weight:600">All tasks mastered (Can Perform Independently).</td></tr>'
       :'<tr><td colspan="3" style="color:#999">No Pre-Bootcamp tasks available.</td></tr>';
@@ -9994,7 +10028,7 @@ function buildPreBootTasksReportHtml(rows,opts){
       <div class="pm-preboot-card-h">
         <div class="pm-preboot-card-toggle" role="button" tabindex="0" onclick="togglePmPreBootCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePmPreBootCard(this);}">
           <div class="pm-preboot-card-name"><span class="pm-preboot-chev">▶</span>${adminEsc(r.name)}</div>
-          <div class="pm-preboot-card-meta">${regionBit}${adminEsc(boot)} · ${adminEsc(last)} · ${needCount} task${needCount===1?'':'s'} still to master</div>
+          <div class="pm-preboot-card-meta">${metaBits.map(adminEsc).join(' · ')}</div>
         </div>
         <div class="pm-preboot-card-actions">
           <button type="button" class="admin-chrome-btn pm-preboot-card-pdf" title="Download open tasks PDF for ${adminEsc(r.name)}" onclick="downloadPreBootOpenTasksPdf(${techId},'${source}')">⬇ PDF</button>
@@ -10077,6 +10111,9 @@ function buildPreBootOpenTasksPdfDoc(r){
     'Generated: '+fmtDateFull(new Date().toISOString().slice(0,10)),
     r.region?('Region: '+regionLabel(r.region)):'',
     r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set',
+    (r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date'))
+      ?(r.last_assessment_date?('Last assessment: '+fmtDate(r.last_assessment_date)):'Last assessment: Never')
+      :'',
     r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet',
     'Progress: '+pct+'%',
     openTasks.length+' open task'+(openTasks.length===1?'':'s')+' (not yet Can Perform Independently)'
@@ -10195,6 +10232,7 @@ async function loadPmPreBootReport(){
     await ensureSkills();
     pmPreBootRows=await rpc('app_pm_pre_bootcamp_report',{p_token:currentToken})||[];
     if(!Array.isArray(pmPreBootRows))pmPreBootRows=[];
+    await attachLastAssessmentDates(pmPreBootRows);
     renderPmPreBootReport();
   }catch(e){
     wrap.innerHTML='';
@@ -10257,6 +10295,7 @@ async function loadAdminPreBootTasksReport(){
     await ensureSkills();
     adminPreBootTasksRows=await rpc('app_admin_pre_bootcamp_tasks_report',{})||[];
     if(!Array.isArray(adminPreBootTasksRows))adminPreBootTasksRows=[];
+    await attachLastAssessmentDates(adminPreBootTasksRows);
     renderAdminPreBootTasksReport();
   }catch(e){
     wrap.innerHTML='';

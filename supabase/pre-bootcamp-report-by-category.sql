@@ -2,6 +2,34 @@
 -- Run in Supabase -> SQL Editor (safe to re-run).
 -- Updates app_admin_pre_bootcamp_report() filter from bootcamp start date
 -- to required_categories containing "pre_bootcamp".
+-- Also returns last_assessment_date (latest skills assessment, not the checklist).
+
+CREATE OR REPLACE FUNCTION public.app_last_assessment_date(p_tech_id bigint)
+RETURNS date
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_date date;
+  v_join text;
+BEGIN
+  IF p_tech_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  v_join := public.app_assessment_join_sql('a', '$1');
+  IF v_join IS NULL OR v_join = 'false' THEN
+    RETURN NULL;
+  END IF;
+  EXECUTE format('SELECT max(a.date) FROM public.assessments a WHERE %s', v_join)
+    INTO v_date
+    USING p_tech_id;
+  RETURN v_date;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.app_last_assessment_date(bigint) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.app_admin_pre_bootcamp_report()
 RETURNS json
@@ -62,6 +90,7 @@ BEGIN
           )::int
         )
       END AS progress_pct,
+      public.app_last_assessment_date(t.id) AS last_assessment_date,
       (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date AS last_update_date,
       CASE
         WHEN t.pre_bootcamp_updated_at IS NULL THEN NULL

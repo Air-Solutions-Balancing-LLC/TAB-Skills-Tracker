@@ -1,6 +1,34 @@
 -- PM Pre-Bootcamp Report
 -- Techs in the PM's region with Pre-Bootcamp selected, plus checklist ratings.
 -- Run in Supabase -> SQL Editor (safe to re-run).
+-- last_assessment_date is the latest skills assessment, not the checklist rating.
+
+CREATE OR REPLACE FUNCTION public.app_last_assessment_date(p_tech_id bigint)
+RETURNS date
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_date date;
+  v_join text;
+BEGIN
+  IF p_tech_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  v_join := public.app_assessment_join_sql('a', '$1');
+  IF v_join IS NULL OR v_join = 'false' THEN
+    RETURN NULL;
+  END IF;
+  EXECUTE format('SELECT max(a.date) FROM public.assessments a WHERE %s', v_join)
+    INTO v_date
+    USING p_tech_id;
+  RETURN v_date;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.app_last_assessment_date(bigint) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.app_pm_pre_bootcamp_report(p_token text)
 RETURNS json
@@ -34,6 +62,7 @@ BEGIN
       t.bootcamp_start_date,
       t.required_categories,
       coalesce(t.checklist_completed, '{}'::jsonb) AS checklist_completed,
+      public.app_last_assessment_date(t.id) AS last_assessment_date,
       (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date AS last_update_date
     FROM public.technicians t
     JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'
@@ -75,6 +104,7 @@ BEGIN
       t.bootcamp_start_date,
       t.required_categories,
       coalesce(t.checklist_completed, '{}'::jsonb) AS checklist_completed,
+      public.app_last_assessment_date(t.id) AS last_assessment_date,
       (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date AS last_update_date
     FROM public.technicians t
     JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'
