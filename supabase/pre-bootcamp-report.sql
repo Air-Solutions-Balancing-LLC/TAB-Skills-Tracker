@@ -109,9 +109,14 @@ BEGIN
               SELECT coalesce(sum(
                 CASE
                   WHEN jsonb_typeof(t.checklist_completed -> sk.skill_code) = 'number'
-                    THEN round((((t.checklist_completed ->> sk.skill_code)::numeric) / 3.0) * 100)
+                    THEN CASE (t.checklist_completed ->> sk.skill_code)::int
+                      WHEN 1 THEN 35
+                      WHEN 2 THEN 90
+                      WHEN 3 THEN 100
+                      ELSE 0
+                    END
                   WHEN (t.checklist_completed ->> sk.skill_code) = 'true'
-                    THEN 67
+                    THEN 90
                   ELSE 0
                 END
               ), 0)

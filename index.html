@@ -2307,14 +2307,14 @@ function buildSkillModel(sections){
   // Include scored sections even without a legacy avg column (scores come from raw_scores).
   SKILL_CATS=QUESTIONNAIRE.filter(s=>(s.section_type||'rated')!=='checklist').map(toCat);
 }
-/** Pre-Bootcamp level weights: 30% per early level, +10% for Can Perform Independently (0 / 30 / 60 / 70). */
+/** Pre-Bootcamp level weights per task: Not Yet 0%, Observed 35%, Performed/Assisted 90%, Independently 100%. */
 const PRE_BOOTCAMP_RATINGS=[
   {v:0,l:'Not Yet',pct:0},
-  {v:1,l:'Observed',pct:30},
-  {v:2,l:'Performed/Assisted',pct:60},
-  {v:3,l:'Can Perform Independently',pct:70}
+  {v:1,l:'Observed',pct:35},
+  {v:2,l:'Performed/Assisted',pct:90},
+  {v:3,l:'Can Perform Independently',pct:100}
 ];
-const PRE_BOOTCAMP_MAX_PCT=70;
+const PRE_BOOTCAMP_MAX_PCT=100;
 function preBootcampRatingLabel(level){
   const r=PRE_BOOTCAMP_RATINGS.find(x=>x.v===level);
   return r?r.l:'Not Yet';
@@ -2341,7 +2341,7 @@ function sectionRatingPct(completed,sec){
   return Math.round(sum/sec.skills.length);
 }
 function pctColor(pct){return pct>=100?'#1D9E75':pct>=50?'#4A90D9':'#7aaedd';}
-function preBootcampPctColor(pct){return pct>=PRE_BOOTCAMP_MAX_PCT?'#1D9E75':pct>=30?'#4A90D9':'#7aaedd';}
+function preBootcampPctColor(pct){return pct>=PRE_BOOTCAMP_MAX_PCT?'#1D9E75':pct>=90?'#4A90D9':pct>=35?'#7aaedd':'#9aa8bc';}
 function parseChecklistCompleted(raw){
   if(!raw)return{};
   if(typeof raw==='string'){try{return JSON.parse(raw);}catch(e){return {};}}
@@ -2366,7 +2366,7 @@ function checklistProgress(completed){
 function preBootcampSectionComplete(completed){
   const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
   if(!sec||!(sec.skills||[]).length)return true;
-  // Complete when every topic is at Can Perform Independently (not when avg hits 100 — max item weight is 70%).
+  // Complete when every topic is at Can Perform Independently (100%).
   return sec.skills.every(sk=>getChecklistRating(completed,sk.id)>=3);
 }
 function isPreBootcampRequired(t){
@@ -2438,7 +2438,7 @@ function renderChecklistHtml(completed,opts){
   let progNote='';
   if(showPb&&prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
   const subText=showPb
-    ?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (30%), Performed/Assisted (60%), or Can Perform Independently (70%). These do not affect your skill scores.'
+    ?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (35%), Performed/Assisted (90%), or Can Perform Independently (100%). These do not affect your skill scores.'
     :'These do not affect your skill scores.';
   const bootcampDateLabel=showPb&&bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
   return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Pre-Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
@@ -2833,7 +2833,7 @@ function renderPreBootcampAssessment(){
   wrap.innerHTML=`
     <div class="q-header">
       <div class="q-title">Pre-Bootcamp Assessment${bootcampDateLabel}</div>
-      <div class="q-sub">Rate each topic — Not Yet (0%), Observed (30%), Performed/Assisted (60%), or Can Perform Independently (70%). These ratings do not affect your monthly skill scores.</div>
+      <div class="q-sub">Rate each topic — Not Yet (0%), Observed (35%), Performed/Assisted (90%), or Can Perform Independently (100%). These ratings do not affect your monthly skill scores.</div>
       <div class="q-progress"><div class="q-progress-fill" id="preboot-fill" style="width:${fillPct}%"></div></div>
       <div class="q-progress-label" id="preboot-label">${ratedCount} of ${total} topics rated · ${prog}% complete</div>
     </div>
@@ -5387,7 +5387,8 @@ function ataResetDisplay(lr){
   const rm=lr.resets||0,tot=lr.resetsTotal||0;
   const has=lr.best!=null||rm>0||tot>0||lr.failed||lr.done;
   if(!has)return {text:'—',empty:true};
-  return {text:rm+'/'+ATA_MAX_RESETS+(tot>rm?(' · '+tot+' tot'):''),empty:false,over:!!lr.overLimit};
+  // 30-day count only — lifetime totals live in the quiz-reset summary card.
+  return {text:rm+'/'+ATA_MAX_RESETS,empty:false,over:!!lr.overLimit};
 }
 function ataFmtDeadline(d){
   if(!d)return '—';
@@ -6231,7 +6232,7 @@ function buildAtaTechDoc(tech,opts){
     {label:'Due Thursday',w:contentW*0.13},
     {label:'Score',w:contentW*0.09},
     {label:'Status',w:contentW*0.12},
-    {label:'Resets (30d·tot)',w:contentW*0.16}
+    {label:'Resets (30d)',w:contentW*0.16}
   ];
   function drawLessonHeader(){
     needPage(24);
@@ -6667,15 +6668,15 @@ function ataRenderResetPanel(){
   if(!progs.length){rp.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to manage its resets.</div>';return;}
   const gw=ataGlobalWeeks();
   let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — Teachable sync auto-counts Fail→Incomplete as a reset. Use <b>+ reset</b> here only if you need to log one by hand (max '+ATA_MAX_RESETS+' in the last 30 days).</div>'
-    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (30d·tot)</th><th style="width:130px">Action</th></tr></thead><tbody>';
+    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (30d)</th><th style="width:130px">Action</th></tr></thead><tbody>';
   progs.forEach(pr=>{
     ataLessonsByProgram(pr).forEach(l=>{
-      const rm=ataResetsThisMonth(tech,l.lesson_code),rt=ataResetsTotal(tech,l.lesson_code);
+      const rm=ataResetsThisMonth(tech,l.lesson_code);
       const mt=(ataAttemptInfo(tech,l.lesson_code)||{}).manual_total||0;
       const over=rm>=ATA_MAX_RESETS;
       html+='<tr><td style="color:#888">'+(gw.map[l.lesson_code]||'')+'</td>'
         +'<td><b>'+adminEsc(l.lesson_code)+'</b> — '+adminEsc(l.lesson_name)+'</td>'
-        +'<td'+(over?' style="color:#C0392B;font-weight:700"':'')+'>'+rm+'/'+ATA_MAX_RESETS+(rt>rm?' ('+rt+' tot)':'')+(over?' !':'')+'</td>'
+        +'<td'+(over?' style="color:#C0392B;font-weight:700"':'')+'>'+rm+'/'+ATA_MAX_RESETS+(over?' !':'')+'</td>'
         +'<td style="white-space:nowrap">'
         +'<button type="button" class="btn" title="Remove last manual reset" style="padding:3px 8px;font-size:12px;background:#C0392B" '+(mt<=0?'disabled':'')+' onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',-1)">−</button> '
         +'<button type="button" class="btn" style="padding:3px 8px;font-size:12px;background:#0F6E56" onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',1)">+ reset</button>'
@@ -6938,7 +6939,7 @@ function renderTechAta(tech){
     </tr>`;
     }).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (30d · tot)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (30d)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);

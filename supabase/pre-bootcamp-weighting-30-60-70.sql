@@ -1,6 +1,6 @@
--- Pre-Bootcamp progress weights: Observed 30%, Performed/Assisted 60%, Can Perform Independently 70%.
--- (Was even thirds: level/3 * 100 → 33 / 67 / 100.)
--- Run in Supabase → SQL Editor (safe to re-run).
+-- DEPRECATED filename — weights are now 0 / 35 / 90 / 100.
+-- Prefer: supabase/pre-bootcamp-weighting-0-35-90-100.sql
+-- This copy keeps the same function so old runbooks still update correctly.
 
 CREATE OR REPLACE FUNCTION public.app_admin_pre_bootcamp_report()
 RETURNS json
@@ -47,12 +47,12 @@ BEGIN
                 CASE
                   WHEN jsonb_typeof(t.checklist_completed -> sk.skill_code) = 'number' THEN
                     CASE (t.checklist_completed ->> sk.skill_code)::int
-                      WHEN 1 THEN 30
-                      WHEN 2 THEN 60
-                      WHEN 3 THEN 70
+                      WHEN 1 THEN 35
+                      WHEN 2 THEN 90
+                      WHEN 3 THEN 100
                       ELSE 0
                     END
-                  WHEN (t.checklist_completed ->> sk.skill_code) = 'true' THEN 60
+                  WHEN (t.checklist_completed ->> sk.skill_code) = 'true' THEN 90
                   ELSE 0
                 END
               ), 0)
