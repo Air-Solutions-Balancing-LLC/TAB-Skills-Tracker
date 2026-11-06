@@ -957,6 +957,12 @@ body.mobile-nav-open{overflow:hidden}
       <a href="/" style="font-size:13px;font-weight:700;color:#1B3A6B;text-decoration:none;padding:8px 12px;border:1.5px solid #c5d4ea;border-radius:10px">Staff sign-in</a>
     </div>
     <div class="err" id="weekly-public-err" style="display:none"></div>
+    <div class="weekly-add-row" id="weekly-public-viewer-row" style="display:none;background:#EEF4FF;border:1.5px solid #c5d4ea">
+      <label style="flex:1;min-width:220px">I am (Training Tech)
+        <select id="weekly-public-viewer" onchange="onWeeklyPublicViewerChange()"></select>
+      </label>
+      <div id="weekly-public-viewer-hint" style="font-size:12px;color:#4a5d78;font-weight:600;padding-bottom:2px">Select your name. Evaluation history is only visible to designated leads.</div>
+    </div>
     <div class="weekly-add-row" id="weekly-public-add-row" style="display:none">
       <label>Technician
         <select id="weekly-public-add-tech"></select>
@@ -2301,12 +2307,14 @@ function buildSkillModel(sections){
   // Include scored sections even without a legacy avg column (scores come from raw_scores).
   SKILL_CATS=QUESTIONNAIRE.filter(s=>(s.section_type||'rated')!=='checklist').map(toCat);
 }
+/** Pre-Bootcamp level weights: 30% per early level, +10% for Can Perform Independently (0 / 30 / 60 / 70). */
 const PRE_BOOTCAMP_RATINGS=[
   {v:0,l:'Not Yet',pct:0},
-  {v:1,l:'Observed',pct:33},
-  {v:2,l:'Performed/Assisted',pct:67},
-  {v:3,l:'Can Perform Independently',pct:100}
+  {v:1,l:'Observed',pct:30},
+  {v:2,l:'Performed/Assisted',pct:60},
+  {v:3,l:'Can Perform Independently',pct:70}
 ];
+const PRE_BOOTCAMP_MAX_PCT=70;
 function preBootcampRatingLabel(level){
   const r=PRE_BOOTCAMP_RATINGS.find(x=>x.v===level);
   return r?r.l:'Not Yet';
@@ -2322,13 +2330,18 @@ function getChecklistRating(completed,code){
   const n=Number(v);
   return (n>=1&&n<=3)?n:0;
 }
-function checklistItemPct(rating){return rating?Math.round((rating/3)*100):0;}
+function checklistItemPct(rating){
+  const n=Number(rating)||0;
+  const r=PRE_BOOTCAMP_RATINGS.find(x=>x.v===n);
+  return r?r.pct:0;
+}
 function sectionRatingPct(completed,sec){
   if(!sec.skills.length)return 0;
   const sum=sec.skills.reduce((s,sk)=>s+checklistItemPct(getChecklistRating(completed,sk.id)),0);
   return Math.round(sum/sec.skills.length);
 }
 function pctColor(pct){return pct>=100?'#1D9E75':pct>=50?'#4A90D9':'#7aaedd';}
+function preBootcampPctColor(pct){return pct>=PRE_BOOTCAMP_MAX_PCT?'#1D9E75':pct>=30?'#4A90D9':'#7aaedd';}
 function parseChecklistCompleted(raw){
   if(!raw)return{};
   if(typeof raw==='string'){try{return JSON.parse(raw);}catch(e){return {};}}
@@ -2353,7 +2366,8 @@ function checklistProgress(completed){
 function preBootcampSectionComplete(completed){
   const sec=CHECKLIST_SECTIONS.find(isRatedChecklistSection);
   if(!sec||!(sec.skills||[]).length)return true;
-  return sectionRatingPct(completed,sec)>=100;
+  // Complete when every topic is at Can Perform Independently (not when avg hits 100 — max item weight is 70%).
+  return sec.skills.every(sk=>getChecklistRating(completed,sk.id)>=3);
 }
 function isPreBootcampRequired(t){
   return techRequiredCategoryKeys(t).includes('pre_bootcamp');
@@ -2404,7 +2418,7 @@ function renderChecklistHtml(completed,opts){
     if(rated){
       const pct=sectionRatingPct(completed,sec);
       avgLabel=total?`${pct}%`:'no tasks';
-      avgColor=pctColor(pct);
+      avgColor=preBootcampPctColor(pct);
     }else{
       const secDone=sec.skills.filter(sk=>isChecklistDone(completed,sk.id)).length;
       avgLabel=total?`${secDone}/${total} done`:'no tasks';
@@ -2424,7 +2438,7 @@ function renderChecklistHtml(completed,opts){
   let progNote='';
   if(showPb&&prog.ratedSec&&prog.ratedSec.skills.length)progNote=` Pre-Bootcamp progress: <strong>${prog.ratedPct}%</strong>.`;
   const subText=showPb
-    ?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These do not affect your skill scores.'
+    ?'Rate each Pre-Bootcamp topic — Not Yet (0%), Observed (30%), Performed/Assisted (60%), or Can Perform Independently (70%). These do not affect your skill scores.'
     :'These do not affect your skill scores.';
   const bootcampDateLabel=showPb&&bootcampStartDate?` · Bootcamp Start Date: ${fmtDate(bootcampStartDate)}`:'';
   return`<div class="cl-box" id="tech-prebootcamp-box"><div class="cl-box-title">📋 Pre-Bootcamp${bootcampDateLabel}</div><div class="cl-box-sub">${subText}${progNote}</div>${sections}</div>`;
@@ -2712,7 +2726,7 @@ function updateTechPreBootcampNav(t,readOnly){
   const canEdit=!readOnly||(techViewBackPage==='pg-admin'&&!!userIsAdmin);
   const completed=parseChecklistCompleted(t&&(t.checklist_completed||currentChecklist));
   const prog=checklistProgress(completed);
-  const continuing=preBootcampHasAnyRating(completed)&&prog.ratedPct<100;
+  const continuing=preBootcampHasAnyRating(completed)&&!preBootcampSectionComplete(completed);
   const label=continuing?'Continue Pre-Bootcamp':'Take Pre-Bootcamp Assessment';
   const mobileLabel=continuing?'Continue Pre-Bootcamp':'Pre-Bootcamp';
   const dateBits=[bootcampDateLabel(t)];
@@ -2789,6 +2803,7 @@ function renderPreBootcampAssessment(){
     return;
   }
   const prog=sectionRatingPct(completed,sec);
+  const fillPct=PRE_BOOTCAMP_MAX_PCT?Math.min(100,Math.round((prog/PRE_BOOTCAMP_MAX_PCT)*100)):0;
   const ratedCount=sec.skills.filter(sk=>getChecklistRating(completed,sk.id)>0).length;
   const total=sec.skills.length;
   const bootcampDateLabel=t.bootcamp_start_date?` · Bootcamp Start Date: ${fmtDate(t.bootcamp_start_date)}`:'';
@@ -2818,8 +2833,8 @@ function renderPreBootcampAssessment(){
   wrap.innerHTML=`
     <div class="q-header">
       <div class="q-title">Pre-Bootcamp Assessment${bootcampDateLabel}</div>
-      <div class="q-sub">Rate each topic — Not Yet (0%), Observed (33%), Performed/Assisted (67%), or Can Perform Independently (100%). These ratings do not affect your monthly skill scores.</div>
-      <div class="q-progress"><div class="q-progress-fill" id="preboot-fill" style="width:${prog}%"></div></div>
+      <div class="q-sub">Rate each topic — Not Yet (0%), Observed (30%), Performed/Assisted (60%), or Can Perform Independently (70%). These ratings do not affect your monthly skill scores.</div>
+      <div class="q-progress"><div class="q-progress-fill" id="preboot-fill" style="width:${fillPct}%"></div></div>
       <div class="q-progress-label" id="preboot-label">${ratedCount} of ${total} topics rated · ${prog}% complete</div>
     </div>
     ${sections}
@@ -3385,7 +3400,10 @@ let currentRole=null,currentRegion=null,currentTechId=null,currentTechName=null,
 let regionTechs=[],qAnswers={},qProjectJobs={},qNebbStatus='',azureEmailAddr=null,qForceRerateComplete=false;
 let userIsAdmin=false,currentDetailIdx=null,techViewBackPage='pg-pm',techViewMode=null;
 let sbClient=null,sbAccessToken=null;
-let weeklyData=null,weeklyLinkToken=null,weeklyLinkRegion=null,weeklyPublicMode=false;
+let weeklyData=null,weeklyLinkToken=null,weeklyLinkRegion=null,weeklyPublicMode=false,weeklyPublicViewerId=null;
+/** Public share-link viewers allowed to see past Weekly Evaluation notes (name match). */
+const WEEKLY_HISTORY_VIEWER_NAMES=['jef tucker','jeff tucker','jimmy anderson','kody collins','adam freeman'];
+const WEEKLY_VIEWER_STORAGE_KEY='tabWeeklyPublicViewerId';
 
 // Company Microsoft domains allowed to sign in
 const ALLOWED_EMAIL_DOMAINS=['airadigmsolutions.com','kitchenenergysolutions.com','usabalancing.com'];
@@ -9668,6 +9686,72 @@ function weeklyTodayInput(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+function weeklyNormName(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+function weeklyNameCanSeeHistory(name){
+  const n=weeklyNormName(name);
+  return !!n&&WEEKLY_HISTORY_VIEWER_NAMES.includes(n);
+}
+function weeklyViewerCanSeeHistory(data){
+  // PM / admin session always sees full history.
+  if(!weeklyPublicMode)return true;
+  const techs=((data||weeklyData)&& (data||weeklyData).techs)||[];
+  const me=techs.find(t=>String(t.id)===String(weeklyPublicViewerId));
+  return !!(me&&weeklyNameCanSeeHistory(me.name));
+}
+function weeklyStripHistoryIfNeeded(data){
+  if(!data||weeklyViewerCanSeeHistory(data))return data;
+  const copy=typeof structuredClone==='function'?structuredClone(data):JSON.parse(JSON.stringify(data));
+  (copy.roster||[]).forEach(r=>{r.updates=[]; r._history_hidden=true;});
+  return copy;
+}
+/** On the public link, never show the viewer's own evaluation card (subjects can't access their own notes). */
+function weeklyFilterSelfFromRoster(data){
+  if(!data||!weeklyPublicMode||!weeklyPublicViewerId)return data;
+  const copy=typeof structuredClone==='function'?structuredClone(data):JSON.parse(JSON.stringify(data));
+  copy.roster=(copy.roster||[]).filter(r=>String(r.tech_id)!==String(weeklyPublicViewerId));
+  return copy;
+}
+function weeklyPreparePublicData(raw){
+  return weeklyFilterSelfFromRoster(weeklyStripHistoryIfNeeded(raw));
+}
+function weeklyLoadStoredViewerId(){
+  try{return sessionStorage.getItem(WEEKLY_VIEWER_STORAGE_KEY)||'';}catch(_){return'';}
+}
+function weeklyStoreViewerId(id){
+  weeklyPublicViewerId=id?Number(id):null;
+  try{
+    if(weeklyPublicViewerId)sessionStorage.setItem(WEEKLY_VIEWER_STORAGE_KEY,String(weeklyPublicViewerId));
+    else sessionStorage.removeItem(WEEKLY_VIEWER_STORAGE_KEY);
+  }catch(_){}
+}
+function weeklyFillViewerSelect(data){
+  const el=document.getElementById('weekly-public-viewer');
+  const row=document.getElementById('weekly-public-viewer-row');
+  const hint=document.getElementById('weekly-public-viewer-hint');
+  if(row)row.style.display=weeklyPublicMode?'flex':'none';
+  if(!el||!weeklyPublicMode)return;
+  const stored=weeklyPublicViewerId||weeklyLoadStoredViewerId();
+  el.innerHTML=weeklyTechOptionsHtml(data&&data.techs||[],stored||null);
+  if(stored&&[...el.options].some(o=>o.value===String(stored))){
+    el.value=String(stored);
+    weeklyStoreViewerId(stored);
+  }else{
+    el.value='';
+    weeklyStoreViewerId(null);
+  }
+  if(hint){
+    hint.textContent=weeklyViewerCanSeeHistory()
+      ?'History visible — you can review past evaluations.'
+      :'Select your name. Evaluation history is only visible to designated leads.';
+  }
+}
+function onWeeklyPublicViewerChange(){
+  const el=document.getElementById('weekly-public-viewer');
+  weeklyStoreViewerId(el&&el.value?el.value:null);
+  loadPublicWeeklyUpdates();
+}
 function weeklyTechOptionsHtml(techs,selectedId){
   const opts=['<option value="">Select…</option>'];
   (techs||[]).forEach(t=>{
@@ -9756,15 +9840,23 @@ function weeklyRosterWrap(){
 function buildWeeklyRosterHtml(data,opts){
   opts=opts||{};
   const canManageRoster=!!opts.canManageRoster;
+  const showHistory=opts.showHistory!==undefined?!!opts.showHistory:weeklyViewerCanSeeHistory();
   const openTechIds=opts.openTechIds instanceof Set?opts.openTechIds:new Set(opts.openTechIds||[]);
   const techs=data&&data.techs||[];
-  const roster=data&&data.roster||[];
+  let roster=data&&data.roster||[];
+  const viewerPrefill=weeklyPublicMode&&weeklyPublicViewerId?weeklyPublicViewerId:null;
+  if(weeklyPublicMode&&weeklyPublicViewerId){
+    roster=roster.filter(r=>String(r.tech_id)!==String(weeklyPublicViewerId));
+  }
+  if(weeklyPublicMode&&!weeklyPublicViewerId){
+    return`<div class="weekly-empty">Select <strong>I am (Training Tech)</strong> above before viewing or adding evaluations. Your own evaluation card is never shown on this link.</div>`;
+  }
   if(!roster.length){
     return`<div class="weekly-empty">No technicians on Weekly Evaluations yet. Add one above to start tracking weekly notes.</div>`;
   }
   const ratingHeads=WEEKLY_RATING_FIELDS.map(f=>`<th class="weekly-su-col" title="${adminEsc(f.label)}">${adminEsc(f.header||f.label)}</th>`).join('');
   return roster.map(r=>{
-    const updates=r.updates||[];
+    const updates=showHistory?(r.updates||[]):[];
     const rows=updates.length?updates.map(u=>`<tr>
       <td class="weekly-date-col" style="font-weight:700;color:#1B3A6B">${adminEsc(weeklyFmtDate(u.update_date))}</td>
       <td>${adminEsc(u.trainer_name||'—')}</td>
@@ -9781,11 +9873,22 @@ function buildWeeklyRosterHtml(data,opts){
       :`<tr><td colspan="11" style="color:#999">No evaluations yet.</td></tr>`;
     const formId='weekly-form-'+r.tech_id;
     const isOpen=openTechIds.has(String(r.tech_id));
+    const meta=showHistory
+      ?(`${updates.length} evaluation${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory`)
+      :('Add an evaluation below · history hidden · S = Satisfactory · U = Unsatisfactory');
+    const historyBlock=showHistory
+      ?`<div style="overflow-x:auto">
+          <table class="weekly-table">
+            <thead><tr><th class="weekly-date-col">Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`
+      :`<div style="padding:12px 14px;font-size:12px;color:#6b7280;background:#f8fafc;border-top:1px solid #eef1f6">Past evaluation notes are only visible to designated leads (Jef Tucker, Jimmy Anderson, Kody Collins, Adam Freeman).</div>`;
     return`<div class="weekly-card${isOpen?' is-open':''}" data-tech="${r.tech_id}">
       <div class="weekly-card-h" role="button" tabindex="0" onclick="toggleWeeklyCard(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleWeeklyCard(this);}">
         <div>
           <div class="weekly-card-name"><span class="weekly-chev">▶</span>${adminEsc(r.name)}</div>
-          <div class="weekly-card-meta">${updates.length} evaluation${updates.length===1?'':'s'} · newest on top · S = Satisfactory · U = Unsatisfactory</div>
+          <div class="weekly-card-meta">${adminEsc(meta)}</div>
         </div>
         ${canManageRoster?`<button type="button" class="admin-chrome-btn" style="padding:6px 10px;font-size:11px;color:#6b7280;border-color:#d1d5db" onclick="event.stopPropagation();weeklyArchiveTech(${r.tech_id})">Archive</button>`:''}
       </div>
@@ -9793,7 +9896,7 @@ function buildWeeklyRosterHtml(data,opts){
         <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
           <div class="weekly-form-top">
             <label class="weekly-date-field">Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
-            <label class="weekly-trainer-field">Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs)}</select></label>
+            <label class="weekly-trainer-field">Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs,viewerPrefill)}</select></label>
             <label class="weekly-trainer-field">Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
             <div class="weekly-submit-wrap"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
           </div>
@@ -9803,12 +9906,7 @@ function buildWeeklyRosterHtml(data,opts){
             <label>Action plan<textarea name="plan" placeholder="Next steps / focus"></textarea></label>
           </div>
         </form>
-        <div style="overflow-x:auto">
-          <table class="weekly-table">
-            <thead><tr><th class="weekly-date-col">Date</th><th>Training Tech</th><th>Training Tech 2</th>${ratingHeads}<th>Comment</th><th>Action Plan</th><th></th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
+        ${historyBlock}
       </div>
     </div>`;
   }).join('');
@@ -9823,20 +9921,25 @@ function weeklyRerenderRoster(opts){
   const wrap=weeklyRosterWrap();
   const openIds=weeklyOpenTechIdsFromDom(wrap);
   if(opts.keepOpenTechId!=null&&opts.keepOpenTechId!=='')openIds.add(String(opts.keepOpenTechId));
+  const showHistory=weeklyViewerCanSeeHistory();
   if(weeklyPublicMode){
+    weeklyFillViewerSelect(weeklyData);
     weeklyFillAddSelect('weekly-public-add-tech',weeklyData);
-    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:false,openTechIds:openIds});
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:false,openTechIds:openIds,showHistory});
   }else{
     weeklyFillAddSelect('pm-weekly-add-tech',weeklyData);
-    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true,openTechIds:openIds});
+    if(wrap)wrap.innerHTML=buildWeeklyRosterHtml(weeklyData,{canManageRoster:true,openTechIds:openIds,showHistory:true});
   }
 }
 function weeklyFillAddSelect(selectId,data,rosterOnly){
   const el=document.getElementById(selectId);if(!el)return;
   const onRoster=new Set((data.roster||[]).map(r=>String(r.tech_id)));
-  const techs=(data.techs||[]).filter(t=>!rosterOnly||!onRoster.has(String(t.id)));
-  // For "add to roster", exclude already-rostered; for public add same.
-  const available=(data.techs||[]).filter(t=>!onRoster.has(String(t.id)));
+  // For "add to roster", exclude already-rostered; on public link also exclude the viewer (can't evaluate yourself).
+  const available=(data.techs||[]).filter(t=>{
+    if(onRoster.has(String(t.id)))return false;
+    if(weeklyPublicMode&&weeklyPublicViewerId&&String(t.id)===String(weeklyPublicViewerId))return false;
+    return true;
+  });
   el.innerHTML=weeklyTechOptionsHtml(available);
 }
 function weeklyShowErr(id,msg){
@@ -9896,6 +9999,14 @@ async function weeklySubmitUpdate(ev,techId){
   const ratings=weeklyReadRatings(form,techId);
   const comment=form.comment.value||'';
   const plan=form.plan.value||'';
+  if(weeklyPublicMode&&!weeklyPublicViewerId){
+    alert('Select who you are (I am) before adding an evaluation.');
+    return;
+  }
+  if(weeklyPublicMode&&String(techId)===String(weeklyPublicViewerId)){
+    alert('You cannot view or submit an evaluation for yourself.');
+    return;
+  }
   if(!trainer){alert('Select the Training Tech.');return;}
   if(trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
   if(WEEKLY_RATING_FIELDS.some(f=>!ratings[f.key])){
@@ -9903,7 +10014,7 @@ async function weeklySubmitUpdate(ev,techId){
     return;
   }
   try{
-    weeklyData=await rpc('app_weekly_add_update',{
+    const raw=await rpc('app_weekly_add_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
       p_link_token:weeklyPublicMode?weeklyLinkToken:null,
       p_tech_id:techId,
@@ -9914,22 +10025,28 @@ async function weeklySubmitUpdate(ev,techId){
       p_action_plan:plan,
       p_ratings:ratings
     });
+    weeklyData=weeklyPreparePublicData(raw);
     weeklyRerenderRoster({keepOpenTechId:techId});
   }catch(e){
     alert('Could not save update. '+(e.message||'Try again.'));
   }
 }
 async function weeklyDeleteUpdate(updateId){
+  if(weeklyPublicMode&&!weeklyViewerCanSeeHistory()){
+    alert('Only designated leads can delete evaluation history.');
+    return;
+  }
   if(!confirm('Delete this Weekly Evaluation entry?'))return;
   const wrap=weeklyRosterWrap();
   const openCard=wrap&&wrap.querySelector(`.weekly-card.is-open`);
   const keepId=openCard?openCard.getAttribute('data-tech'):null;
   try{
-    weeklyData=await rpc('app_weekly_delete_update',{
+    const raw=await rpc('app_weekly_delete_update',{
       p_session_token:weeklyPublicMode?null:currentToken,
       p_link_token:weeklyPublicMode?weeklyLinkToken:null,
       p_update_id:updateId
     });
+    weeklyData=weeklyPreparePublicData(raw);
     weeklyRerenderRoster({keepOpenTechId:keepId});
   }catch(e){
     alert('Could not delete update. '+(e.message||'Try again.'));
@@ -9940,6 +10057,7 @@ function renderPublicWeekly(){
   if(sub)sub.textContent=(regionLabel(weeklyData&&weeklyData.region||weeklyLinkRegion)||'Region')+' — add weekly notes for technicians on the list';
   const addRow=document.getElementById('weekly-public-add-row');
   if(addRow)addRow.style.display='flex';
+  weeklyFillViewerSelect(weeklyData);
   weeklyRerenderRoster();
 }
 async function loadPublicWeeklyUpdates(){
@@ -9947,7 +10065,18 @@ async function loadPublicWeeklyUpdates(){
   const wrap=document.getElementById('weekly-public-wrap');
   if(wrap)wrap.innerHTML='<div class="loading">Loading…</div>';
   try{
-    weeklyData=await rpc('app_weekly_public_get',{p_link_token:weeklyLinkToken});
+    if(!weeklyPublicViewerId)weeklyPublicViewerId=weeklyLoadStoredViewerId()||null;
+    const args={p_link_token:weeklyLinkToken};
+    if(weeklyPublicViewerId)args.p_viewer_tech_id=Number(weeklyPublicViewerId);
+    let raw;
+    try{
+      raw=await rpc('app_weekly_public_get',args);
+    }catch(e1){
+      // Older SQL without p_viewer_tech_id — fall back and strip client-side.
+      if(args.p_viewer_tech_id!=null)raw=await rpc('app_weekly_public_get',{p_link_token:weeklyLinkToken});
+      else throw e1;
+    }
+    weeklyData=weeklyPreparePublicData(raw);
     weeklyLinkRegion=weeklyData.region||weeklyLinkRegion;
     renderPublicWeekly();
   }catch(e){
