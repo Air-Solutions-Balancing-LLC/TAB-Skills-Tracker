@@ -1947,7 +1947,7 @@ body.mobile-nav-open{overflow:hidden}
       <h3 id="ata-report-title" style="margin:0;font-size:17px;display:flex;align-items:center;flex-wrap:wrap;gap:8px"><span id="ata-report-title-text">ATA Report</span><span id="ata-report-alert"></span></h3>
       <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="ataCloseReport()">Close</button>
     </div>
-    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Use <strong>Edit</strong> for scores / pass / dates, <strong>Manage resets</strong> for retakes, or <strong>Report</strong> to preview and download the PDF.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick the modules to include. Use <strong>Edit</strong> for scores / pass / dates, <strong>Manage resets</strong> for retakes, or <strong>Report</strong> to open the PDF preview on top.</p>
     <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:10px">
       <span style="font-weight:700;font-size:12px;color:#1B3A6B">Modules:</span>
       <label style="font-size:13px;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" class="ata-rep-mod" value="basic" checked onchange="ataOnReportModulesChange()"> Basic</label>
@@ -1957,14 +1957,25 @@ body.mobile-nav-open{overflow:hidden}
       <button type="button" class="btn" id="ata-rep-edit-toggle" style="background:#0F6E56;font-size:12px;padding:6px 11px;display:none" onclick="ataSetReportMode('edit')">Edit</button>
       <button type="button" class="btn" id="ata-rep-reset-toggle" style="background:#6b7280;font-size:12px;padding:6px 11px;display:none" onclick="ataSetReportMode('resets')">Manage resets</button>
       <button type="button" class="btn" id="ata-rep-view-toggle" style="background:#1B3A6B;font-size:12px;padding:6px 11px" onclick="ataSetReportMode('report')">Report</button>
-      <button type="button" class="btn" id="ata-rep-download-btn" style="background:#1B3A6B;font-size:12px;padding:6px 11px;display:none" onclick="ataReportDownload()">⬇ Download PDF</button>
     </div>
     <div id="ata-brenda-note" style="display:none;margin:0 0 10px"></div>
     <div id="ata-schedule-hold" style="display:none;border:1px solid #e7d7b8;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fffaf1"></div>
     <div id="ata-progress-edit-panel" style="display:none;border:1px solid #cfe8dc;border-radius:10px;padding:10px;margin-bottom:10px;background:#f4fbf7;flex:1;min-height:280px;overflow:auto"></div>
     <div id="ata-reset-panel" style="display:none;border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:10px;background:#fafbfe;flex:1;min-height:280px;overflow:auto"></div>
-    <div id="ata-report-preview-wrap" style="display:none;flex:1;min-height:340px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
-      <iframe id="ata-report-frame" style="width:100%;height:62vh;border:0;display:block" title="ATA report preview"></iframe>
+  </div>
+</div>
+
+<div class="assess-modal-overlay" id="ata-pdf-preview-overlay" role="dialog" aria-modal="true" aria-labelledby="ata-pdf-preview-title" style="z-index:220" onclick="if(event.target===this)ataClosePdfPreview()">
+  <div class="assess-modal" style="max-width:960px;width:96%;max-height:94vh;padding:20px;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <h3 id="ata-pdf-preview-title" style="margin:0;font-size:17px;color:#1B3A6B">ATA Schedule Preview</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn" style="background:#1B3A6B;padding:6px 12px" onclick="ataReportDownload()">⬇ Download PDF</button>
+        <button type="button" class="btn btn-outline" style="padding:6px 12px;font-size:18px;line-height:1;min-width:40px" onclick="ataClosePdfPreview()" title="Close preview" aria-label="Close preview">×</button>
+      </div>
+    </div>
+    <div style="flex:1;min-height:360px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
+      <iframe id="ata-report-frame" style="width:100%;height:68vh;border:0;display:block" title="ATA report preview"></iframe>
     </div>
   </div>
 </div>
@@ -6300,8 +6311,8 @@ function buildAtaTechDoc(tech,opts){
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
 }
-// Opens the report modal: Edit (admin), Manage resets, or Report preview.
-let ataReportTechId=null,ataReportBlobUrl=null,ataReportMode='report';
+// Opens the report modal: manage (default), Edit / Manage resets (admin), or Report PDF overlay.
+let ataReportTechId=null,ataReportBlobUrl=null,ataReportMode='manage';
 function ataDownloadTechPdf(techId){ataOpenReport(techId);}
 function ataApplyReportModeBtn(el,active,baseBg,show){
   if(!el)return;
@@ -6314,26 +6325,60 @@ function ataApplyReportModeBtn(el,active,baseBg,show){
   el.style.fontWeight=active?'800':'600';
   el.style.boxShadow=active?'0 0 0 2px rgba(27,58,107,.25)':'none';
 }
+function ataPdfPreviewOpen(){
+  const ov=document.getElementById('ata-pdf-preview-overlay');
+  return !!(ov&&ov.classList.contains('visible'));
+}
+function ataClosePdfPreview(){
+  const ov=document.getElementById('ata-pdf-preview-overlay');
+  if(ov)ov.classList.remove('visible');
+  const frame=document.getElementById('ata-report-frame');
+  if(frame)frame.removeAttribute('src');
+  if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
+  if(ataReportMode==='report')ataReportMode='manage';
+  const vt=document.getElementById('ata-rep-view-toggle');
+  ataApplyReportModeBtn(vt,false,'#1B3A6B',true);
+}
+async function ataOpenPdfPreview(){
+  const ov=document.getElementById('ata-pdf-preview-overlay');
+  const title=document.getElementById('ata-pdf-preview-title');
+  const tech=ataFindTech(ataReportTechId);
+  if(title)title.textContent='ATA Schedule — '+((tech&&tech.name)||'Technician');
+  if(ov)ov.classList.add('visible');
+  await ataReportPreview();
+}
 function ataSetReportMode(mode){
-  ataReportMode=mode==='edit'||mode==='resets'||mode==='report'?mode:'report';
-  if((ataReportMode==='edit'||ataReportMode==='resets')&&!userIsAdmin)ataReportMode='report';
+  let next=mode==='edit'||mode==='resets'||mode==='report'||mode==='manage'?mode:'manage';
+  if((next==='edit'||next==='resets')&&!userIsAdmin)next='manage';
+  // Report opens the PDF on top; closing it returns to manage.
+  if(next==='report'){
+    ataReportMode='report';
+    const ep=document.getElementById('ata-progress-edit-panel');
+    const rp=document.getElementById('ata-reset-panel');
+    if(ep){ep.style.display='none';ep.innerHTML='';}
+    if(rp){rp.style.display='none';rp.innerHTML='';}
+    ataApplyReportModeBtn(document.getElementById('ata-rep-edit-toggle'),false,'#0F6E56',!!userIsAdmin);
+    ataApplyReportModeBtn(document.getElementById('ata-rep-reset-toggle'),false,'#6b7280',!!userIsAdmin);
+    ataApplyReportModeBtn(document.getElementById('ata-rep-view-toggle'),true,'#1B3A6B',true);
+    ataRenderBrendaNote();
+    ataRenderScheduleHold();
+    ataOpenPdfPreview();
+    return;
+  }
+  ataClosePdfPreview();
+  ataReportMode=next;
   const ep=document.getElementById('ata-progress-edit-panel');
   const rp=document.getElementById('ata-reset-panel');
-  const wrap=document.getElementById('ata-report-preview-wrap');
   const et=document.getElementById('ata-rep-edit-toggle');
   const rt=document.getElementById('ata-rep-reset-toggle');
   const vt=document.getElementById('ata-rep-view-toggle');
-  const dl=document.getElementById('ata-rep-download-btn');
   if(ep){ep.style.display=ataReportMode==='edit'?'block':'none';if(ataReportMode!=='edit')ep.innerHTML='';}
   if(rp){rp.style.display=ataReportMode==='resets'?'block':'none';if(ataReportMode!=='resets')rp.innerHTML='';}
-  if(wrap)wrap.style.display=ataReportMode==='report'?'block':'none';
-  if(dl)dl.style.display=ataReportMode==='report'?'':'none';
   ataApplyReportModeBtn(et,ataReportMode==='edit','#0F6E56',!!userIsAdmin);
   ataApplyReportModeBtn(rt,ataReportMode==='resets','#6b7280',!!userIsAdmin);
-  ataApplyReportModeBtn(vt,ataReportMode==='report','#1B3A6B',true);
+  ataApplyReportModeBtn(vt,false,'#1B3A6B',true);
   if(ataReportMode==='edit')ataRenderProgressEditPanel();
   else if(ataReportMode==='resets')ataRenderResetPanel();
-  else ataReportPreview();
   ataRenderBrendaNote();
   ataRenderScheduleHold();
 }
@@ -6345,16 +6390,16 @@ function ataOpenReport(techId){
   if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
   document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
-  // List "Report" opens preview; admins can switch to Edit / Manage resets.
-  ataSetReportMode('report');
+  // Open the manage screen first; Report opens the PDF preview on top.
+  ataSetReportMode('manage');
 }
 function ataCloseReport(){
+  ataClosePdfPreview();
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.remove('visible');
-  const frame=document.getElementById('ata-report-frame');if(frame)frame.removeAttribute('src');
-  if(ataReportBlobUrl){try{URL.revokeObjectURL(ataReportBlobUrl);}catch(e){}ataReportBlobUrl=null;}
   const hold=document.getElementById('ata-schedule-hold');if(hold){hold.style.display='none';hold.innerHTML='';}
+  const note=document.getElementById('ata-brenda-note');if(note){note.style.display='none';note.innerHTML='';}
   ataReportTechId=null;
-  ataReportMode='report';
+  ataReportMode='manage';
 }
 function ataFirstOpenLesson(tech,program){
   const start=ataStart(tech,program);
@@ -6699,7 +6744,7 @@ async function ataAdjustReset(techId,code,delta){
   ataRenderBrendaNote();
   if(ataReportMode==='resets')ataRenderResetPanel();
   else if(ataReportMode==='edit')ataRenderProgressEditPanel();
-  else ataReportPreview();
+  else if(ataReportMode==='report'||ataPdfPreviewOpen())ataReportPreview();
   const ataPage=document.getElementById('pg-tech');
   if(ataPage&&ataPage.classList.contains('active')){
     try{await loadTechAta();}catch(e){}
