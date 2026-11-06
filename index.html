@@ -1186,7 +1186,7 @@ body.mobile-nav-open{overflow:hidden}
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-tasks-filter-btn" onclick="toggleAdminPreBootTasksFilter()">Show All Tasks</button>
                 <div class="pm-preboot-dl-wrap">
-                  <button type="button" class="btn" id="admin-preboot-tasks-download-btn" onclick="togglePreBootTechPdfMenu(event,'admin')">⬇ Download PDF</button>
+                  <button type="button" class="btn" id="admin-preboot-tasks-download-btn" onclick="togglePreBootTechPdfMenu(event,'admin')">Preview PDF</button>
                   <div class="pm-preboot-pdf-menu" id="admin-preboot-tasks-pdf-menu" role="menu" aria-label="Choose technician for PDF"></div>
                 </div>
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootTasksReport()">Refresh</button>
@@ -1649,7 +1649,7 @@ body.mobile-nav-open{overflow:hidden}
           </div>
           <button type="button" class="admin-chrome-btn" id="pm-preboot-filter-btn" style="padding:7px 12px;font-size:12px" onclick="togglePmPreBootTaskFilter()">Show All Tasks</button>
           <div class="pm-preboot-dl-wrap">
-            <button type="button" class="admin-chrome-btn" id="pm-preboot-download-btn" style="padding:7px 12px;font-size:12px" onclick="togglePreBootTechPdfMenu(event,'pm')">⬇ Download PDF</button>
+            <button type="button" class="admin-chrome-btn" id="pm-preboot-download-btn" style="padding:7px 12px;font-size:12px" onclick="togglePreBootTechPdfMenu(event,'pm')">Preview PDF</button>
             <div class="pm-preboot-pdf-menu" id="pm-preboot-pdf-menu" role="menu" aria-label="Choose technician for PDF"></div>
           </div>
           <button type="button" class="admin-chrome-btn" style="padding:7px 12px;font-size:12px" onclick="loadPmPreBootReport()">Refresh</button>
@@ -1992,7 +1992,7 @@ body.mobile-nav-open{overflow:hidden}
         <button type="button" class="btn btn-outline" style="padding:6px 12px" onclick="closeAdminPdfPreview()">Close</button>
       </div>
     </div>
-    <p style="margin:0 0 10px;font-size:12px;color:#666">Preview uses your current filters. Download saves the same PDF.</p>
+    <p id="admin-pdf-preview-note" style="margin:0 0 10px;font-size:12px;color:#666">Preview uses your current filters. Download saves the same PDF.</p>
     <div style="flex:1;min-height:360px;border:1px solid #e2e6ee;border-radius:10px;overflow:hidden;background:#f4f5f8">
       <iframe id="admin-pdf-preview-frame" style="width:100%;height:68vh;border:0;display:block" title="Admin report PDF preview"></iframe>
     </div>
@@ -7056,10 +7056,11 @@ function downloadAdminPdfPreview(){
   try{adminPdfPreviewDoc.save(adminPdfPreviewFilename||'report.pdf');}
   catch(e){console.error(e);alert('Could not download PDF. Please try again.');}
 }
-async function openAdminPdfPreview(doc,title,filename){
+async function openAdminPdfPreview(doc,title,filename,note){
   const modal=document.getElementById('admin-pdf-preview-modal');
   const frame=document.getElementById('admin-pdf-preview-frame');
   const titleEl=document.getElementById('admin-pdf-preview-title');
+  const noteEl=document.getElementById('admin-pdf-preview-note');
   if(!modal||!frame)throw new Error('Preview UI is missing');
   if(adminPdfPreviewUrl){
     try{URL.revokeObjectURL(adminPdfPreviewUrl);}catch(e){}
@@ -7068,6 +7069,7 @@ async function openAdminPdfPreview(doc,title,filename){
   adminPdfPreviewFilename=filename||'report.pdf';
   adminPdfPreviewUrl=doc.output('bloburl');
   if(titleEl)titleEl.textContent=title||'Report Preview';
+  if(noteEl)noteEl.textContent=note||'Preview uses your current filters. Download saves the same PDF.';
   frame.src=adminPdfPreviewUrl;
   modal.classList.add('visible');
 }
@@ -10031,7 +10033,7 @@ function buildPreBootTasksReportHtml(rows,opts){
           <div class="pm-preboot-card-meta">${metaBits.map(adminEsc).join(' · ')}</div>
         </div>
         <div class="pm-preboot-card-actions">
-          <button type="button" class="admin-chrome-btn pm-preboot-card-pdf" title="Download open tasks PDF for ${adminEsc(r.name)}" onclick="downloadPreBootOpenTasksPdf(${techId},'${source}')">⬇ PDF</button>
+          <button type="button" class="admin-chrome-btn pm-preboot-card-pdf" title="Preview open tasks PDF for ${adminEsc(r.name)}" onclick="downloadPreBootOpenTasksPdf(${techId},'${source}')">Preview</button>
           <div class="pm-preboot-card-pct">${pct}%</div>
         </div>
       </div>
@@ -10070,7 +10072,6 @@ function buildPreBootOpenTasksPdfDoc(r){
   const pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;
   let y=margin;
-  const lh=13;
   const completed=parseChecklistCompleted(r.checklist_completed);
   const allTasks=pmPreBootSkillRows(completed);
   const openTasks=allTasks.filter(t=>isPreBootTaskNeeded(t.level));
@@ -10099,27 +10100,43 @@ function buildPreBootOpenTasksPdfDoc(r){
   doc.setFont('helvetica','bold');
   doc.setTextColor(27,58,107);
   doc.text('Pre-Bootcamp Open Tasks',margin,y);
-  y+=20;
-  doc.setFontSize(13);
+  y+=18;
+  doc.setFontSize(14);
   doc.setTextColor(26,26,46);
   doc.text(pdfSafeText(r.name||'Technician'),margin,y);
-  y+=16;
-  doc.setFontSize(10);
-  doc.setFont('helvetica','normal');
-  doc.setTextColor(70,70,70);
-  const meta=[
-    'Generated: '+fmtDateFull(new Date().toISOString().slice(0,10)),
-    r.region?('Region: '+regionLabel(r.region)):'',
-    r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set',
-    (r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date'))
-      ?(r.last_assessment_date?('Last assessment: '+fmtDate(r.last_assessment_date)):'Last assessment: Never')
-      :'',
-    r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet',
-    'Progress: '+pct+'%',
-    openTasks.length+' open task'+(openTasks.length===1?'':'s')+' (not yet Can Perform Independently)'
-  ].filter(Boolean).join('  ·  ');
-  doc.splitTextToSize(pdfSafeText(meta),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
-  y+=12;
+  y+=14;
+  const assessText=r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date')
+    ?(r.last_assessment_date?fmtDate(r.last_assessment_date):'Never')
+    :'—';
+  const facts=[
+    ['Generated', fmtDateFull(new Date().toISOString().slice(0,10))],
+    ['Region', r.region?regionLabel(r.region):'—'],
+    ['Bootcamp', r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'Not set'],
+    ['Last assessment', assessText],
+    ['Last rated', r.last_update_date?fmtDate(r.last_update_date):'Not rated yet'],
+    ['Progress', pct+'%'],
+    ['Open tasks', String(openTasks.length)]
+  ];
+  const factRows=Math.ceil(facts.length/2);
+  const boxH=factRows*30+8;
+  doc.setFillColor(246,248,252);
+  doc.setDrawColor(225,230,238);
+  doc.roundedRect(margin,y,contentW,boxH,4,4,'FD');
+  facts.forEach((pair,i)=>{
+    const col=i%2;
+    const row=Math.floor(i/2);
+    const x=margin+12+col*(contentW/2);
+    const yy=y+16+row*30;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
+    doc.setTextColor(120,120,120);
+    doc.text(pdfSafeText(pair[0].toUpperCase()),x,yy);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(11);
+    doc.setTextColor(30,30,30);
+    doc.text(pdfSafeText(pair[1]),x,yy+13,{maxWidth:(contentW/2)-20});
+  });
+  y+=boxH+16;
   if(!openTasks.length){
     doc.setFont('helvetica','bold');
     doc.setTextColor(15,110,86);
@@ -10161,14 +10178,14 @@ async function downloadPreBootOpenTasksPdf(techId,source){
   }
   const btnId=source==='admin'?'admin-preboot-tasks-download-btn':'pm-preboot-download-btn';
   try{
-    await withAdminPdfBusy(btnId,'Generating PDF…',async()=>{
+    await withAdminPdfBusy(btnId,'Preparing…',async()=>{
       await ensureJsPdf();
       const doc=buildPreBootOpenTasksPdfDoc(r);
-      doc.save(preBootOpenTasksPdfFilename(r));
+      await openAdminPdfPreview(doc,'Pre-Bootcamp Open Tasks — '+(r.name||'Technician'),preBootOpenTasksPdfFilename(r),'Review this technician’s open tasks, then download the same PDF.');
     });
   }catch(e){
     console.error('Pre-Bootcamp open tasks PDF failed:',e);
-    alert('Could not create PDF. Please try again.');
+    alert('Could not preview PDF. Please try again.');
   }
 }
 function closePreBootTechPdfMenus(){
@@ -10186,7 +10203,7 @@ function togglePreBootTechPdfMenu(ev,source){
   if(!rows.length){
     menu.innerHTML='<div class="pm-preboot-pdf-menu-empty">Load the report first, or no technicians match.</div>';
   }else{
-    menu.innerHTML='<div class="pm-preboot-pdf-menu-title">Download open tasks for</div>'+rows.map(r=>{
+    menu.innerHTML='<div class="pm-preboot-pdf-menu-title">Preview open tasks for</div>'+rows.map(r=>{
       const need=pmPreBootSkillRows(parseChecklistCompleted(r.checklist_completed)).filter(t=>isPreBootTaskNeeded(t.level)).length;
       return`<button type="button" role="menuitem" onclick="downloadPreBootOpenTasksPdf(${Number(r.tech_id)},'${source}')">${adminEsc(r.name)} <span style="color:#888;font-weight:600">(${need} open)</span></button>`;
     }).join('');
