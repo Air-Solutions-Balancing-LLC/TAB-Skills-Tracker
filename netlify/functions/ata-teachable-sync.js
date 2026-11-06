@@ -2,9 +2,14 @@
 // into Supabase. Uses Node https (same as ata-sheet) so esbuild/Netlify does
 // not depend on global fetch.
 //
+// After ingest, Fail→Incomplete detection (app_ata_detect_teachable_resets)
+// logs a manual_reset when ATA still has a failing score but Teachable no
+// longer returns a graded response for that tech/lesson.
+//
 // Admin button: POST /.netlify/functions/ata-teachable-sync-background  {secret}
 // Daily cron:   ata-teachable-cron.js POSTs that same background function
 //               (needs ATA_WEBHOOK_SECRET + TEACHABLE_API_KEY)
+// SQL once:     supabase/ata-teachable-incomplete-resets.sql
 
 const https = require('https');
 const QUIZZES = require('./ata-teachable-quizzes.json');
@@ -171,6 +176,40 @@ async function ingest(secret, rows) {
   return { applied, matched, unmatched };
 }
 
+/** Fail still in ATA + no graded Teachable response for that lesson → count a reset. */
+async function detectIncompleteResets(secret, gradedRows, syncedLessons) {
+  const present = [];
+  const seen = new Set();
+  for (const row of gradedRows || []) {
+    if (row.complete_no_score) continue;
+    if (row.score == null) continue;
+    const code = String(row.lesson_code || '').toUpperCase();
+    const key = String(row.email || '').toLowerCase() + '|' + String(row.name || '').toLowerCase() + '|' + code;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    present.push({ email: row.email || '', name: row.name || '', lesson_code: code });
+  }
+  const lessons = Array.from(new Set((syncedLessons || []).map((c) => String(c || '').toUpperCase()).filter(Boolean)));
+  if (!lessons.length) return { inserted: 0, skipped: 0, candidates: 0, note: 'no_synced_lessons' };
+
+  const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/app_ata_detect_teachable_resets';
+  const res = await requestJson('POST', url, {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  }, { p_secret: secret, p_present: present, p_synced_lessons: lessons });
+  const data = res.json;
+  if (res.status < 200 || res.status >= 300 || !data || data.ok === false) {
+    throw new Error((data && (data.error || data.message || data.hint)) || ('Reset detect HTTP ' + res.status + ' ' + String(res.text || '').slice(0, 180)));
+  }
+  return {
+    inserted: data.inserted || 0,
+    skipped: data.skipped || 0,
+    candidates: data.candidates || 0,
+    note: data.note || null,
+  };
+}
+
 async function ingestEnrollments(secret, rows) {
   if (!rows.length) return { created: 0, matched: 0, starts: 0, skipped: 0 };
   const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/app_ata_import_enrollments';
@@ -274,6 +313,7 @@ async function runSync(apiKey, secret) {
   }
 
   const all = [];
+  const syncedLessons = [];
   let quizErrors = 0;
   let firstError = '';
   await mapPool(QUIZZES, 4, async (quiz) => {
@@ -281,6 +321,9 @@ async function runSync(apiKey, secret) {
       const path = '/courses/' + quiz.course_id + '/lectures/' + quiz.lecture_id + '/quizzes/' + quiz.quiz_id + '/responses';
       const payload = await teachableGet(apiKey, path);
       all.push.apply(all, collectRows(quiz, payload));
+      syncedLessons.push(quiz.lesson_code);
+      const sibling = SHARED_FINALS[quiz.lesson_code];
+      if (sibling) syncedLessons.push(sibling);
     } catch (e) {
       quizErrors += 1;
       if (!firstError) firstError = (e && e.message) || String(e);
@@ -288,7 +331,18 @@ async function runSync(apiKey, secret) {
     }
   });
   const extras = await fillCompleteNoScore(apiKey, all);
-  const result = await ingest(secret, mirrorSharedFinals(all.concat(extras.rows)));
+  const scoredAndComplete = mirrorSharedFinals(all.concat(extras.rows));
+  const result = await ingest(secret, scoredAndComplete);
+
+  // After scores land: failing ATA rows with no graded Teachable response = Incomplete reset.
+  let resets = { inserted: 0, skipped: 0, candidates: 0, error: null };
+  try {
+    resets = await detectIncompleteResets(secret, scoredAndComplete, syncedLessons);
+  } catch (e) {
+    console.error('incomplete reset detect failed', e && e.message);
+    resets.error = (e && e.message) || String(e);
+  }
+
   return {
     ok: true,
     quizzes: QUIZZES.length,
@@ -300,6 +354,10 @@ async function runSync(apiKey, secret) {
     applied: result.applied,
     matched: result.matched,
     unmatched: result.unmatched,
+    resetsInserted: resets.inserted || 0,
+    resetsSkipped: resets.skipped || 0,
+    resetsCandidates: resets.candidates || 0,
+    resetsError: resets.error || null,
     enrolledCreated: enroll.created,
     enrolledStarts: enroll.starts,
     enrollError: enroll.error || null,
