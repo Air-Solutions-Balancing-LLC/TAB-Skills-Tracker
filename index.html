@@ -4900,7 +4900,7 @@ function ataResetLogFor(tech){
   if(!n)return [];
   return ATA_RESET_LOG.filter(r=>r.name.toLowerCase()===n);
 }
-/** Rolling 30-day cutoff used by the summary card and the Resets column (must stay in sync). */
+/** Rolling 30-day cutoff for the quiz-reset summary card / Brenda alert (not the Resets column). */
 function ataResetWindowCutoff(today){
   today=today||ataToday();
   return new Date(today.getFullYear(),today.getMonth(),today.getDate()-30);
@@ -4911,7 +4911,7 @@ function ataLogExtra(tech,code){
   const i=ataAttemptInfo(tech,code)||{};
   const today=ataToday();
   const cutoff=ataResetWindowCutoff(today);
-  // Always rolling 30 days — never calendar month — so the column matches the top summary.
+  // Always rolling 30 days for the top summary card — never calendar month.
   const inWindow=rows.filter(r=>{
     const d=parseDateOnly(r.date);
     return !!(d&&d>=cutoff&&d<=today);
@@ -4937,11 +4937,12 @@ function ataResetWindowPhrase(tech){
   return 'in the last 30 days';
 }
 // Resets in the last 30 days = auto retakes in that window + manual resets + Quiz Reset Log extras.
+// Used only by the top summary card / Brenda alert — not the per-lesson Resets column.
 function ataResetsThisMonth(tech,code){
   const extra=ataLogExtra(tech,code).window;
   const i=ataAttemptInfo(tech,code);
   if(!i)return extra;
-  // Prefer rolling 30-day attempt stats so the column matches the top summary.
+  // Prefer rolling 30-day attempt stats so the top card stays accurate.
   // Legacy RPCs without days30/manual_30 still get Quiz Reset Log extras (30-day) plus any
   // Manage-resets counted in manual_month until supabase/ata-reset-window-30.sql is applied.
   const hasRolling=i.days30_count!=null||i.manual_30!=null;
@@ -4951,13 +4952,22 @@ function ataResetsThisMonth(tech,code){
   if(n===0&&ataImpliedRetake(tech,code)&&attempts>0)n=1;
   return n+extra;
 }
-// Total resets ever = auto retakes (total attempts - 1, min 0) + manual resets logged all-time.
+// Lifetime resets for the Resets column = auto retakes (attempts − 1) + all-time manuals + log extras.
+// Not capped at 3 — can show 4/3, 5/3, etc. The 30-day Brenda limit is separate.
 function ataResetsTotal(tech,code){
   const extra=ataLogExtra(tech,code).total;
   const i=ataAttemptInfo(tech,code);
-  if(!i)return extra;
-  let n=Math.max(0,(i.count||0)-1)+(i.manual_total||0);
-  if(n===0&&ataImpliedRetake(tech,code))n=1;
+  let n=0;
+  if(i){
+    n=Math.max(0,(i.count||0)-1)+Number(i.manual_total||0);
+    if(n===0&&ataImpliedRetake(tech,code))n=1;
+  }
+  // Status "Reset" (under 80% after a Teachable complete/retake) must never read as 0 total.
+  if(n===0){
+    const best=ataBestScore(tech,code);
+    const under=best!=null&&Number(best)<ATA_PASS_PCT;
+    if(under&&ataWasReset(tech,code))n=1;
+  }
   return n+extra;
 }
 // Continuous week number (1..88) across the three modules, in curriculum order.
@@ -5395,11 +5405,14 @@ function ataRenderBrendaNote(){
   if(badge)badge.innerHTML=info.hit?ataResetAlertPill(tech):'';
 }
 function ataResetDisplay(lr){
-  const rm=lr.resets||0,tot=lr.resetsTotal||0;
-  const has=lr.best!=null||rm>0||tot>0||lr.failed||lr.done;
+  let tot=Number(lr.resetsTotal||0);
+  // Belt-and-suspenders: a Reset row never shows 0/3.
+  if((lr.resetUsed||lr.state==='reset')&&tot<1)tot=1;
+  const has=lr.best!=null||tot>0||(lr.resets||0)>0||lr.failed||lr.done||lr.resetUsed;
   if(!has)return {text:'—',empty:true};
-  // 30-day count only — lifetime totals live in the quiz-reset summary card.
-  return {text:rm+'/'+ATA_MAX_RESETS,empty:false,over:!!lr.overLimit};
+  // Lifetime total — may exceed 3 (4/3, 5/3). Brenda's 30-day check-in stays on the top card.
+  const over=tot>=ATA_MAX_RESETS;
+  return {text:tot+'/'+ATA_MAX_RESETS,empty:false,over:over};
 }
 function ataFmtDeadline(d){
   if(!d)return '—';
@@ -5415,7 +5428,7 @@ function ataLessonDisplay(lr,today){
   let score='—';
   if(lr.best!=null)score=lr.best+'%';
   else if(lr.done)score='Complete';
-  return {week:String(week),code:lr.lesson.lesson_code,name:lr.lesson.lesson_name,due:ataFmtDeadline(lr.deadline),score:score,status:st,resets:rd.text+(lr.overLimit?' !':''),reset:rd};
+  return {week:String(week),code:lr.lesson.lesson_code,name:lr.lesson.lesson_name,due:ataFmtDeadline(lr.deadline),score:score,status:st,resets:rd.text+(rd.over?' !':''),reset:rd};
 }
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
@@ -6243,7 +6256,7 @@ function buildAtaTechDoc(tech,opts){
     {label:'Due Thursday',w:contentW*0.13},
     {label:'Score',w:contentW*0.09},
     {label:'Status',w:contentW*0.12},
-    {label:'Resets (30d)',w:contentW*0.16}
+    {label:'Resets',w:contentW*0.16}
   ];
   function drawLessonHeader(){
     needPage(24);
@@ -6289,7 +6302,7 @@ function buildAtaTechDoc(tech,opts){
         doc.setFont('helvetica',i===1||i===5?'bold':'normal');
         if(i===5)doc.setTextColor(...ataHexRgb(st.c));
         else if(i===4&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
-        else if(i===6&&lr.overLimit)doc.setTextColor(192,57,43);
+        else if(i===6&&row.reset&&row.reset.over)doc.setTextColor(192,57,43);
         else if(i===0)doc.setTextColor(120,120,120);
         else doc.setTextColor(45,45,45);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*10,{maxWidth:cols[i].w-6}));
@@ -6306,7 +6319,7 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   One lesson every Thursday   ·   Max '+ATA_MAX_RESETS+' resets per lesson per month   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   One lesson every Thursday   ·   Resets column = lifetime total per lesson   ·   Brenda check-in at '+ATA_MAX_RESETS+' resets in 30 days   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
@@ -6963,7 +6976,8 @@ function renderTechAta(tech){
   const resetCell=(lr)=>{
     const rd=ataResetDisplay(lr);
     if(rd.empty)return '<span style="color:#bbb">—</span>';
-    const col=lr.overLimit?'#C0392B':(lr.resets||0)>=2?'#b58900':'#555';
+    const n=parseInt(String(rd.text).split('/')[0],10)||0;
+    const col=rd.over?'#C0392B':n>=2?'#b58900':'#555';
     return `<span style="color:${col};font-weight:700">${adminEsc(rd.text)}</span>`;
   };
   const stateBadge=(lr)=>{
@@ -6984,7 +6998,7 @@ function renderTechAta(tech){
     </tr>`;
     }).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets (30d)</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
