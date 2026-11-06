@@ -4783,12 +4783,17 @@ function ataIsDone(tech,code){
   return !!(c&&c.passed===true);
 }
 // A reset was already used when Teachable marked the lesson complete, a manual
-// reset was logged, or there is more than one graded attempt.
+// reset was logged (Manage resets), there is more than one graded attempt, or
+// the Quiz Reset Log has an entry for this lesson. While the score is still
+// under 80%, that lesson shows Status "Reset" instead of "Failed".
 function ataWasReset(tech,code){
   const i=ataAttemptInfo(tech,code);
   const c=ataCompletionFor(tech,code);
   if(i&&((i.manual_total||0)>0||(i.count||0)>1))return true;
-  return !!(c&&c.passed===true);
+  if(c&&c.passed===true)return true;
+  const codeKey=String(code||'');
+  if(ataResetLogFor(tech).some(r=>String(r.code)===codeKey))return true;
+  return false;
 }
 // Failed only when the current score is under 80% and no reset has been used.
 function ataIsFailed(tech,code){
@@ -5028,11 +5033,13 @@ function ataProgramStatus(tech,program,today){
     const done=ataIsDone(tech,code);
     const best=ataBestScore(tech,code);
     const under=best!=null&&Number(best)<ATA_PASS_PCT;
-    const resetUsed=!done&&under&&ataWasReset(tech,code);
-    const isFailed=!done&&under&&!resetUsed;
-    const tracked=ataLessonIsTracked(code)||done||isFailed||resetUsed;
     const resets=ataResetsThisMonth(tech,code);
     const resetsTotal=ataResetsTotal(tech,code);
+    // Under 80% with any reset counted (Manage resets, Teachable retake, or Quiz Reset Log)
+    // shows as Reset — not Failed — and the Resets column reflects 1/3, 2/3, etc.
+    const resetUsed=!done&&under&&(ataWasReset(tech,code)||resets>0||resetsTotal>0);
+    const isFailed=!done&&under&&!resetUsed;
+    const tracked=ataLessonIsTracked(code)||done||isFailed||resetUsed;
     const overLimit=resets>=ATA_MAX_RESETS;
     if(tracked)counted++;
     if(isFailed)failed++;
@@ -5401,7 +5408,7 @@ function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
   if(lr.done&&lr.best!=null&&Number(lr.best)>=ATA_PASS_PCT)return {t:'Passed',c:'#0F6E56'};
   if(lr.done&&lr.best==null)return {t:'Complete',c:'#0F6E56'};
-  if(lr.resetUsed||lr.state==='reset')return {t:'—',c:'#bbbbbb'};
+  if(lr.resetUsed||lr.state==='reset')return {t:'Reset',c:'#B58900'};
   if(lr.state==='paused')return {t:'Paused',c:'#6b7280'};
   if(lr.failed)return {t:'Failed',c:'#C0392B'};
   if(lr.state==='untracked')return {t:'Not in Teachable',c:'#888888'};
@@ -6657,7 +6664,7 @@ function ataRenderResetPanel(){
   const progs=ataReportSelectedPrograms();
   if(!progs.length){rp.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to manage its resets.</div>';return;}
   const gw=ataGlobalWeeks();
-  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — click <b>+ reset</b> when a retake is approved. Max '+ATA_MAX_RESETS+' in the last 30 days.</div>'
+  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — after you reset a quiz in Teachable, click <b>+ reset</b> here. Status changes from Failed to <b>Reset</b> and the count moves from 0/3 to 1/3 (max '+ATA_MAX_RESETS+' in the last 30 days).</div>'
     +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (30d·tot)</th><th style="width:130px">Action</th></tr></thead><tbody>';
   progs.forEach(pr=>{
     ataLessonsByProgram(pr).forEach(l=>{
@@ -6686,8 +6693,10 @@ async function ataAdjustReset(techId,code,delta){
     return;
   }
   try{await ataLoadAdmin();}catch(e){}
+  ataRenderBrendaNote();
   if(ataReportMode==='resets')ataRenderResetPanel();
-  else if(ataReportMode==='report')ataReportPreview();
+  else if(ataReportMode==='edit')ataRenderProgressEditPanel();
+  else ataReportPreview();
   const ataPage=document.getElementById('pg-tech');
   if(ataPage&&ataPage.classList.contains('active')){
     try{await loadTechAta();}catch(e){}
