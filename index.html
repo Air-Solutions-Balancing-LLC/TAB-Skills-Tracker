@@ -411,7 +411,21 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .ata-reset-card summary{cursor:pointer;font-size:12px;font-weight:700;color:#1B3A6B}
 .ata-reset-list{margin:6px 0 0;padding:0;list-style:none}
 .ata-reset-list li{font-size:12px;color:#333;padding:5px 0;border-top:1px solid #eef1f6;line-height:1.35}
+.ata-note-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ata-reset-msg{margin-top:8px;padding:10px 12px;background:#fff;border:1px solid #e7d7b8;border-radius:8px;font-size:13px;line-height:1.45;white-space:pre-wrap;color:#222}
+.ata-go{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:10px 12px;border:1px solid #b7e0cf;border-radius:10px;background:#f3fbf7}
+.ata-go-empty{border-color:#e2e6ee;background:#fafbfe}
+.ata-go-title{font-size:13px;font-weight:800;color:#0F6E56;line-height:1.35}
+.ata-go-empty .ata-go-title{color:#1B3A6B}
+.ata-go-sub{font-size:12px;color:#3d6b5a;margin-top:2px}
+.ata-go-empty .ata-go-sub{color:#666}
+.ata-go-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ata-note-btn{border:1px solid #d5dbe6;background:#fff;color:#1B3A6B;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1.3}
+.ata-note-btn:hover{border-color:#1B3A6B}
+.ata-note-line{display:flex;align-items:center;gap:6px;min-width:0}
+.ata-note-line span{min-width:0;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#333}
+.ata-note-edit{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.ata-note-edit input{flex:1;min-width:160px;padding:5px 7px;border:1px solid #d5dbe6;border-radius:6px;font-size:12px;font-family:inherit}
 .sp-ata-muted{font-size:11px;color:#bbb;font-weight:600}
 .sp-focus{font-size:11px;background:#FFF8E6;border:1px solid #e6c200;border-radius:20px;padding:4px 10px;color:#7a5d00;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sp-focus-dates{font-size:11px;color:#888;font-weight:600;white-space:nowrap}
@@ -5332,7 +5346,152 @@ function ataResetAlertPill(tech){
   const tip=info.recent.map(r=>fmtDate(r.date)+' · '+r.code).join('; ')+(info.leaves?('. Oldest drops off '+fmtDate(ataDateKey(info.leaves))+'.'):'');
   return '<span class="ata-reset-pill" title="'+adminEsc(tip)+'">'+info.recent.length+' resets in 30 days</span>';
 }
-/** Reset summary card. opts.includeTeamsMsg (admin/PM only) adds the Brenda Teams copy block. */
+const ATA_BRENDA_GO_NOTE='Checked in with Brenda - good to continue ATA';
+let ataResetNotes={};
+let ataNoteEditing='';
+function ataNotesBag(techId){
+  return ataResetNotes[String(techId)]||{checkin:null,lessons:{}};
+}
+function ataStoreResetNotes(techId, data){
+  const lessons={};
+  ((data&&data.lessons)||[]).forEach(row=>{
+    if(row&&row.lesson_code)lessons[String(row.lesson_code).toUpperCase()]={note:row.note||'',updated_at:row.updated_at||''};
+  });
+  const checkin=data&&data.checkin&&String(data.checkin.note||'').trim()
+    ?{note:String(data.checkin.note).trim(),updated_at:data.checkin.updated_at||''}
+    :null;
+  ataResetNotes[String(techId)]={checkin,lessons};
+}
+function ataCheckinRecord(techId){
+  const rec=ataNotesBag(techId).checkin;
+  return rec&&rec.note?rec:null;
+}
+function ataLessonNote(techId, code){
+  const rec=ataNotesBag(techId).lessons[String(code||'').toUpperCase()];
+  return rec&&rec.note?rec:null;
+}
+function ataWeeklyNoteText(techId){
+  const bag=ataNotesBag(techId);
+  if(bag.checkin&&bag.checkin.note)return bag.checkin.note;
+  const codes=Object.keys(bag.lessons||{});
+  if(!codes.length)return '—';
+  codes.sort((a,b)=>String(bag.lessons[b].updated_at||'').localeCompare(String(bag.lessons[a].updated_at||'')));
+  return bag.lessons[codes[0]].note||'—';
+}
+function ataNotesSqlAlert(){
+  alert('Could not save the note. Open Supabase → SQL Editor, paste supabase/ata-reset-notes.sql, click Run, then try again.\n\nhttps://supabase.com/dashboard/project/vwjizsgmfjwgnaojgkmt/sql/new');
+}
+async function ataLoadResetNotes(techId){
+  if(!userIsAdmin||!techId)return false;
+  try{
+    const data=await rpc('app_ata_reset_notes',{p_tech_id:Number(techId)});
+    ataStoreResetNotes(techId, data||{});
+  }catch(e){
+    return false;
+  }
+  if(String(ataReportTechId)===String(techId)){
+    ataRenderBrendaNote();
+    if(ataReportMode==='resets')ataRenderResetPanel();
+  }
+  return true;
+}
+async function ataLoadAllResetNotes(){
+  if(!userIsAdmin)return;
+  try{
+    const rows=await rpc('app_ata_reset_notes_all',{})||[];
+    const next={};
+    rows.forEach(row=>{
+      const id=String(row.tech_id);
+      if(!next[id])next[id]={checkin:null,lessons:{}};
+      if(!row.lesson_code){
+        if(String(row.note||'').trim())next[id].checkin={note:String(row.note).trim(),updated_at:row.updated_at||''};
+      }else if(String(row.note||'').trim()){
+        next[id].lessons[String(row.lesson_code).toUpperCase()]={note:String(row.note).trim(),updated_at:row.updated_at||''};
+      }
+    });
+    ataResetNotes=next;
+  }catch(e){}
+}
+async function ataSaveResetNote(techId, code, note){
+  try{
+    const data=await rpc('app_ata_save_reset_note',{p_tech_id:Number(techId),p_lesson_code:code||'',p_note:note==null?'':String(note)});
+    ataStoreResetNotes(techId, data||{});
+  }catch(e){
+    ataNotesSqlAlert();
+    return false;
+  }
+  ataNoteEditing='';
+  if(String(ataReportTechId)===String(techId)){
+    ataRenderBrendaNote();
+    if(ataReportMode==='resets')ataRenderResetPanel();
+  }
+  return true;
+}
+function ataBeginNoteEdit(techId, code){
+  ataNoteEditing=String(techId)+'|'+String(code||'');
+  ataRenderBrendaNote();
+  if(ataReportMode==='resets')ataRenderResetPanel();
+  setTimeout(()=>{const el=document.getElementById('ata-note-input');if(el){el.focus();const n=el.value.length;try{el.setSelectionRange(n,n);}catch(e){}}},0);
+}
+function ataCancelNoteEdit(){
+  ataNoteEditing='';
+  ataRenderBrendaNote();
+  if(ataReportMode==='resets')ataRenderResetPanel();
+}
+async function ataCommitNoteEdit(){
+  const input=document.getElementById('ata-note-input');
+  if(!input||!ataNoteEditing)return;
+  const cut=ataNoteEditing.indexOf('|');
+  const techId=ataNoteEditing.slice(0,cut);
+  const code=ataNoteEditing.slice(cut+1);
+  await ataSaveResetNote(techId, code, input.value);
+}
+async function ataRemoveNoteEdit(){
+  if(!ataNoteEditing)return;
+  const cut=ataNoteEditing.indexOf('|');
+  const techId=ataNoteEditing.slice(0,cut);
+  const code=ataNoteEditing.slice(cut+1);
+  await ataSaveResetNote(techId, code, '');
+}
+function ataNoteEditorHtml(techId, code, current, allowEdit){
+  const key=String(techId)+'|'+String(code||'');
+  const text=current||'';
+  const safeCode=adminEsc(code||'');
+  if(allowEdit!==false&&ataNoteEditing===key){
+    return '<div class="ata-note-edit"><input id="ata-note-input" type="text" value="'+adminEsc(text)+'" placeholder="Add a note"><button type="button" class="ata-note-btn" onclick="ataCommitNoteEdit()">Save</button>'+(text?'<button type="button" class="ata-note-btn" onclick="ataRemoveNoteEdit()">Remove</button>':'')+'<button type="button" class="ata-note-btn" onclick="ataCancelNoteEdit()">Cancel</button></div>';
+  }
+  if(!userIsAdmin)return text?'<span>'+adminEsc(text)+'</span>':'';
+  if(text)return '<div class="ata-note-line"><span title="'+adminEsc(text)+'">'+adminEsc(text)+'</span><button type="button" class="ata-note-btn" onclick="ataBeginNoteEdit('+Number(techId)+',\''+safeCode+'\')">Edit</button></div>';
+  return '<button type="button" class="ata-note-btn" onclick="ataBeginNoteEdit('+Number(techId)+',\''+safeCode+'\')">Add note</button>';
+}
+function ataBrendaGoHtml(tech){
+  if(!tech)return '';
+  const rec=ataCheckinRecord(tech.id);
+  const editing=ataNoteEditing===String(tech.id)+'|';
+  if(!userIsAdmin&&!rec)return '';
+  if(!rec&&!editing){
+    return '<div class="ata-go ata-go-empty"><div><div class="ata-go-title">Brenda check-in</div><div class="ata-go-sub">After the meeting, mark that this technician is good to continue ATA.</div></div><button type="button" class="btn" style="background:#0F6E56;font-size:12px;padding:6px 11px" onclick="ataSaveResetNote('+tech.id+',\'\',\''+adminEsc(ATA_BRENDA_GO_NOTE)+'\')">Good to continue</button></div>';
+  }
+  if(editing)return '<div class="ata-go"><div style="flex:1;min-width:220px">'+ataNoteEditorHtml(tech.id,'',rec&&rec.note)+'</div></div>';
+  const when=rec.updated_at?fmtDate(String(rec.updated_at).slice(0,10)):'';
+  const actions=userIsAdmin
+    ?'<div class="ata-go-actions"><button type="button" class="ata-note-btn" onclick="ataBeginNoteEdit('+tech.id+',\'\')">Edit</button><button type="button" class="ata-note-btn" onclick="ataSaveResetNote('+tech.id+',\'\',\'\')">Remove</button></div>'
+    :'';
+  return '<div class="ata-go"><div><div class="ata-go-title">'+adminEsc(rec.note)+'</div>'+(when?'<div class="ata-go-sub">Marked '+adminEsc(when)+'</div>':'')+'</div>'+actions+'</div>';
+}
+function ataLessonNotesHtml(tech){
+  if(!tech||!userIsAdmin)return '';
+  const bag=ataNotesBag(tech.id);
+  const codes=Object.keys(bag.lessons||{}).filter(code=>bag.lessons[code]&&bag.lessons[code].note).sort();
+  const editingCode=ataNoteEditing.startsWith(String(tech.id)+'|')?ataNoteEditing.slice(String(tech.id).length+1):'';
+  if(editingCode&&ataReportMode!=='resets'&&codes.indexOf(editingCode)<0)codes.push(editingCode);
+  if(!codes.length)return '';
+  const rows=codes.map(code=>{
+    const rec=bag.lessons[code];
+    return '<li class="ata-note-row"><div style="min-width:0;flex:1"><b>'+adminEsc(ataLessonLabel(code))+'</b></div>'+ataNoteEditorHtml(tech.id, code, rec&&rec.note, ataReportMode!=='resets')+'</li>';
+  }).join('');
+  return '<details open><summary>Notes ('+codes.length+')</summary><ul class="ata-reset-list">'+rows+'</ul></details>';
+}
 function ataResetCardHtml(tech,opts){
   opts=opts||{};
   const includeTeamsMsg=!!opts.includeTeamsMsg;
@@ -5346,6 +5505,7 @@ function ataResetCardHtml(tech,opts){
   }else{
     head='<div style="font-size:13px;font-weight:700;color:#1B3A6B">Quiz resets <span style="font-weight:800">'+n+' of 3</span> <span style="font-weight:600;color:#555">in the last 30 days</span></div>';
   }
+  const notes=includeTeamsMsg?ataLessonNotesHtml(tech):'';
   const recent=n
     ?'<details open><summary>Quizzes in the last 30 days ('+n+')</summary><ul class="ata-reset-list">'+info.recent.slice().reverse().map(ataResetRowHtml).join('')+'</ul><div style="font-size:12px;color:#555;margin-top:6px">'+adminEsc(ataResetLeavesSentence(info))+'</div></details>'
     :'<div style="font-size:12px;color:#666;margin-top:4px">No quiz resets in the last 30 days.</div>';
@@ -5357,7 +5517,7 @@ function ataResetCardHtml(tech,opts){
   const older=info.older.length
     ?'<details><summary>Older resets ('+info.older.length+')</summary><ul class="ata-reset-list">'+info.older.slice().reverse().map(ataResetRowHtml).join('')+'</ul></details>'
     :'';
-  return '<div class="ata-reset-card'+(info.hit?' is-alert':'')+'">'+head+recent+msg+older+'</div>';
+  return '<div class="ata-reset-card'+(info.hit?' is-alert':'')+'">'+head+notes+recent+msg+older+'</div>';
 }
 function ataCopyResetMessage(){
   const tech=ataFindTech(ataReportTechId);
@@ -5401,7 +5561,7 @@ function ataRenderBrendaNote(){
   }
   const info=ataResetWindowInfo(tech);
   el.style.display='block';
-  el.innerHTML=ataResetCardHtml(tech,{includeTeamsMsg:true});
+  el.innerHTML=ataBrendaGoHtml(tech)+ataResetCardHtml(tech,{includeTeamsMsg:true});
   if(badge)badge.innerHTML=info.hit?ataResetAlertPill(tech):'';
 }
 function ataResetDisplay(lr){
@@ -6020,10 +6180,7 @@ function ataPdfFooter(doc,margin,pageW,pageH,subtitle){
 function ataProgCellText(p){
   if(!p)return '—';
   if(!p.start&&!(p.completed>0))return '—';
-  let t=p.completed+'/'+p.total;
-  if(p.overdue)t+=' · '+p.overdue+' late';
-  if(p.failed)t+=' · '+p.failed+' failed';
-  return t;
+  return p.completed+'/'+p.total;
 }
 
 // ── PDF: weekly region-grouped report ────────────────────────────────────────
@@ -6034,14 +6191,14 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;let y=margin;
   const cols=[
-    {label:'Technician',w:contentW*0.20},
+    {label:'Technician',w:contentW*0.18},
     {label:'Status',w:contentW*0.10},
-    {label:'Basic',w:contentW*0.13},
-    {label:'Intermediate',w:contentW*0.13},
-    {label:'Advanced',w:contentW*0.13},
-    {label:'Overdue',w:contentW*0.09},
-    {label:'Failed',w:contentW*0.09},
-    {label:'Resets',w:contentW*0.13}
+    {label:'Basic',w:contentW*0.10},
+    {label:'Intermediate',w:contentW*0.12},
+    {label:'Advanced',w:contentW*0.11},
+    {label:'Behind',w:contentW*0.08},
+    {label:'Resets',w:contentW*0.08},
+    {label:'Notes',w:contentW*0.23}
   ];
   const bottom=pageH-40;
   function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
@@ -6105,8 +6262,8 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
         pdfSafeText(ataProgCellText(s.byProgram.intermediate)),
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
         String(s.totalOverdue||0),
-        String(s.totalFailed||0),
-        pdfSafeText(String(b.resets||0))
+        pdfSafeText(String(b.resets||0)),
+        pdfSafeText(ataWeeklyNoteText(s.tech.id))
       ];
       doc.setFontSize(9);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
@@ -6117,8 +6274,8 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
       sets.forEach((lines,i)=>{
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
-        else if((i===5||i===6)&&Number(values[i])>0)doc.setTextColor(192,57,43);
-        else if(i===7&&(b.resets||0)>0)doc.setTextColor(192,57,43);
+        else if(i===5&&Number(values[i])>0)doc.setTextColor(192,57,43);
+        else if(i===6&&(b.resets||0)>0)doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
         x+=cols[i].w;
@@ -6148,6 +6305,7 @@ async function ataDownloadWeeklyReport(scope){
   }
   if(!summaries.length){alert('No Active technicians to include. Complete and Exempt are left off the weekly report.');return;}
   try{
+    await ataLoadAllResetNotes();
     await ensureJsPdf();
     const doc=buildAtaWeeklyReportDoc(summaries,scopeLabel);
     doc.save('ATA-Weekly-Report-'+new Date().toISOString().slice(0,10)+'.pdf');
@@ -6403,8 +6561,10 @@ function ataOpenReport(techId){
   if(title)title.textContent='ATA Report — '+(tech.name||'Technician');
   document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
   const modal=document.getElementById('ata-report-modal');if(modal)modal.classList.add('visible');
+  ataNoteEditing='';
   // Open the manage screen first; Report opens the PDF preview on top.
   ataSetReportMode('manage');
+  ataLoadResetNotes(techId);
 }
 function ataCloseReport(){
   ataClosePdfPreview();
@@ -6413,6 +6573,7 @@ function ataCloseReport(){
   const note=document.getElementById('ata-brenda-note');if(note){note.style.display='none';note.innerHTML='';}
   ataReportTechId=null;
   ataReportMode='manage';
+  ataNoteEditing='';
 }
 function ataFirstOpenLesson(tech,program){
   const start=ataStart(tech,program);
@@ -6725,16 +6886,18 @@ function ataRenderResetPanel(){
   const progs=ataReportSelectedPrograms();
   if(!progs.length){rp.innerHTML='<div style="font-size:12px;color:#888;padding:6px">Select a module to manage its resets.</div>';return;}
   const gw=ataGlobalWeeks();
-  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — Teachable sync auto-counts Fail→Incomplete as a reset. Use <b>+ reset</b> here only if you need to log one by hand (max '+ATA_MAX_RESETS+' in the last 30 days).</div>'
-    +'<div style="max-height:230px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:120px">Resets (30d)</th><th style="width:130px">Action</th></tr></thead><tbody>';
+  let html='<div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">Manage resets — Teachable sync auto-counts Fail→Incomplete as a reset. Use <b>+ reset</b> only to log one by hand. That also adds the note (max '+ATA_MAX_RESETS+' in the last 30 days).</div>'
+    +'<div style="max-height:280px;overflow:auto"><table class="report-table" style="font-size:12px"><thead><tr><th style="width:36px">Wk</th><th>Lesson</th><th style="width:100px">Resets (30d)</th><th>Notes</th><th style="width:130px">Action</th></tr></thead><tbody>';
   progs.forEach(pr=>{
     ataLessonsByProgram(pr).forEach(l=>{
       const rm=ataResetsThisMonth(tech,l.lesson_code);
       const mt=(ataAttemptInfo(tech,l.lesson_code)||{}).manual_total||0;
       const over=rm>=ATA_MAX_RESETS;
+      const note=ataLessonNote(tech.id, l.lesson_code);
       html+='<tr><td style="color:#888">'+(gw.map[l.lesson_code]||'')+'</td>'
         +'<td><b>'+adminEsc(l.lesson_code)+'</b> — '+adminEsc(l.lesson_name)+'</td>'
         +'<td'+(over?' style="color:#C0392B;font-weight:700"':'')+'>'+rm+'/'+ATA_MAX_RESETS+(over?' !':'')+'</td>'
+        +'<td>'+ataNoteEditorHtml(tech.id, l.lesson_code, note&&note.note)+'</td>'
         +'<td style="white-space:nowrap">'
         +'<button type="button" class="btn" title="Remove last manual reset" style="padding:3px 8px;font-size:12px;background:#C0392B" '+(mt<=0?'disabled':'')+' onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',-1)">−</button> '
         +'<button type="button" class="btn" style="padding:3px 8px;font-size:12px;background:#0F6E56" onclick="ataAdjustReset('+tech.id+',\''+l.lesson_code+'\',1)">+ reset</button>'
@@ -6752,6 +6915,12 @@ async function ataAdjustReset(techId,code,delta){
     const msg=e.message||'';
     alert('Could not update the reset. '+((msg.includes('app_ata_add_reset')||msg.includes('app_ata_remove_reset'))?'Run supabase/ata-manual-resets.sql in Supabase.':(msg||'Try again.')));
     return;
+  }
+  if(delta>0){
+    const checkin=ataCheckinRecord(techId);
+    const text=checkin&&checkin.note?checkin.note:ATA_BRENDA_GO_NOTE;
+    const noted=await ataSaveResetNote(techId, code, text);
+    if(noted&&!checkin)await ataSaveResetNote(techId, '', ATA_BRENDA_GO_NOTE);
   }
   try{await ataLoadAdmin();}catch(e){}
   ataRenderBrendaNote();
