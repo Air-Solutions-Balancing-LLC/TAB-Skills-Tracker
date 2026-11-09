@@ -120,3 +120,41 @@ $$;
 GRANT EXECUTE ON FUNCTION public.app_ata_reset_notes(bigint)              TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_ata_reset_notes_all()                TO authenticated;
 GRANT EXECUTE ON FUNCTION public.app_ata_save_reset_note(bigint, text, text) TO authenticated;
+
+-- Technician can read their own check-in and notes. Run this if the functions above already exist.
+CREATE OR REPLACE FUNCTION public.app_ata_my_reset_notes(p_token text)
+RETURNS json
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+DECLARE
+  v_tech_id bigint;
+BEGIN
+  SELECT s.tech_id INTO v_tech_id
+  FROM sessions s
+  WHERE s.token = p_token AND s.role = 'technician' AND s.expires_at > now();
+  IF v_tech_id IS NULL THEN
+    RETURN json_build_object('checkin', NULL, 'lessons', '[]'::json);
+  END IF;
+  RETURN json_build_object(
+    'checkin', (
+      SELECT json_build_object('note', n.note, 'updated_at', n.updated_at)
+      FROM ata_reset_notes n
+      WHERE n.tech_id = v_tech_id AND n.lesson_code IS NULL
+    ),
+    'lessons', coalesce((
+      SELECT json_agg(json_build_object(
+        'lesson_code', n.lesson_code,
+        'note', n.note,
+        'updated_at', n.updated_at
+      ) ORDER BY n.lesson_code)
+      FROM ata_reset_notes n
+      WHERE n.tech_id = v_tech_id AND n.lesson_code IS NOT NULL
+    ), '[]'::json)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.app_ata_my_reset_notes(text) TO anon, authenticated;
