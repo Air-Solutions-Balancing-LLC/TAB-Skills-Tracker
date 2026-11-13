@@ -1247,7 +1247,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-ctpath" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('ctpath')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">CT Path</div>
-                <div class="report-meta">Path to NEBB CT · Report date: <span id="admin-ctpath-report-date-label">—</span></div>
+                <div class="report-meta">Path to NEBB CT (excludes already certified) · Report date: <span id="admin-ctpath-report-date-label">—</span></div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminCtPathReport()">Refresh</button>
@@ -1257,7 +1257,7 @@ body.mobile-nav-open{overflow:hidden}
             </div>
             <div class="report-table-body collapsed" id="report-table-ctpath">
               <div class="err" id="admin-ctpath-report-err" style="display:none"></div>
-              <div class="login-sub" style="color:#666;margin:0 0 8px">All technicians except National-TAB Survey. Milestone dates calculate automatically from Employee start (Training +2.0 yrs · Exam +2.5 yrs · Anniv +3.0 yrs). Edit cohort, exam date, and notes here or on the tech Edit card.</div>
+              <div class="login-sub" style="color:#666;margin:0 0 8px">Technicians working toward NEBB CT (excludes National-TAB Survey and anyone already NEBB CT or CP). Milestone dates calculate automatically from Employee start (Training +2.0 yrs · Exam +2.5 yrs · Anniv +3.0 yrs). Edit cohort, exam date, and notes here or on the tech Edit card.</div>
               <div class="report-filters">
                 <div class="pm-search-wrap">
                   <input type="search" id="admin-ctpath-search" placeholder="Search by name…" autocomplete="off" oninput="onAdminCtPathFilterChange()">
@@ -5257,8 +5257,13 @@ function ctPathIsSurvey(tech){
   const pos=String(tech.job_position||'').trim().toLowerCase();
   return region==='National-TAB Survey'||pos==='tab survey technician';
 }
+function ctPathAlreadyCertified(tech){
+  // Path tracks progress toward NEBB CT — skip anyone who already holds CT or CP.
+  const tier=nebbStatusTier(tech&&tech.nebb_status);
+  return tier==='ct'||tier==='cp';
+}
 function ctPathEligible(tech){
-  return !!(tech&&tech.role!=='admin'&&tech.role!=='pm'&&!ctPathIsSurvey(tech)&&!tech.deleted);
+  return !!(tech&&tech.role!=='admin'&&tech.role!=='pm'&&!ctPathIsSurvey(tech)&&!ctPathAlreadyCertified(tech)&&!tech.deleted);
 }
 function ctPathAddYears(startDate,years){
   const dt=parseDateOnly(startDate);
@@ -8367,7 +8372,7 @@ function buildAdminCtPathPdfDoc(rows,reportDateText){
   doc.setTextColor(70,70,70);
   const meta=doc.splitTextToSize(pdfSafeText([
     'Report date: '+reportDateText,
-    'Excludes National-TAB Survey',
+    'Excludes National-TAB Survey and already NEBB CT/CP',
     adminCtPathSearch.trim()?('Search: '+adminCtPathSearch.trim()):'',
     adminCtPathRegion?('Region: '+regionLabel(adminCtPathRegion)):'',
     'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
@@ -9129,7 +9134,7 @@ function editDeckBodyHtml(p){
   const ms=ctPathMilestones(p.start_date);
   const ctPath=showCt?`<div class="edit-deck-sec">
     <div class="edit-deck-sec-title">CT Path</div>
-    <div class="login-sub" style="color:#666;margin:0 0 8px;font-size:11px">Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). National-TAB Survey techs are not tracked here.</div>
+    <div class="login-sub" style="color:#666;margin:0 0 8px;font-size:11px">Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). Hidden for National-TAB Survey and techs already NEBB CT or CP.</div>
     <div class="edit-deck-grid">
       <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Training Start (2.0 yrs)</span><div id="edit-ct-train-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.trainingStart)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.trainingStart))}</div></div>
       <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Exam Date (2.5 yrs)</span><div id="edit-ct-exam-target-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.examTarget)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.examTarget))}</div></div>
