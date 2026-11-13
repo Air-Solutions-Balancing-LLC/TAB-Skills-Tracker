@@ -186,6 +186,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .edit-deck-body{padding:18px 22px;overflow-y:auto;flex:1;background:linear-gradient(180deg,#f7f9fc 0%,#fff 120px)}
 .edit-deck-sec{margin-bottom:16px;background:#fff;border:1px solid #e8eef6;border-radius:14px;padding:14px 16px;box-shadow:0 1px 2px rgba(27,58,107,.04)}
 .edit-deck-sec-title{font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eef2f8}
+.edit-deck-sec-nebb .edit-deck-sec-title{color:#0F6E56;border-bottom-color:#d7ebe3}
+.edit-deck-sec-nebb .admin-start-lbl{color:#0F6E56}
+.edit-deck-sec-nebb .admin-edit-field{color:#0F6E56}
+.edit-deck-sec-ctpath .edit-deck-sec-title{color:#C45C26;border-bottom-color:#f0d9c8}
+.edit-deck-sec-ctpath .admin-start-lbl{color:#C45C26}
+.edit-deck-sec-ctpath .admin-edit-field{color:#C45C26}
+.edit-deck-sec-ctpath .login-sub{color:#C45C26!important}
 .edit-deck-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
 .edit-deck-grid .span-2{grid-column:1/-1}
 .edit-deck-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid #e8eef6;background:#fafbfd}
@@ -1094,7 +1101,7 @@ body.mobile-nav-open{overflow:hidden}
   <div class="login-bg">
     <div class="login-box admin-box-wide">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
-        <div class="login-logo">User Management</div>
+        <div class="login-logo">Admin Page / User Management</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="chooseRole('pm')">PM Login</button>
           <button type="button" class="btn" style="padding:8px 14px;background:#4A90D9" onclick="openAdminTechViewPicker()">Technician View</button>
@@ -1201,7 +1208,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-prebootTasks" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('prebootTasks')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Tasks Report</div>
-                <div class="report-meta">All regions · Techs with Pre-Bootcamp selected · Tasks and mastery level (needed = not yet Can Perform Independently)</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-tasks-report-date-label">—</span> · All regions · Techs with Pre-Bootcamp selected · Tasks and mastery level (needed = not yet Can Perform Independently)</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-tasks-filter-btn" onclick="toggleAdminPreBootTasksFilter()">Show All Tasks</button>
@@ -1405,32 +1412,35 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="btn" id="admin-tech-table-btn" style="background:#4A90D9;padding:8px 14px;font-size:12px" onclick="toggleAdminTechTableView()">Table view</button>
           <button type="button" class="btn" style="background:#0F6E56;padding:8px 14px;font-size:12px" onclick="exportAdminTechsExcel()">Export to Excel</button>
           <button type="button" class="btn" style="background:#1B3A6B;padding:8px 14px;font-size:12px" onclick="document.getElementById('admin-tech-import-file').click()">Import from Excel</button>
+          <button type="button" class="btn" style="background:#C45C26;padding:8px 14px;font-size:12px" onclick="focusAdminAddTech()">Add New Tech</button>
           <input type="file" id="admin-tech-import-file" accept=".xlsx,.xls,.csv,text/csv" style="display:none" onchange="importAdminTechsExcel(this)">
           <span id="admin-tech-table-hint" style="font-size:11px;color:#888;display:none">Edit cells inline and click Save. Category columns are required-category checkboxes. Export/Import still use email to match technicians.</span>
         </div>
         <div id="admin-tech-import-status" style="font-size:12px;margin:0 0 8px;min-height:0"></div>
         <div class="admin-list" id="list-techs"></div>
-        <div class="admin-add-title">Add Technician</div>
-        <div class="admin-add admin-add-below">
-          <input id="add-tech-name" placeholder="Full name">
-          <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
-          <select id="add-tech-region" onchange="ctPathRefreshAddPreview()">
-            <option value="IM">Intermountain</option>
-            <option value="KES">KES</option>
-            <option value="MA">Mid-Atlantic</option>
-            <option value="MW">Midwest</option>
-            <option value="National">National</option>
-            <option value="National-TAB Survey">National-TAB Survey</option>
-            <option value="NE">New England</option>
-            <option value="PC">Pacific Coast</option>
-            <option value="RM">Rocky Mountain</option>
-            <option value="SE">Southeast</option>
-            <option value="SW">Southwest</option>
-          </select>
-          <input type="date" id="add-tech-start" title="Employee start date" aria-label="Employee start date" oninput="ctPathRefreshAddPreview()">
-          <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
+        <div id="admin-add-tech-panel">
+          <div class="admin-add-title">Add Technician</div>
+          <div class="admin-add admin-add-below">
+            <input id="add-tech-name" placeholder="Full name">
+            <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
+            <select id="add-tech-region" onchange="ctPathRefreshAddPreview()">
+              <option value="IM">Intermountain</option>
+              <option value="KES">KES</option>
+              <option value="MA">Mid-Atlantic</option>
+              <option value="MW">Midwest</option>
+              <option value="National">National</option>
+              <option value="National-TAB Survey">National-TAB Survey</option>
+              <option value="NE">New England</option>
+              <option value="PC">Pacific Coast</option>
+              <option value="RM">Rocky Mountain</option>
+              <option value="SE">Southeast</option>
+              <option value="SW">Southwest</option>
+            </select>
+            <input type="date" id="add-tech-start" title="Employee start date" aria-label="Employee start date" oninput="ctPathRefreshAddPreview()">
+            <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
+          </div>
+          <div id="add-tech-ctpath-preview" style="display:none;margin:8px 0 0;padding:10px 12px;border:1px solid #d8e2f0;border-radius:8px;background:#f6f8fc;font-size:12px;color:#555"></div>
         </div>
-        <div id="add-tech-ctpath-preview" style="display:none;margin:8px 0 0;padding:10px 12px;border:1px solid #d8e2f0;border-radius:8px;background:#f6f8fc;font-size:12px;color:#555"></div>
         </div>
       </div>
 
@@ -3919,6 +3929,19 @@ function toggleAdminSection(key){
   applyAdminSectionState(key);
 }
 
+function focusAdminAddTech(){
+  if(!adminSecOpen.techs){
+    adminSecOpen.techs=true;
+    applyAdminSectionState('techs');
+  }
+  const panel=document.getElementById('admin-add-tech-panel');
+  const nameEl=document.getElementById('add-tech-name');
+  if(panel)panel.scrollIntoView({behavior:'smooth',block:'center'});
+  if(nameEl){
+    try{nameEl.focus({preventScroll:true});}catch(_){nameEl.focus();}
+  }
+}
+
 function applyAdminSectionState(key){
   const body=document.getElementById('admin-sec-body-'+key);
   const head=document.getElementById('admin-sec-h-'+key);
@@ -4475,7 +4498,7 @@ async function loadAdminNebbReport(){
   wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
   adminNebbReportDate=new Date();
   const dateLabel=document.getElementById('admin-nebb-report-date-label');
-  if(dateLabel)dateLabel.textContent=fmtDateFull(adminNebbReportDate.toISOString().slice(0,10));
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDateIso(adminNebbReportDate));
   try{
     if(!adminPeople||!adminPeople.length){
       try{await loadAdminLists();}catch(_){}
@@ -7593,6 +7616,29 @@ function renderTechAta(tech){
   body.innerHTML=ataTechGoHtml(tech)+overall+resetCard+sections;
 }
 
+function adminTodayIso(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function adminReportDateIso(storedDate){
+  if(storedDate instanceof Date&&!isNaN(storedDate.getTime())){
+    return storedDate.getFullYear()+'-'+String(storedDate.getMonth()+1).padStart(2,'0')+'-'+String(storedDate.getDate()).padStart(2,'0');
+  }
+  return adminTodayIso();
+}
+function stampAdminReportDatesToday(){
+  const today=new Date();
+  const label=fmtDateFull(adminTodayIso());
+  adminReportDate=today;
+  adminPreBootReportDate=today;
+  adminNebbReportDate=today;
+  adminCtPathReportDate=today;
+  ['admin-report-date-label','admin-preboot-report-date-label','admin-preboot-tasks-report-date-label','admin-ctpath-report-date-label','admin-nebb-report-date-label'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=label;
+  });
+}
+
 async function loadAdminActivityReport(){
   const wrap=document.getElementById('admin-report-wrap');
   const err=document.getElementById('admin-report-err');
@@ -7601,7 +7647,7 @@ async function loadAdminActivityReport(){
   wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
   adminReportDate=new Date();
   const dateLabel=document.getElementById('admin-report-date-label');
-  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDate.toISOString().slice(0,10));
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDateIso(adminReportDate));
   try{
     adminReportRows=sortAdminReportRows(await rpc('app_admin_technician_activity_report',{})||[]);
   }catch(e){
@@ -7617,7 +7663,7 @@ async function loadAdminActivityReport(){
 }
 
 function adminReportPdfFilename(reportDateIso){
-  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const iso=reportDateIso||adminTodayIso();
   const parts=['Technician-Activity-Report',iso];
   if(adminReportRegion)parts.push(adminReportRegion);
   if(adminReportSearch.trim())parts.push('filtered');
@@ -7786,7 +7832,7 @@ async function downloadAdminReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-report-download-btn','Generating PDF…',async()=>{
-    const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const reportDateIso=adminReportDateIso(adminReportDate);
     await ensureJsPdf();
     const doc=buildAdminActivityReportPdfDoc(rows,fmtDateFull(reportDateIso));
     doc.save(adminReportPdfFilename(reportDateIso));
@@ -7802,7 +7848,7 @@ async function previewAdminReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-report-preview-btn','Preparing…',async()=>{
-    const reportDateIso=adminReportDate?adminReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const reportDateIso=adminReportDateIso(adminReportDate);
     await ensureJsPdf();
     const doc=buildAdminActivityReportPdfDoc(rows,fmtDateFull(reportDateIso));
     await openAdminPdfPreview(doc,'Technician Activity Report Preview',adminReportPdfFilename(reportDateIso));
@@ -7907,7 +7953,7 @@ async function loadAdminPreBootReport(){
   wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
   adminPreBootReportDate=new Date();
   const dateLabel=document.getElementById('admin-preboot-report-date-label');
-  if(dateLabel)dateLabel.textContent=fmtDateFull(adminPreBootReportDate.toISOString().slice(0,10));
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDateIso(adminPreBootReportDate));
   try{
     adminPreBootRows=sortAdminReportRows(await rpc('app_admin_pre_bootcamp_report',{})||[]);
     await attachLastAssessmentDates(adminPreBootRows);
@@ -7923,7 +7969,7 @@ async function loadAdminPreBootReport(){
   renderAdminPreBootReport();
 }
 function adminPreBootPdfFilename(reportDateIso){
-  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const iso=reportDateIso||adminTodayIso();
   const parts=['Pre-Bootcamp-Assessment-Report',iso];
   if(adminPreBootRegion)parts.push(adminPreBootRegion);
   if(adminPreBootSearch.trim())parts.push('filtered');
@@ -8027,7 +8073,7 @@ async function downloadAdminPreBootReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-preboot-download-btn','Generating PDF…',async()=>{
-    const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const reportDateIso=adminReportDateIso(adminPreBootReportDate);
     await ensureJsPdf();
     const doc=buildAdminPreBootReportPdfDoc(rows,fmtDateFull(reportDateIso));
     doc.save(adminPreBootPdfFilename(reportDateIso));
@@ -8043,7 +8089,7 @@ async function previewAdminPreBootReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-preboot-preview-btn','Preparing…',async()=>{
-    const reportDateIso=adminPreBootReportDate?adminPreBootReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const reportDateIso=adminReportDateIso(adminPreBootReportDate);
     await ensureJsPdf();
     const doc=buildAdminPreBootReportPdfDoc(rows,fmtDateFull(reportDateIso));
     await openAdminPdfPreview(doc,'Pre-Bootcamp Assessment Report Preview',adminPreBootPdfFilename(reportDateIso));
@@ -8054,7 +8100,7 @@ async function previewAdminPreBootReportPdf(){
 }
 
 function adminNebbPdfFilename(reportDateIso){
-  const iso=reportDateIso||new Date().toISOString().slice(0,10);
+  const iso=reportDateIso||adminTodayIso();
   const parts=['NEBB-Certified-Report',iso];
   if(adminNebbRegion)parts.push(adminNebbRegion);
   if(String(adminNebbDeadlineFilter||'all')!=='all')parts.push('under-'+adminNebbDeadlineFilter+'-days');
@@ -8159,7 +8205,7 @@ async function downloadAdminNebbReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-nebb-download-btn','Generating PDF…',async()=>{
-    const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const iso=adminReportDateIso(adminNebbReportDate);
     await ensureJsPdf();
     const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
     doc.save(adminNebbPdfFilename(iso));
@@ -8175,7 +8221,7 @@ async function previewAdminNebbReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-nebb-preview-btn','Preparing…',async()=>{
-    const iso=adminNebbReportDate?adminNebbReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const iso=adminReportDateIso(adminNebbReportDate);
     await ensureJsPdf();
     const doc=buildAdminNebbPdfDoc(rows,fmtDateFull(iso));
     await openAdminPdfPreview(doc,'NEBB Certified Report Preview',adminNebbPdfFilename(iso));
@@ -8281,7 +8327,7 @@ async function loadAdminCtPathReport(){
   wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
   adminCtPathReportDate=new Date();
   const dateLabel=document.getElementById('admin-ctpath-report-date-label');
-  if(dateLabel)dateLabel.textContent=fmtDateFull(adminCtPathReportDate.toISOString().slice(0,10));
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminReportDateIso(adminCtPathReportDate));
   try{
     await loadAdminLists();
     adminCtPathRows=buildAdminCtPathRows();
@@ -8320,7 +8366,7 @@ async function saveCtPathReportRow(personId){
   }
 }
 function adminCtPathPdfFilename(iso){
-  const parts=['CT-Path',iso||new Date().toISOString().slice(0,10)];
+  const parts=['CT-Path',iso||adminTodayIso()];
   if(adminCtPathRegion)parts.push(adminCtPathRegion);
   if(adminCtPathSearch.trim())parts.push('filtered');
   return parts.join('-')+'.pdf';
@@ -8420,7 +8466,7 @@ async function downloadAdminCtPathReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-ctpath-download-btn','Generating PDF…',async()=>{
-    const iso=adminCtPathReportDate?adminCtPathReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const iso=adminReportDateIso(adminCtPathReportDate);
     await ensureJsPdf();
     const doc=buildAdminCtPathPdfDoc(rows,fmtDateFull(iso));
     doc.save(adminCtPathPdfFilename(iso));
@@ -8436,7 +8482,7 @@ async function previewAdminCtPathReportPdf(){
     return;
   }
   await withAdminPdfBusy('admin-ctpath-preview-btn','Preparing…',async()=>{
-    const iso=adminCtPathReportDate?adminCtPathReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const iso=adminReportDateIso(adminCtPathReportDate);
     await ensureJsPdf();
     const doc=buildAdminCtPathPdfDoc(rows,fmtDateFull(iso));
     await openAdminPdfPreview(doc,'CT Path Report Preview',adminCtPathPdfFilename(iso));
@@ -8508,7 +8554,8 @@ function openAdmin(){
   showPage('pg-admin');
   initAdminSections();
   initReportTables();
-  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminPreBootTasksReport(),loadAdminNebbReport(),ataLoadAdmin()]);
+  stampAdminReportDatesToday();
+  Promise.all([loadAdminLists(),loadAdminActivityReport(),loadAdminPreBootReport(),loadAdminPreBootTasksReport(),loadAdminCtPathReport(),loadAdminNebbReport(),ataLoadAdmin()]);
 }
 
 async function loadAdminLists(){
@@ -9114,7 +9161,7 @@ function editDeckBodyHtml(p){
         :`<label class="admin-start-wrap"><span class="admin-start-lbl">Role</span><select id="edit-role-${p.id}" class="admin-edit-field"><option value="admin"${p.role==='admin'?' selected':''}>Admin</option><option value="pm"${p.role==='pm'?' selected':''}>PM/APM</option></select></label><label class="admin-start-wrap"><span class="admin-start-lbl">Region</span><select id="edit-region-${p.id}" class="admin-edit-field">${regionOptionsWithBlankHtml(p.region||'')}</select></label>`}
     </div>
   </div>`;
-  const cert=`<div class="edit-deck-sec">
+  const cert=`<div class="edit-deck-sec edit-deck-sec-nebb">
     <div class="edit-deck-sec-title">NEBB & certification</div>
     <div class="edit-deck-grid">
       <label class="admin-start-wrap"><span class="admin-start-lbl">NEBB status</span><select id="edit-nebb-${p.id}" class="admin-edit-field">${nebbOptionsHtml(p.nebb_status||'')}</select></label>
@@ -9132,14 +9179,14 @@ function editDeckBodyHtml(p){
   </div>`:'';
   const showCt=isTech&&ctPathEligible(p);
   const ms=ctPathMilestones(p.start_date);
-  const ctPath=showCt?`<div class="edit-deck-sec">
+  const ctPath=showCt?`<div class="edit-deck-sec edit-deck-sec-ctpath">
     <div class="edit-deck-sec-title">CT Path</div>
-    <div class="login-sub" style="color:#666;margin:0 0 8px;font-size:11px">Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). Hidden for National-TAB Survey and techs already NEBB CT or CP.</div>
+    <div class="login-sub" style="margin:0 0 8px;font-size:11px">Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). Hidden for National-TAB Survey and techs already NEBB CT or CP.</div>
     <div class="edit-deck-grid">
-      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Training Start (2.0 yrs)</span><div id="edit-ct-train-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.trainingStart)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.trainingStart))}</div></div>
-      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Exam Date (2.5 yrs)</span><div id="edit-ct-exam-target-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.examTarget)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.examTarget))}</div></div>
-      <div class="admin-start-wrap"><span class="admin-start-lbl">3 Year Anniv.</span><div id="edit-ct-year3-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.year3)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.year3))}</div></div>
-      <label class="admin-start-wrap"><span class="admin-start-lbl">ATA Status</span><div style="padding:8px 0;font-weight:700;color:#555">${adminEsc(ctPathAtaStatusLabel(p))}</div></label>
+      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Training Start (2.0 yrs)</span><div id="edit-ct-train-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.trainingStart)?'#C0392B':'#C45C26'}">${adminEsc(ctPathDateLabel(ms.trainingStart))}</div></div>
+      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Exam Date (2.5 yrs)</span><div id="edit-ct-exam-target-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.examTarget)?'#C0392B':'#C45C26'}">${adminEsc(ctPathDateLabel(ms.examTarget))}</div></div>
+      <div class="admin-start-wrap"><span class="admin-start-lbl">3 Year Anniv.</span><div id="edit-ct-year3-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.year3)?'#C0392B':'#C45C26'}">${adminEsc(ctPathDateLabel(ms.year3))}</div></div>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">ATA Status</span><div style="padding:8px 0;font-weight:700;color:#C45C26">${adminEsc(ctPathAtaStatusLabel(p))}</div></label>
       <label class="admin-start-wrap"><span class="admin-start-lbl">CT Training Cohort</span><input id="edit-ct-cohort-${p.id}" class="admin-edit-field" value="${adminEsc(p.ct_training_cohort||'')}" placeholder="e.g. Jun–Sept 2026" maxlength="80"></label>
       <label class="admin-start-wrap"><span class="admin-start-lbl">Upcoming CT Exam Scheduled</span><input type="date" id="edit-ct-exam-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.ct_exam_scheduled)}"></label>
     </div>
@@ -9153,7 +9200,7 @@ function ctPathRefreshEditMilestones(id){
   [['edit-ct-train-'+id,ms.trainingStart],['edit-ct-exam-target-'+id,ms.examTarget],['edit-ct-year3-'+id,ms.year3]].forEach(([elId,d])=>{
     const el=document.getElementById(elId);if(!el)return;
     el.textContent=ctPathDateLabel(d);
-    el.style.color=ctPathPastDue(d)?'#C0392B':'#1B3A6B';
+    el.style.color=ctPathPastDue(d)?'#C0392B':'#C45C26';
   });
 }
 
@@ -11464,6 +11511,8 @@ async function loadAdminPreBootTasksReport(){
   if(!wrap)return;
   if(err){err.style.display='none';err.textContent='';}
   wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  const dateLabel=document.getElementById('admin-preboot-tasks-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminTodayIso());
   try{
     await ensureSkills();
     adminPreBootTasksRows=await rpc('app_admin_pre_bootcamp_tasks_report',{})||[];
