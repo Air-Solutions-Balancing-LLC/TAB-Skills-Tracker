@@ -1242,6 +1242,49 @@ body.mobile-nav-open{overflow:hidden}
               </div>
             </div>
           </div>
+          <div class="report-item" id="report-ctpath">
+            <div class="report-head">
+              <button type="button" class="report-toggle" id="report-toggle-ctpath" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('ctpath')"><span class="admin-sec-chevron">▼</span></button>
+              <div class="report-head-main">
+                <div class="report-title">CT Path</div>
+                <div class="report-meta">Path to NEBB CT · Report date: <span id="admin-ctpath-report-date-label">—</span></div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn" style="background:#888" onclick="loadAdminCtPathReport()">Refresh</button>
+                <button type="button" class="btn" style="background:#4A90D9" id="admin-ctpath-preview-btn" onclick="previewAdminCtPathReportPdf()">Preview</button>
+                <button type="button" class="btn" id="admin-ctpath-download-btn" onclick="downloadAdminCtPathReportPdf()">Download PDF</button>
+              </div>
+            </div>
+            <div class="report-table-body collapsed" id="report-table-ctpath">
+              <div class="err" id="admin-ctpath-report-err" style="display:none"></div>
+              <div class="login-sub" style="color:#666;margin:0 0 8px">All technicians except National-TAB Survey. Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). Edit cohort, exam date, and notes here or on the tech Edit card. Run <code>supabase/ct-path.sql</code> in Supabase once.</div>
+              <div class="report-filters">
+                <div class="pm-search-wrap">
+                  <input type="search" id="admin-ctpath-search" placeholder="Search by name…" autocomplete="off" oninput="onAdminCtPathFilterChange()">
+                </div>
+                <div class="report-filter-field">
+                  <label for="admin-ctpath-region">Region</label>
+                  <select id="admin-ctpath-region" onchange="onAdminCtPathFilterChange()">
+                    <option value="">All regions</option>
+                    <option value="IM">Intermountain</option>
+                    <option value="KES">KES</option>
+                    <option value="MA">Mid-Atlantic</option>
+                    <option value="MW">Midwest</option>
+                    <option value="National">National</option>
+                    <option value="NE">New England</option>
+                    <option value="PC">Pacific Coast</option>
+                    <option value="RM">Rocky Mountain</option>
+                    <option value="SE">Southeast</option>
+                    <option value="SW">Southwest</option>
+                  </select>
+                </div>
+              </div>
+              <div class="report-filter-hint" id="admin-ctpath-filter-hint"></div>
+              <div class="report-wrap" id="admin-ctpath-report-wrap" style="overflow-x:auto">
+                <div class="admin-empty" style="padding:12px">Open to load…</div>
+              </div>
+            </div>
+          </div>
           <div class="report-item" id="report-nebb">
             <div class="report-head">
               <button type="button" class="report-toggle" id="report-toggle-nebb" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('nebb')"><span class="admin-sec-chevron">▼</span></button>
@@ -3835,7 +3878,7 @@ async function doLogout(){
 // ── Admin: user management ───────────────────────────────────────────────────
 function adminEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all';
+let adminPeople=[],adminEditId=null,adminReportRows=[],adminReportDate=null,adminReportSearch='',adminReportRegion='',adminPreBootRows=[],adminPreBootReportDate=null,adminPreBootSearch='',adminPreBootRegion='',adminNebbRows=[],adminNebbReportDate=null,adminNebbSearch='',adminNebbRegion='',adminNebbDeadlineFilter='all',adminCtPathRows=[],adminCtPathReportDate=null,adminCtPathSearch='',adminCtPathRegion='';
 let pmNebbRows=[],pmNebbReportDate=null,pmNebbSearch='',pmNebbDeadlineFilter='all';
 const ADMIN_REGIONS=[['IM','Intermountain'],['KES','KES'],['MA','Mid-Atlantic'],['MW','Midwest'],['National','National'],['National-TAB Survey','National-TAB Survey'],['NE','New England'],['PC','Pacific Coast'],['RM','Rocky Mountain'],['SE','Southeast'],['SW','Southwest']];
 const ADMIN_NEBB_OPTIONS=[['','Not set'],['NEBB CP','NEBB CP'],['NEBB CT','NEBB CT'],['In Training','In Training']];
@@ -3847,7 +3890,7 @@ const ADMIN_POSITION_OPTIONS=[
   ['KES Install Technician','KES Install Technician']
 ];
 const adminSecOpen={reports:false,ata:false,admins:false,pms:false,techs:false,deleted:false};
-const reportTableOpen={activity:false,preboot:false,prebootTasks:false,nebb:false};
+const reportTableOpen={activity:false,preboot:false,prebootTasks:false,nebb:false,ctpath:false};
 
 function toggleReportTable(key){
   if(!(key in reportTableOpen))return;
@@ -5204,6 +5247,58 @@ function ataCategoryMeta(cat){
     case 'exempt':return{label:'Exempt',color:'#6b7280',bg:'#F3F4F6'};
     default:return{label:'Active',color:'#0F6E56',bg:'#E7F5EF'};
   }
+}
+// ── CT Path (Path to NEBB CT) ────────────────────────────────────────────────
+function ctPathIsSurvey(tech){
+  if(!tech)return false;
+  const region=String(tech.region||'').trim();
+  const pos=String(tech.job_position||'').trim().toLowerCase();
+  return region==='National-TAB Survey'||pos==='tab survey technician';
+}
+function ctPathEligible(tech){
+  return !!(tech&&tech.role!=='admin'&&tech.role!=='pm'&&!ctPathIsSurvey(tech)&&!tech.deleted);
+}
+function ctPathAddYears(startDate,years){
+  const dt=parseDateOnly(startDate);
+  if(!dt||isNaN(dt.getTime()))return null;
+  const whole=Math.floor(years);
+  const months=Math.round((years-whole)*12);
+  const out=new Date(dt.getFullYear()+whole,dt.getMonth()+months,dt.getDate());
+  return out;
+}
+function ctPathMilestones(startDate){
+  return {
+    trainingStart:ctPathAddYears(startDate,2),
+    examTarget:ctPathAddYears(startDate,2.5),
+    year3:ctPathAddYears(startDate,3)
+  };
+}
+function ctPathDateIso(d){
+  const dt=(d instanceof Date)?d:parseDateOnly(d);
+  if(!dt||isNaN(dt.getTime()))return '';
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+function ctPathDateLabel(d){
+  const iso=ctPathDateIso(d);
+  return iso||'—';
+}
+function ctPathPastDue(d){
+  const dt=(d instanceof Date)?d:parseDateOnly(d);
+  if(!dt||isNaN(dt.getTime()))return false;
+  const today=new Date();today.setHours(0,0,0,0);
+  return dt<today;
+}
+function ctPathAtaStatusLabel(techOrPerson){
+  const cat=techOrPerson&&techOrPerson.role==='technician'?personAtaCategory(techOrPerson):ataCategory(techOrPerson);
+  if(cat==='complete')return'Completed';
+  if(cat==='exempt')return'N/A';
+  return'In Progress';
+}
+function ctPathMilestoneCellHtml(d){
+  const label=ctPathDateLabel(d);
+  if(label==='—')return'<span style="color:#bbb">—</span>';
+  const past=ctPathPastDue(d);
+  return`<span style="color:${past?'#C0392B':'#333'};font-weight:${past?'700':'500'}">${adminEsc(label)}</span>`;
 }
 function ataCategoryChip(cat){
   const m=ataCategoryMeta(cat);
@@ -8079,6 +8174,267 @@ async function previewAdminNebbReportPdf(){
   });
 }
 
+// ── Admin CT Path report ─────────────────────────────────────────────────────
+function ctPathRowFromPerson(p){
+  const ms=ctPathMilestones(p.start_date);
+  return {
+    id:p.id,
+    tech_id:p.tech_id,
+    name:p.full_name||p.email||'',
+    region:p.region||'',
+    start_date:p.start_date||null,
+    ata_status:ctPathAtaStatusLabel(p),
+    training_start:ms.trainingStart,
+    exam_target:ms.examTarget,
+    year3:ms.year3,
+    ct_training_cohort:p.ct_training_cohort||'',
+    ct_exam_scheduled:p.ct_exam_scheduled||null,
+    ct_path_notes:p.ct_path_notes||''
+  };
+}
+function buildAdminCtPathRows(){
+  return (adminPeople||[])
+    .filter(p=>p.role==='technician'&&!p.deleted&&ctPathEligible(p))
+    .map(ctPathRowFromPerson)
+    .sort((a,b)=>{
+      const as=ctPathDateIso(a.start_date)||'9999';
+      const bs=ctPathDateIso(b.start_date)||'9999';
+      return as.localeCompare(bs)||String(a.name||'').localeCompare(String(b.name||''));
+    });
+}
+function filteredAdminCtPathRows(){
+  const q=adminCtPathSearch.trim().toLowerCase();
+  const region=adminCtPathRegion;
+  return adminCtPathRows.filter(r=>{
+    if(region&&r.region!==region)return false;
+    if(q&&!String(r.name||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+function updateAdminCtPathFilterHint(shown,total){
+  const el=document.getElementById('admin-ctpath-filter-hint');
+  if(!el)return;
+  if(!total){el.textContent='';return;}
+  if(shown===total&&!adminCtPathSearch.trim()&&!adminCtPathRegion){
+    el.textContent=total+' technician'+(total===1?'':'s');
+    return;
+  }
+  el.textContent=shown+' of '+total+' shown';
+}
+function onAdminCtPathFilterChange(){
+  const searchEl=document.getElementById('admin-ctpath-search');
+  const regionEl=document.getElementById('admin-ctpath-region');
+  adminCtPathSearch=searchEl?searchEl.value:'';
+  adminCtPathRegion=regionEl?regionEl.value:'';
+  renderAdminCtPathReport();
+}
+function buildAdminCtPathTableHtml(rows){
+  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians match the current filters.</div>';
+  const body=rows.map(r=>{
+    return `<tr data-ctpath-id="${r.id}">
+      <td style="font-weight:700;color:#1B3A6B;white-space:nowrap">${adminEsc(r.name)}</td>
+      <td style="white-space:nowrap">${adminEsc(regionLabel(r.region))}</td>
+      <td style="white-space:nowrap">${adminEsc(ctPathDateLabel(r.start_date))}</td>
+      <td style="white-space:nowrap">${adminEsc(r.ata_status)}</td>
+      <td style="white-space:nowrap">${ctPathMilestoneCellHtml(r.training_start)}</td>
+      <td><input id="ctpath-cohort-${r.id}" class="admin-edit-field" style="min-width:110px;width:100%" value="${adminEsc(r.ct_training_cohort||'')}" placeholder="Cohort"></td>
+      <td style="white-space:nowrap">${ctPathMilestoneCellHtml(r.exam_target)}</td>
+      <td><input type="date" id="ctpath-exam-${r.id}" class="admin-edit-field" style="min-width:130px" value="${adminDateInputValue(r.ct_exam_scheduled)}"></td>
+      <td style="white-space:nowrap">${ctPathMilestoneCellHtml(r.year3)}</td>
+      <td><input id="ctpath-notes-${r.id}" class="admin-edit-field" style="min-width:160px;width:100%" value="${adminEsc(r.ct_path_notes||'')}" placeholder="Notes"></td>
+      <td style="white-space:nowrap"><button type="button" class="btn" style="padding:5px 8px;font-size:11px;background:#0F6E56" onclick="saveCtPathReportRow(${r.id})">Save</button></td>
+    </tr>`;
+  }).join('');
+  return `<table class="report-table" style="font-size:11px">
+    <thead><tr>
+      <th>Name</th><th>Region</th><th>Employee Start</th><th>ATA Status</th>
+      <th>Target CT Training Start (2.0 yrs)</th><th>CT Training Cohort</th>
+      <th>Target CT Exam Date (2.5 yrs)</th><th>Upcoming CT Exam Scheduled</th>
+      <th>3 Year Anniv.</th><th>Notes</th><th></th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+function renderAdminCtPathReport(){
+  const wrap=document.getElementById('admin-ctpath-report-wrap');
+  if(!wrap)return;
+  const rows=filteredAdminCtPathRows();
+  updateAdminCtPathFilterHint(rows.length,adminCtPathRows.length);
+  wrap.innerHTML=buildAdminCtPathTableHtml(rows);
+}
+async function loadAdminCtPathReport(){
+  const wrap=document.getElementById('admin-ctpath-report-wrap');
+  const err=document.getElementById('admin-ctpath-report-err');
+  if(!wrap)return;
+  if(err)err.style.display='none';
+  wrap.innerHTML='<div class="admin-empty" style="padding:12px">Loading…</div>';
+  adminCtPathReportDate=new Date();
+  const dateLabel=document.getElementById('admin-ctpath-report-date-label');
+  if(dateLabel)dateLabel.textContent=fmtDateFull(adminCtPathReportDate.toISOString().slice(0,10));
+  try{
+    await loadAdminLists();
+    adminCtPathRows=buildAdminCtPathRows();
+  }catch(e){
+    wrap.innerHTML='';
+    updateAdminCtPathFilterHint(0,0);
+    if(err){
+      err.textContent='Could not load CT Path. '+(e.message||'Run supabase/ct-path.sql in Supabase, then refresh.');
+      err.style.display='block';
+    }
+    return;
+  }
+  renderAdminCtPathReport();
+}
+async function saveCtPathReportRow(personId){
+  const err=document.getElementById('admin-ctpath-report-err');
+  if(err)err.style.display='none';
+  const cohort=document.getElementById('ctpath-cohort-'+personId);
+  const exam=document.getElementById('ctpath-exam-'+personId);
+  const notes=document.getElementById('ctpath-notes-'+personId);
+  try{
+    await rpc('app_admin_update_person',{
+      p_id:personId,
+      p_ct_training_cohort:cohort?cohort.value:'',
+      p_ct_exam_scheduled:exam?exam.value:'',
+      p_ct_path_notes:notes?notes.value:''
+    });
+    await loadAdminLists();
+    adminCtPathRows=buildAdminCtPathRows();
+    renderAdminCtPathReport();
+  }catch(e){
+    if(err){
+      err.textContent='Could not save. '+(e.message||'Run supabase/ct-path.sql in Supabase.');
+      err.style.display='block';
+    }
+  }
+}
+function adminCtPathPdfFilename(iso){
+  const parts=['CT-Path',iso||new Date().toISOString().slice(0,10)];
+  if(adminCtPathRegion)parts.push(adminCtPathRegion);
+  if(adminCtPathSearch.trim())parts.push('filtered');
+  return parts.join('-')+'.pdf';
+}
+function buildAdminCtPathPdfDoc(rows,reportDateText){
+  const lib=window.jspdf;
+  if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=28;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;
+  let y=margin;
+  const cols=[
+    {label:'Name',w:contentW*0.12},
+    {label:'Region',w:contentW*0.08},
+    {label:'Employee Start',w:contentW*0.09},
+    {label:'ATA Status',w:contentW*0.08},
+    {label:'Target Training (2.0)',w:contentW*0.10},
+    {label:'Cohort',w:contentW*0.09},
+    {label:'Target Exam (2.5)',w:contentW*0.10},
+    {label:'Exam Scheduled',w:contentW*0.09},
+    {label:'3 Year Anniv.',w:contentW*0.09},
+    {label:'Notes',w:contentW*0.16}
+  ];
+  function needPage(h){
+    if(y+h>pageH-margin){doc.addPage();y=margin;return true;}
+    return false;
+  }
+  function drawHeader(){
+    needPage(26);
+    doc.setFillColor(27,58,107);
+    doc.rect(margin,y-10,contentW,22,'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(255,255,255);
+    let x=margin+3;
+    cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-6});x+=c.w;});
+    y+=20;
+  }
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(27,58,107);
+  doc.text('CT Path — Path to NEBB CT',margin,y);
+  y+=16;
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
+  const meta=doc.splitTextToSize(pdfSafeText([
+    'Report date: '+reportDateText,
+    'Excludes National-TAB Survey',
+    adminCtPathSearch.trim()?('Search: '+adminCtPathSearch.trim()):'',
+    adminCtPathRegion?('Region: '+regionLabel(adminCtPathRegion)):'',
+    'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
+  ].filter(Boolean).join('  ·  ')),contentW);
+  meta.forEach(line=>{doc.text(line,margin,y);y+=11;});
+  y+=8;
+  drawHeader();
+  rows.forEach((r,idx)=>{
+    const values=[
+      pdfSafeText(r.name),
+      pdfSafeText(regionLabel(r.region)),
+      pdfSafeText(ctPathDateLabel(r.start_date)),
+      pdfSafeText(r.ata_status),
+      pdfSafeText(ctPathDateLabel(r.training_start)),
+      pdfSafeText(r.ct_training_cohort||'—'),
+      pdfSafeText(ctPathDateLabel(r.exam_target)),
+      pdfSafeText(ctPathDateLabel(r.ct_exam_scheduled)),
+      pdfSafeText(ctPathDateLabel(r.year3)),
+      pdfSafeText(r.ct_path_notes||'—')
+    ];
+    const lineSets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-6));
+    const rowH=Math.max(...lineSets.map(ls=>ls.length),1)*9+6;
+    if(needPage(rowH+4))drawHeader();
+    if(idx%2===0){doc.setFillColor(246,248,252);doc.rect(margin,y-7,contentW,rowH,'F');}
+    let x=margin+3;
+    lineSets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===0?'bold':'normal');
+      if(i===4&&ctPathPastDue(r.training_start))doc.setTextColor(192,57,43);
+      else if(i===6&&ctPathPastDue(r.exam_target))doc.setTextColor(192,57,43);
+      else if(i===8&&ctPathPastDue(r.year3))doc.setTextColor(192,57,43);
+      else doc.setTextColor(40,40,40);
+      lines.forEach((line,li)=>doc.text(line,x,y+li*9,{maxWidth:cols[i].w-6}));
+      x+=cols[i].w;
+    });
+    y+=rowH;
+    doc.setDrawColor(230,230,230);
+    doc.line(margin,y-3,margin+contentW,y-3);
+  });
+  return doc;
+}
+async function downloadAdminCtPathReportPdf(){
+  const rows=filteredAdminCtPathRows();
+  if(!rows.length){
+    alert(adminCtPathRows.length?'No technicians match the current filters.':'Load the CT Path report first.');
+    return;
+  }
+  await withAdminPdfBusy('admin-ctpath-download-btn','Generating PDF…',async()=>{
+    const iso=adminCtPathReportDate?adminCtPathReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminCtPathPdfDoc(rows,fmtDateFull(iso));
+    doc.save(adminCtPathPdfFilename(iso));
+  }).catch(e=>{
+    console.error('CT Path PDF export failed:',e);
+    alert('Could not create PDF. Please try again.');
+  });
+}
+async function previewAdminCtPathReportPdf(){
+  const rows=filteredAdminCtPathRows();
+  if(!rows.length){
+    alert(adminCtPathRows.length?'No technicians match the current filters.':'Load the CT Path report first.');
+    return;
+  }
+  await withAdminPdfBusy('admin-ctpath-preview-btn','Preparing…',async()=>{
+    const iso=adminCtPathReportDate?adminCtPathReportDate.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    await ensureJsPdf();
+    const doc=buildAdminCtPathPdfDoc(rows,fmtDateFull(iso));
+    await openAdminPdfPreview(doc,'CT Path Report Preview',adminCtPathPdfFilename(iso));
+  }).catch(e=>{
+    console.error('CT Path PDF preview failed:',e);
+    alert('Could not preview PDF. Please try again.');
+  });
+}
+
 function openAdmin(){
   currentRole='admin';
   saveSessionPref();
@@ -8096,6 +8452,8 @@ function openAdmin(){
   adminNebbSearch='';
   adminNebbRegion='';
   adminNebbDeadlineFilter='all';
+  adminCtPathSearch='';
+  adminCtPathRegion='';
   const reportSearch=document.getElementById('admin-report-search');
   const reportRegion=document.getElementById('admin-report-region');
   const prebootSearch=document.getElementById('admin-preboot-search');
@@ -8105,6 +8463,10 @@ function openAdmin(){
   const nebbSearch=document.getElementById('admin-nebb-search');
   const nebbRegion=document.getElementById('admin-nebb-region');
   const nebbDeadline=document.getElementById('admin-nebb-deadline');
+  const ctpathSearch=document.getElementById('admin-ctpath-search');
+  const ctpathRegion=document.getElementById('admin-ctpath-region');
+  if(ctpathSearch)ctpathSearch.value='';
+  if(ctpathRegion)ctpathRegion.value='';
   if(reportSearch)reportSearch.value='';
   if(reportRegion)reportRegion.value='';
   if(prebootSearch)prebootSearch.value='';
@@ -8753,11 +9115,35 @@ function editDeckBodyHtml(p){
   const employment=isTech?`<div class="edit-deck-sec">
     <div class="edit-deck-sec-title">Employment</div>
     <div class="edit-deck-grid">
-      <label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Employee start date</span><input type="date" id="edit-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.start_date)}" oninput="ctPathRefreshEditMilestones(${p.id})"></label>
       <label class="admin-start-wrap"><span class="admin-start-lbl">Bootcamp start date</span><input type="date" id="edit-bootcamp-start-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.bootcamp_start_date)}"></label>
     </div>
   </div>`:'';
-  return profile+cert+employment+ataStatusEditorHtml(p)+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
+  const showCt=isTech&&ctPathEligible(p);
+  const ms=ctPathMilestones(p.start_date);
+  const ctPath=showCt?`<div class="edit-deck-sec">
+    <div class="edit-deck-sec-title">CT Path</div>
+    <div class="login-sub" style="color:#666;margin:0 0 8px;font-size:11px">Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). National-TAB Survey techs are not tracked here.</div>
+    <div class="edit-deck-grid">
+      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Training Start (2.0 yrs)</span><div id="edit-ct-train-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.trainingStart)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.trainingStart))}</div></div>
+      <div class="admin-start-wrap"><span class="admin-start-lbl">Target CT Exam Date (2.5 yrs)</span><div id="edit-ct-exam-target-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.examTarget)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.examTarget))}</div></div>
+      <div class="admin-start-wrap"><span class="admin-start-lbl">3 Year Anniv.</span><div id="edit-ct-year3-${p.id}" style="padding:8px 0;font-weight:700;color:${ctPathPastDue(ms.year3)?'#C0392B':'#1B3A6B'}">${adminEsc(ctPathDateLabel(ms.year3))}</div></div>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">ATA Status</span><div style="padding:8px 0;font-weight:700;color:#555">${adminEsc(ctPathAtaStatusLabel(p))}</div></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">CT Training Cohort</span><input id="edit-ct-cohort-${p.id}" class="admin-edit-field" value="${adminEsc(p.ct_training_cohort||'')}" placeholder="e.g. Jun–Sept 2026" maxlength="80"></label>
+      <label class="admin-start-wrap"><span class="admin-start-lbl">Upcoming CT Exam Scheduled</span><input type="date" id="edit-ct-exam-${p.id}" class="admin-edit-field" value="${adminDateInputValue(p.ct_exam_scheduled)}"></label>
+    </div>
+    <label class="admin-start-wrap" style="display:block;margin-top:10px"><span class="admin-start-lbl">CT Path notes</span><textarea id="edit-ct-notes-${p.id}" class="admin-edit-field" rows="3" style="width:100%;resize:vertical" placeholder="Exam results, reschedules, blockers…">${adminEsc(p.ct_path_notes||'')}</textarea></label>
+  </div>`:'';
+  return profile+cert+employment+ctPath+ataStatusEditorHtml(p)+trainingFocusEditorHtml(p)+requiredCategoriesEditorHtml(p);
+}
+function ctPathRefreshEditMilestones(id){
+  const sd=document.getElementById('edit-start-'+id);
+  const ms=ctPathMilestones(sd?sd.value:null);
+  [['edit-ct-train-'+id,ms.trainingStart],['edit-ct-exam-target-'+id,ms.examTarget],['edit-ct-year3-'+id,ms.year3]].forEach(([elId,d])=>{
+    const el=document.getElementById(elId);if(!el)return;
+    el.textContent=ctPathDateLabel(d);
+    el.style.color=ctPathPastDue(d)?'#C0392B':'#1B3A6B';
+  });
 }
 
 function adminPeopleNameLine(p,opts){
@@ -8911,7 +9297,7 @@ async function saveEdit(id,role){
   if(err){err.style.display='none';err.textContent='';}
   const nameEl=document.getElementById('edit-name-'+id);
   const emailEl=document.getElementById('edit-email-'+id);
-  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null,p_job_position:null,p_lead_tech:null};
+  const args={p_id:id,p_name:(nameEl?nameEl.value:'').trim()||null,p_email:(emailEl?emailEl.value:'').trim()||null,p_role:null,p_region:null,p_start_date:null,p_bootcamp_start_date:null,p_nebb_status:null,p_cert_expires_on:null,p_cecs_complete:null,p_nebb_site_updated:null,p_required_categories:null,p_training_focus:null,p_training_goal_start:null,p_training_goal_end:null,p_job_position:null,p_lead_tech:null,p_ct_training_cohort:null,p_ct_exam_scheduled:null,p_ct_path_notes:null};
   const nebb=document.getElementById('edit-nebb-'+id);
   const certExp=document.getElementById('edit-cert-exp-'+id);
   const cecs=document.getElementById('edit-cecs-'+id);
@@ -8939,6 +9325,14 @@ async function saveEdit(id,role){
     args.p_training_focus=tf?tf.value:'';
     args.p_training_goal_start=ts?ts.value:'';
     args.p_training_goal_end=te?te.value:'';
+    const cohort=document.getElementById('edit-ct-cohort-'+id);
+    const exam=document.getElementById('edit-ct-exam-'+id);
+    const notes=document.getElementById('edit-ct-notes-'+id);
+    if(cohort||exam||notes){
+      args.p_ct_training_cohort=cohort?cohort.value:'';
+      args.p_ct_exam_scheduled=exam?exam.value:'';
+      args.p_ct_path_notes=notes?notes.value:'';
+    }
   }else{
     const r=document.getElementById('edit-role-'+id);
     const rr=document.getElementById('edit-region-'+id);
@@ -8983,7 +9377,10 @@ async function saveEdit(id,role){
           training_goal_start:person.training_goal_start||null,
           training_goal_end:person.training_goal_end||null,
           required_categories:person.required_categories!=null?person.required_categories:currentTechData.required_categories,
-          ata_category:person.ata_category||currentTechData.ata_category
+          ata_category:person.ata_category||currentTechData.ata_category,
+          ct_training_cohort:person.ct_training_cohort||'',
+          ct_exam_scheduled:person.ct_exam_scheduled||null,
+          ct_path_notes:person.ct_path_notes||''
         });
         renderTechHome(currentTechData,{readOnly:true});
       }
