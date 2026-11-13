@@ -1397,6 +1397,7 @@ body.mobile-nav-open{overflow:hidden}
           <div class="login-sub" style="color:#666;margin-bottom:8px">Weekly digital ATA quiz progress in three categories: <strong>Active</strong> (in progress), <strong>Complete</strong> (Basic + Intermediate + Advanced all passed), and <strong>Exempt</strong> (not required). Technicians see their ATA status on My Progress — Active techs also see % Basic / Intermediate / Advanced. Sync from Teachable for scores (Fail→Incomplete counts as a reset); use <strong>Mark Exempt</strong> for people who should not be tracked.</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px">
             <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadWeeklyReport('admin')">📄 Weekly Report PDF</button>
+            <button type="button" class="btn" style="background:#1B3A6B" onclick="ataDownloadRosterReport('admin')">📄 Full ATA Roster PDF</button>
             <button type="button" class="btn" id="ata-teachable-btn" style="background:#0F6E56" onclick="ataSyncFromTeachable()">↻ Sync from Teachable</button>
             <button type="button" class="btn" id="ata-infer-starts-btn" style="background:#4A90D9" onclick="ataInferStarts()">Fill empty start dates</button>
             <button type="button" class="btn" id="ata-curriculum-toggle" style="background:#6b4fa0" onclick="ataToggleCurriculumPanel()">📚 Master course list</button>
@@ -1741,6 +1742,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="topbar-grow"><div class="topbar-title">ATA Progress</div><div class="topbar-sub">One lesson per week, due every Thursday</div></div>
           <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadWeeklyReport('pm')">Region Report PDF</button>
+          <button type="button" class="btn" style="padding:8px 14px;background:#1B3A6B" onclick="ataDownloadRosterReport('pm')">Full Roster PDF</button>
         </div>
         <div class="page-body">
           <div class="report-filters">
@@ -5007,6 +5009,41 @@ function ataBestScore(tech,code){
   if(a&&a.best!=null)vals.push(Number(a.best));
   return vals.length?Math.max.apply(null,vals):null;
 }
+// Most recent Teachable quiz activity for a tech (for the Full ATA Roster PDF).
+function ataLatestQuiz(tech){
+  const codes=new Set();
+  Object.keys((tech&&tech.completions)||{}).forEach(c=>codes.add(c));
+  Object.keys((tech&&tech.attempts)||{}).forEach(c=>codes.add(c));
+  (ataCurriculum||[]).forEach(l=>{if(l&&l.lesson_code)codes.add(l.lesson_code);});
+  let best=null;
+  codes.forEach(code=>{
+    const c=ataCompletionFor(tech,code);
+    const i=ataAttemptInfo(tech,code);
+    const at=(c&&c.completed_at)||(i&&i.last_at)||null;
+    if(!at)return;
+    const d=parseDateOnly(at);
+    if(!d||isNaN(d.getTime()))return;
+    if(best&&d.getTime()<=best._t)return;
+    const score=ataBestScore(tech,code);
+    const passed=ataIsDone(tech,code);
+    const under=score!=null&&Number(score)<ATA_PASS_PCT;
+    let result='—';
+    if(score!=null)result=Number(score)+'%'+(passed?' Passed':(under?(ataWasReset(tech,code)?' Reset':' Failed'):''));
+    else if(passed)result='Complete';
+    best={code:String(code),at:at,score:score,passed:passed,result:result,_t:d.getTime()};
+  });
+  if(!best)return null;
+  delete best._t;
+  return best;
+}
+function ataResetStatusText(tech){
+  const r=ataTechResetCounts(tech);
+  const hit=r.month>=ATA_MAX_RESETS;
+  let text=r.month+'/'+ATA_MAX_RESETS+' (30d)';
+  if(r.total)text+=' · '+r.total+' total';
+  if(hit)text+=' · check-in';
+  return {text:text,month:r.month,total:r.total,hit:hit};
+}
 // Teachable does not publish these yet. TAB-A-405 is the last Advanced lesson that counts.
 // Later lessons stay on the report, but they do not change the percent or overdue count.
 const ATA_UNTRACKED_LESSON_CODES=new Set(['TAB-A-406','TAB-A-501','TAB-A-502','TAB-A-503','TAB-A-504','TAB-A-505','TAB-A-506','TAB-A-507']);
@@ -6337,6 +6374,115 @@ async function ataDownloadWeeklyReport(scope){
   }catch(e){console.error('ATA report PDF failed',e);alert('Could not create the PDF. Please try again.');}
 }
 
+function buildAtaRosterReportDoc(summaries,scopeLabel){
+  const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
+  const {jsPDF}=lib;
+  const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
+  const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+  const contentW=pageW-margin*2;let y=margin;
+  const cols=[
+    {label:'Technician',w:contentW*0.16},
+    {label:'Region',w:contentW*0.11},
+    {label:'Status',w:contentW*0.09},
+    {label:'Last quiz',w:contentW*0.12},
+    {label:'Completed',w:contentW*0.11},
+    {label:'Result',w:contentW*0.14},
+    {label:'Resets (30d)',w:contentW*0.12},
+    {label:'Total resets',w:contentW*0.15}
+  ];
+  const bottom=pageH-40;
+  function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
+  function header(){
+    needPage(26);doc.setFillColor(27,58,107);doc.roundedRect(margin,y-10,contentW,22,3,3,'F');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    let x=margin+6;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});y+=20;
+  }
+
+  doc.setFillColor(27,58,107);doc.rect(0,0,pageW,58,'F');
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  doc.text('Full ATA Roster Report',margin,28);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(200,214,240);
+  doc.text(pdfSafeText(fmtDateFull(new Date().toISOString().slice(0,10))+'  ·  '+scopeLabel+'  ·  '+summaries.length+' technician'+(summaries.length===1?'':'s')+'  ·  same order as on-screen list'),margin,44);
+  y=70;
+
+  // Keep the on-screen filtered/sorted order — do not regroup or re-sort here.
+  header();
+  summaries.forEach((s,idx)=>{
+    const m=ataStatusMeta(s.status);
+    const latest=ataLatestQuiz(s.tech);
+    const resets=ataResetStatusText(s.tech);
+    const values=[
+      pdfSafeText(s.tech.name),
+      pdfSafeText(regionLabel(s.tech.region)),
+      m.label,
+      pdfSafeText(latest?latest.code:'—'),
+      latest?ataFmtDeadline(latest.at):'—',
+      pdfSafeText(latest?latest.result:'—'),
+      pdfSafeText(String(resets.month)+'/'+ATA_MAX_RESETS+(resets.hit?' !':'')),
+      pdfSafeText(String(resets.total||0)+(resets.hit?' · check-in':''))
+    ];
+    doc.setFontSize(8.5);
+    const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
+    const rowH=Math.max(...sets.map(ls=>ls.length),1)*11+8;
+    if(needPage(rowH+4))header();
+    if(idx%2===0){doc.setFillColor(250,251,253);doc.rect(margin,y-9,contentW,rowH,'F');}
+    let x=margin+6;
+    sets.forEach((lines,i)=>{
+      doc.setFont('helvetica',i===0?'bold':'normal');
+      if(i===2)doc.setTextColor(...ataHexRgb(m.color));
+      else if(i===5&&latest){
+        if(latest.passed)doc.setTextColor(15,110,86);
+        else if(latest.score!=null&&Number(latest.score)<ATA_PASS_PCT)doc.setTextColor(192,57,43);
+        else doc.setTextColor(40,40,40);
+      }
+      else if((i===6||i===7)&&resets.hit)doc.setTextColor(192,57,43);
+      else doc.setTextColor(40,40,40);
+      lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
+      x+=cols[i].w;
+    });
+    y+=rowH;doc.setDrawColor(235,238,244);doc.line(margin,y-4,margin+contentW,y-4);
+  });
+  y+=10;
+  needPage(28);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(110,110,110);
+  doc.text(pdfSafeText('Order matches the filtered ATA list on screen. Last quiz / Completed / Result come from Teachable sync. Resets (30d) drives the Brenda check-in; Total resets is lifetime across all lessons.'),margin,y,{maxWidth:contentW});
+  ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · Full ATA Roster');
+  return doc;
+}
+
+function ataPmFilteredTechs(){
+  const q=ataPmSearch.trim().toLowerCase();
+  return ((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>{
+    if(!ataOnReports(s.tech))return false;
+    if(ataPmStatusFilter&&s.status!==ataPmStatusFilter)return false;
+    if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
+}
+
+async function ataDownloadRosterReport(scope){
+  let summaries,scopeLabel;
+  if(scope==='pm'){
+    summaries=ataPmFilteredTechs();
+    scopeLabel='Region: '+regionLabel(currentRegion);
+    if(ataPmStatusFilter)scopeLabel+='  ·  Status: '+ataStatusMeta(ataPmStatusFilter).label;
+  }else{
+    // Same people + order as the on-screen ATA roster (current filters).
+    summaries=ataFilteredAdminTechs().slice();
+    scopeLabel=ataAdminRegion?('Region: '+regionLabel(ataAdminRegion)):'All regions';
+    const catLabel=ataAdminRosterFilter==='complete'?'Complete':ataAdminRosterFilter==='exempt'||ataAdminRosterFilter==='archived'?'Exempt':ataAdminRosterFilter==='all'?'All categories':'Active ATA';
+    scopeLabel+='  ·  '+catLabel;
+    if(ataAdminStatusFilter)scopeLabel+='  ·  Status: '+ataStatusMeta(ataAdminStatusFilter).label;
+    if(ataAdminSearch.trim())scopeLabel+='  ·  Search: '+ataAdminSearch.trim();
+  }
+  if(!summaries.length){alert('No technicians match the current list filters.');return;}
+  try{
+    await ensureJsPdf();
+    const doc=buildAtaRosterReportDoc(summaries,scopeLabel);
+    doc.save('ATA-Full-Roster-'+new Date().toISOString().slice(0,10)+'.pdf');
+  }catch(e){console.error('ATA roster PDF failed',e);alert('Could not create the PDF. Please try again.');}
+}
+
 // Compact reset block for the downloaded schedule. Recent quizzes stay listed.
 // Older resets share one line so the PDF does not repeat the full history.
 function ataDrawCheckinPdf(doc,tech,margin,contentW,y,needPage){
@@ -7070,13 +7216,7 @@ function onPmAtaFilterChange(){
 }
 function renderPmAta(){
   const wrap=document.getElementById('pm-ata-wrap');if(!wrap)return;
-  const q=ataPmSearch.trim().toLowerCase();
-  const rows=((ataPmData&&ataPmData.techs)||[]).map(ataTechSummary).filter(s=>{
-    if(!ataOnReports(s.tech))return false;
-    if(ataPmStatusFilter&&s.status!==ataPmStatusFilter)return false;
-    if(q&&!String(s.tech.name||'').toLowerCase().includes(q))return false;
-    return true;
-  }).sort((a,b)=>ataStatusRank(a.status)-ataStatusRank(b.status)||String(a.tech.name||'').localeCompare(String(b.tech.name||'')));
+  const rows=ataPmFilteredTechs();
   if(!rows.length){wrap.innerHTML='<div class="admin-empty" style="padding:12px">No technicians match.</div>';return;}
   const cell=(s,program)=>{
     if(!ataProgramRequired(s.tech,program))return'<span style="color:#888;font-weight:600">Not Required</span>';
