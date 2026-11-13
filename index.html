@@ -1257,7 +1257,7 @@ body.mobile-nav-open{overflow:hidden}
             </div>
             <div class="report-table-body collapsed" id="report-table-ctpath">
               <div class="err" id="admin-ctpath-report-err" style="display:none"></div>
-              <div class="login-sub" style="color:#666;margin:0 0 8px">All technicians except National-TAB Survey. Milestone dates calculate from Employee start (2.0 / 2.5 / 3.0 years). Edit cohort, exam date, and notes here or on the tech Edit card. Run <code>supabase/ct-path.sql</code> in Supabase once.</div>
+              <div class="login-sub" style="color:#666;margin:0 0 8px">All technicians except National-TAB Survey. Milestone dates calculate automatically from Employee start (Training +2.0 yrs · Exam +2.5 yrs · Anniv +3.0 yrs). Edit cohort, exam date, and notes here or on the tech Edit card.</div>
               <div class="report-filters">
                 <div class="pm-search-wrap">
                   <input type="search" id="admin-ctpath-search" placeholder="Search by name…" autocomplete="off" oninput="onAdminCtPathFilterChange()">
@@ -1414,7 +1414,7 @@ body.mobile-nav-open{overflow:hidden}
         <div class="admin-add admin-add-below">
           <input id="add-tech-name" placeholder="Full name">
           <input id="add-tech-email" type="email" placeholder="name@airadigmsolutions.com">
-          <select id="add-tech-region">
+          <select id="add-tech-region" onchange="ctPathRefreshAddPreview()">
             <option value="IM">Intermountain</option>
             <option value="KES">KES</option>
             <option value="MA">Mid-Atlantic</option>
@@ -1427,8 +1427,10 @@ body.mobile-nav-open{overflow:hidden}
             <option value="SE">Southeast</option>
             <option value="SW">Southwest</option>
           </select>
+          <input type="date" id="add-tech-start" title="Employee start date" aria-label="Employee start date" oninput="ctPathRefreshAddPreview()">
           <button type="button" class="btn" onclick="addPerson('technician')">Add</button>
         </div>
+        <div id="add-tech-ctpath-preview" style="display:none;margin:8px 0 0;padding:10px 12px;border:1px solid #d8e2f0;border-radius:8px;background:#f6f8fc;font-size:12px;color:#555"></div>
         </div>
       </div>
 
@@ -5261,10 +5263,14 @@ function ctPathEligible(tech){
 function ctPathAddYears(startDate,years){
   const dt=parseDateOnly(startDate);
   if(!dt||isNaN(dt.getTime()))return null;
-  const whole=Math.floor(years);
-  const months=Math.round((years-whole)*12);
-  const out=new Date(dt.getFullYear()+whole,dt.getMonth()+months,dt.getDate());
-  return out;
+  const whole=Math.floor(Number(years)||0);
+  const months=Math.round(((Number(years)||0)-whole)*12);
+  const y=dt.getFullYear()+whole;
+  const m=dt.getMonth()+months;
+  const day=dt.getDate();
+  // Clamp to last day of target month so Jan 31 + N months never spills into the next month.
+  const last=new Date(y,m+1,0).getDate();
+  return new Date(y,m,Math.min(day,last));
 }
 function ctPathMilestones(startDate){
   return {
@@ -9390,21 +9396,66 @@ async function saveEdit(id,role){
   }
 }
 
+function ctPathRefreshAddPreview(){
+  const box=document.getElementById('add-tech-ctpath-preview');
+  if(!box)return;
+  const regionEl=document.getElementById('add-tech-region');
+  const startEl=document.getElementById('add-tech-start');
+  const region=regionEl?regionEl.value:'';
+  const start=startEl?startEl.value:'';
+  if(region==='National-TAB Survey'){
+    box.style.display='block';
+    box.textContent='National-TAB Survey techs are not on the CT Path.';
+    return;
+  }
+  if(!start){
+    box.style.display='none';
+    box.textContent='';
+    return;
+  }
+  const ms=ctPathMilestones(start);
+  box.style.display='block';
+  box.innerHTML='<strong style="color:#1B3A6B">CT Path milestones</strong> (auto from Employee start) · '
+    +'Training 2.0 yrs: <b>'+adminEsc(ctPathDateLabel(ms.trainingStart))+'</b> · '
+    +'Exam 2.5 yrs: <b>'+adminEsc(ctPathDateLabel(ms.examTarget))+'</b> · '
+    +'3 Year Anniv.: <b>'+adminEsc(ctPathDateLabel(ms.year3))+'</b>';
+}
 async function addPerson(role){
   const err=document.getElementById('admin-err');
   err.style.display='none';
-  let email,name,region=null;
+  let email,name,region=null,startDate='';
   if(role==='admin'){name=document.getElementById('add-admin-name').value;email=document.getElementById('add-admin-email').value;region=document.getElementById('add-admin-region').value||null;}
   else if(role==='pm'){name=document.getElementById('add-pm-name').value;email=document.getElementById('add-pm-email').value;region=document.getElementById('add-pm-region').value||null;}
-  else{name=document.getElementById('add-tech-name').value;email=document.getElementById('add-tech-email').value;region=document.getElementById('add-tech-region').value;}
+  else{
+    name=document.getElementById('add-tech-name').value;
+    email=document.getElementById('add-tech-email').value;
+    region=document.getElementById('add-tech-region').value;
+    const sd=document.getElementById('add-tech-start');
+    startDate=sd?sd.value:'';
+  }
   email=(email||'').trim();
   if(!email){err.textContent='Enter an email address.';err.style.display='block';return;}
   try{
-    await rpc('app_admin_add_person',{p_email:email,p_role:role,p_name:(name||'').trim()||null,p_region:region});
+    const personId=await rpc('app_admin_add_person',{p_email:email,p_role:role,p_name:(name||'').trim()||null,p_region:region});
+    if(role==='technician'&&startDate&&personId){
+      try{
+        await rpc('app_admin_update_person',{p_id:personId,p_start_date:startDate});
+      }catch(startErr){
+        console.warn('Could not set employee start date on add',startErr);
+      }
+    }
     if(role==='admin'){document.getElementById('add-admin-name').value='';document.getElementById('add-admin-email').value='';document.getElementById('add-admin-region').value='';}
     else if(role==='pm'){document.getElementById('add-pm-name').value='';document.getElementById('add-pm-email').value='';document.getElementById('add-pm-region').value='';}
-    else{document.getElementById('add-tech-name').value='';document.getElementById('add-tech-email').value='';}
+    else{
+      document.getElementById('add-tech-name').value='';
+      document.getElementById('add-tech-email').value='';
+      const sd=document.getElementById('add-tech-start');if(sd)sd.value='';
+      ctPathRefreshAddPreview();
+    }
     await loadAdminLists();
+    if(role==='technician'&&personId&&region!=='National-TAB Survey'){
+      try{editPerson(Number(personId));}catch(_){}
+    }
   }catch(e){err.textContent='Could not add: '+(e.message||'try again');err.style.display='block';}
 }
 
