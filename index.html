@@ -4795,6 +4795,15 @@ function ataCompletionFor(tech,code){
   return (sibling&&c[sibling])||null;
 }
 function ataAttemptInfo(tech,code){const a=(tech&&tech.attempts)||{};return a[code]||null;}
+// Date the tech finished the lesson in Teachable (pass / complete). Prefer
+// completions.completed_at; fall back to the latest graded attempt timestamp.
+function ataCompletedAt(tech,code){
+  const c=ataCompletionFor(tech,code);
+  if(c&&c.completed_at)return c.completed_at;
+  if(!ataIsDone(tech,code))return null;
+  const i=ataAttemptInfo(tech,code);
+  return (i&&i.last_at)||null;
+}
 function ataStart(tech,program){const s=(tech&&tech.starts)||{};return s[program]||null;}
 const ATA_PASS_PCT=80;
 const ATA_MAX_RESETS=3;
@@ -5103,7 +5112,7 @@ function ataProgramStatus(tech,program,today){
         else st='upcoming';
       }
     }else{st='pending';}
-    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resetUsed:resetUsed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,tracked:tracked,weekNum:weekNum,globalWeek:gwMap[code]||weekNum});
+    lessonRows.push({lesson:l,deadline:dl,done,state:st,failed:isFailed,resetUsed:resetUsed,resets:resets,resetsTotal:resetsTotal,overLimit:overLimit,best:best,completedAt:ataCompletedAt(tech,code),tracked:tracked,weekNum:weekNum,globalWeek:gwMap[code]||weekNum});
   });
   const total=counted||lessons.length;
   let status;
@@ -5603,7 +5612,8 @@ function ataLessonDisplay(lr,today){
   let score='—';
   if(lr.best!=null)score=lr.best+'%';
   else if(lr.done)score='Complete';
-  return {week:String(week),code:lr.lesson.lesson_code,name:lr.lesson.lesson_name,due:ataFmtDeadline(lr.deadline),score:score,status:st,resets:rd.text+(rd.over?' !':''),reset:rd};
+  const completed=lr.completedAt?ataFmtDeadline(lr.completedAt):'—';
+  return {week:String(week),code:lr.lesson.lesson_code,name:lr.lesson.lesson_name,due:ataFmtDeadline(lr.deadline),completed:completed,score:score,status:st,resets:rd.text+(rd.over?' !':''),reset:rd};
 }
 function ataLessonStatusLabel(lr,today){
   today=today||ataToday();
@@ -6088,7 +6098,7 @@ function ataRenderAdmin(){
       ${ataStartCell(s,'intermediate')}
       ${ataStartCell(s,'advanced')}
       <td>${ataCategoryChip(cat)}${cat==='active'?' '+ataStatusChip(s.status):''}${pctLine}${s.totalFailed&&cat==='active'?` <span title="Failed tests (<${ATA_PASS_PCT}%)" style="display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#C0392B;background:#FDECEA">✕ ${s.totalFailed} failed</span>`:''}${ataBrendaListHtml(t,cat==='active')}</td>
-      <td style="white-space:nowrap;display:flex;gap:5px">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${t.id})">Report</button></td>
+      <td style="white-space:nowrap;display:flex;gap:5px;flex-wrap:wrap">${warn}<button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#0F6E56" onclick="ataOpenReport(${t.id})">Edit</button><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#1B3A6B" onclick="ataOpenTechPdfReport(${t.id})">Report</button></td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<table class="report-table">
@@ -6452,13 +6462,14 @@ function buildAtaTechDoc(tech,opts){
 
   // Lesson tables per program — every lesson is one week (88 weeks across the 3 modules).
   const cols=[
-    {label:'Wk',w:contentW*0.06},
-    {label:'Code',w:contentW*0.15},
-    {label:'Lesson',w:contentW*0.29},
-    {label:'Due Thursday',w:contentW*0.13},
-    {label:'Score',w:contentW*0.09},
+    {label:'Wk',w:contentW*0.05},
+    {label:'Code',w:contentW*0.12},
+    {label:'Lesson',w:contentW*0.22},
+    {label:'Due Thursday',w:contentW*0.12},
+    {label:'Completed',w:contentW*0.12},
+    {label:'Score',w:contentW*0.08},
     {label:'Status',w:contentW*0.12},
-    {label:'Resets',w:contentW*0.16}
+    {label:'Resets',w:contentW*0.17}
   ];
   function drawLessonHeader(){
     needPage(24);
@@ -6492,7 +6503,7 @@ function buildAtaTechDoc(tech,opts){
         row.week,
         pdfSafeText(row.code),
         pdfSafeText(row.name),
-        row.due,row.score,st.t,row.resets
+        row.due,row.completed,row.score,st.t,row.resets
       ];
       doc.setFontSize(8);
       const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-6));
@@ -6501,10 +6512,11 @@ function buildAtaTechDoc(tech,opts){
       if(idx%2===0){doc.setFillColor(248,250,253);doc.rect(margin,y-8,contentW,rowH,'F');}
       let x=margin+5;
       sets.forEach((lines,i)=>{
-        doc.setFont('helvetica',i===1||i===5?'bold':'normal');
-        if(i===5)doc.setTextColor(...ataHexRgb(st.c));
-        else if(i===4&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
-        else if(i===6&&row.reset&&row.reset.over)doc.setTextColor(192,57,43);
+        doc.setFont('helvetica',i===1||i===6?'bold':'normal');
+        if(i===6)doc.setTextColor(...ataHexRgb(st.c));
+        else if(i===5&&lr.best!=null)doc.setTextColor(...(lr.best>=ATA_PASS_PCT?[15,110,86]:[192,57,43]));
+        else if(i===4&&lr.completedAt)doc.setTextColor(15,110,86);
+        else if(i===7&&row.reset&&row.reset.over)doc.setTextColor(192,57,43);
         else if(i===0)doc.setTextColor(120,120,120);
         else doc.setTextColor(45,45,45);
         lines.forEach((ln,li)=>doc.text(ln,x,y+li*10,{maxWidth:cols[i].w-6}));
@@ -6521,14 +6533,23 @@ function buildAtaTechDoc(tech,opts){
   doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(80,80,80);
   doc.text('Legend',margin,y);y+=11;
   doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   One lesson every Thursday   ·   Resets column = lifetime total per lesson   ·   Brenda check-in at '+ATA_MAX_RESETS+' resets in 30 days   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
+  doc.text(pdfSafeText('Pass = score ≥ '+ATA_PASS_PCT+'%   ·   Completed = Teachable pass / complete date   ·   Scores and resets show as soon as Teachable has them, even before Thursday   ·   One lesson every Thursday   ·   Resets column = lifetime total per lesson   ·   Brenda check-in at '+ATA_MAX_RESETS+' resets in 30 days   ·   “Not in Teachable” = lesson not published yet'),margin,y,{maxWidth:contentW});
 
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Schedule · '+(tech.name||''));
   return doc;
 }
 // Opens the report modal: manage (default), Edit / Manage resets (admin), or Report PDF overlay.
 let ataReportTechId=null,ataReportBlobUrl=null,ataReportMode='manage';
-function ataDownloadTechPdf(techId){ataOpenReport(techId);}
+function ataDownloadTechPdf(techId){ataOpenTechPdfReport(techId);}
+// Roster Report: open the same ATA Tracking PDF that lives inside the Edit card.
+function ataOpenTechPdfReport(techId){
+  const tech=ataFindTech(techId);
+  if(!tech)return;
+  ataReportTechId=techId;
+  document.querySelectorAll('.ata-rep-mod').forEach(c=>{c.checked=true;});
+  ataReportMode='report';
+  ataOpenPdfPreview();
+}
 function ataApplyReportModeBtn(el,active,baseBg,show){
   if(!el)return;
   if(!show){el.style.display='none';return;}
@@ -7071,7 +7092,7 @@ function renderPmAta(){
     <td>${cell(s,'basic')}</td>
     <td>${cell(s,'intermediate')}</td>
     <td>${cell(s,'advanced')}</td>
-    <td><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#888" onclick="ataDownloadTechPdf(${s.tech.id})">Report</button></td>
+    <td style="white-space:nowrap;display:flex;gap:5px;flex-wrap:wrap"><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#0F6E56" onclick="ataOpenReport(${s.tech.id})">Edit</button><button type="button" class="btn" style="padding:5px 9px;font-size:11px;background:#1B3A6B" onclick="ataOpenTechPdfReport(${s.tech.id})">Report</button></td>
   </tr>`;
   }).join('');
   wrap.innerHTML=`<div style="overflow-x:auto"><table class="report-table">
@@ -7265,18 +7286,22 @@ function renderTechAta(tech){
   const sections=visible.map(p=>{
     const rows=p.lessonRows.map(lr=>{
       const row=ataLessonDisplay(lr,today);
+      const completedCell=lr.completedAt
+        ?`<span style="color:#0F6E56;font-weight:600">${adminEsc(row.completed)}</span>`
+        :'<span style="color:#bbb">—</span>';
       return `<tr>
       <td style="white-space:nowrap;color:#888;font-weight:700">${adminEsc(row.week)}</td>
       <td style="white-space:nowrap;color:#1B3A6B;font-weight:700">${adminEsc(row.code)}</td>
       <td>${adminEsc(row.name)}</td>
       <td style="white-space:nowrap">${adminEsc(row.due)}</td>
+      <td style="white-space:nowrap">${completedCell}</td>
       <td style="white-space:nowrap;text-align:center">${lr.best==null?(lr.done?'<span style="color:#0F6E56;font-weight:700">Complete</span>':'<span style="color:#bbb">—</span>'):`<span style="color:${lr.best>=ATA_PASS_PCT?'#0F6E56':'#C0392B'};font-weight:700">${lr.best}%</span>`}</td>
       <td style="white-space:nowrap">${stateBadge(lr)}</td>
       <td style="white-space:nowrap">${resetCell(lr)}</td>
     </tr>`;
     }).join('');
     return `<div class="hist-box"><div class="hist-title">${ATA_PROGRAM_LABEL[p.program]} — ${p.completed}/${p.total} passed ${ataStatusChip(p.status)}</div>
-      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Score</th><th>Status</th><th>Resets</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <div style="overflow-x:auto"><table class="hist-table"><thead><tr><th>Wk</th><th>Code</th><th>Lesson</th><th>Due Thursday</th><th>Completed</th><th>Score</th><th>Status</th><th>Resets</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join('');
   const alerts=[];
   if(s.totalOverdue)alerts.push(`⚠️ ${s.totalOverdue} overdue lesson${s.totalOverdue===1?'':'s'}`);
