@@ -6244,30 +6244,54 @@ function ataProgCellText(p){
   if(!p.start&&!(p.completed>0))return '—';
   return p.completed+'/'+p.total;
 }
+// Overdue lesson codes + Thursday due dates for the weekly PDF (oldest first).
+function ataOverdueDueText(summary){
+  const list=(summary&&summary.overdueList||[]).slice().sort((a,b)=>{
+    const da=a.deadline instanceof Date?a.deadline.getTime():0;
+    const db=b.deadline instanceof Date?b.deadline.getTime():0;
+    return da-db;
+  });
+  if(!list.length)return '—';
+  const parts=list.map(o=>{
+    const code=(o.lesson&&o.lesson.lesson_code)||'';
+    const due=o.deadline?ataFmtDeadline(o.deadline):'';
+    return (code+(due?(' '+due):'')).trim();
+  }).filter(Boolean);
+  if(parts.length<=5)return parts.join(' · ');
+  return parts.slice(0,4).join(' · ')+' · +'+(parts.length-4)+' more';
+}
+function ataLastQuizCellText(tech){
+  const latest=ataLatestQuiz(tech);
+  if(!latest)return '—';
+  const when=ataFmtDeadline(latest.at);
+  return when+(latest.code?('\n'+latest.code):'');
+}
 
 // ── PDF: weekly region-grouped report ────────────────────────────────────────
 function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   const lib=window.jspdf;if(!lib||!lib.jsPDF)throw new Error('PDF library not available');
   const {jsPDF}=lib;
   const doc=new jsPDF({unit:'pt',format:'letter',orientation:'landscape'});
-  const margin=36,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+  const margin=32,pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
   const contentW=pageW-margin*2;let y=margin;
   const cols=[
-    {label:'Technician',w:contentW*0.18},
-    {label:'Status',w:contentW*0.10},
-    {label:'Basic',w:contentW*0.10},
-    {label:'Intermediate',w:contentW*0.12},
-    {label:'Advanced',w:contentW*0.11},
-    {label:'Behind',w:contentW*0.08},
-    {label:'Resets',w:contentW*0.08},
-    {label:'Notes',w:contentW*0.23}
+    {label:'Technician',w:contentW*0.13},
+    {label:'Status',w:contentW*0.08},
+    {label:'Basic',w:contentW*0.07},
+    {label:'Intermediate',w:contentW*0.08},
+    {label:'Advanced',w:contentW*0.07},
+    {label:'Lessons behind',w:contentW*0.07},
+    {label:'Last quiz',w:contentW*0.10},
+    {label:'Overdue due dates',w:contentW*0.22},
+    {label:'Resets',w:contentW*0.06},
+    {label:'Notes',w:contentW*0.12}
   ];
   const bottom=pageH-40;
   function needPage(h){if(y+h>bottom){doc.addPage();y=margin;return true;}return false;}
   function header(){
     needPage(26);doc.setFillColor(27,58,107);doc.roundedRect(margin,y-10,contentW,22,3,3,'F');
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-    let x=margin+6;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-8});x+=c.w;});y+=20;
+    doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    let x=margin+5;cols.forEach(c=>{doc.text(c.label,x,y+4,{maxWidth:c.w-6});x+=c.w;});y+=20;
   }
 
   // Title band
@@ -6275,7 +6299,7 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
   doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
   doc.text('ATA Weekly Progress Report',margin,28);
   doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(200,214,240);
-  doc.text(pdfSafeText(fmtDateFull(new Date().toISOString().slice(0,10))+'  ·  '+scopeLabel),margin,44);
+  doc.text(pdfSafeText(fmtDateFull(new Date().toISOString().slice(0,10))+'  ·  '+scopeLabel+'  ·  One quiz due each Thursday'),margin,44);
   y=70;
 
   const behind=summaries.filter(s=>s.status==='behind').length;
@@ -6317,35 +6341,42 @@ function buildAtaWeeklyReportDoc(summaries,scopeLabel){
     list.forEach((s,idx)=>{
       const m=ataStatusMeta(s.status);
       const b=ataBrendaReminder(s.tech);
+      const overdueN=s.totalOverdue||0;
       const values=[
         pdfSafeText(s.tech.name),
         m.label,
         pdfSafeText(ataProgCellText(s.byProgram.basic)),
         pdfSafeText(ataProgCellText(s.byProgram.intermediate)),
         pdfSafeText(ataProgCellText(s.byProgram.advanced)),
-        String(s.totalOverdue||0),
+        String(overdueN),
+        pdfSafeText(ataLastQuizCellText(s.tech)),
+        pdfSafeText(ataOverdueDueText(s)),
         pdfSafeText(String(b.resets||0)),
         pdfSafeText(ataWeeklyNoteText(s.tech.id))
       ];
-      doc.setFontSize(9);
-      const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-8));
-      const rowH=Math.max(...sets.map(ls=>ls.length),1)*11+8;
+      doc.setFontSize(8);
+      const sets=values.map((v,i)=>doc.splitTextToSize(v,cols[i].w-6));
+      const rowH=Math.max(...sets.map(ls=>ls.length),1)*10+7;
       if(needPage(rowH+4))header();
-      if(idx%2===0){doc.setFillColor(250,251,253);doc.rect(margin,y-9,contentW,rowH,'F');}
-      let x=margin+6;
+      if(idx%2===0){doc.setFillColor(250,251,253);doc.rect(margin,y-8,contentW,rowH,'F');}
+      let x=margin+5;
       sets.forEach((lines,i)=>{
         doc.setFont('helvetica',i===0?'bold':'normal');
         if(i===1)doc.setTextColor(...ataHexRgb(m.color));
-        else if(i===5&&Number(values[i])>0)doc.setTextColor(192,57,43);
-        else if(i===6&&(b.resets||0)>0)doc.setTextColor(192,57,43);
+        else if(i===5&&overdueN>0)doc.setTextColor(192,57,43);
+        else if(i===7&&overdueN>0)doc.setTextColor(192,57,43);
+        else if(i===8&&(b.resets||0)>0)doc.setTextColor(192,57,43);
         else doc.setTextColor(40,40,40);
-        lines.forEach((ln,li)=>doc.text(ln,x,y+li*11,{maxWidth:cols[i].w-8}));
+        lines.forEach((ln,li)=>doc.text(ln,x,y+li*10,{maxWidth:cols[i].w-6}));
         x+=cols[i].w;
       });
-      y+=rowH;doc.setDrawColor(235,238,244);doc.line(margin,y-4,margin+contentW,y-4);
+      y+=rowH;doc.setDrawColor(235,238,244);doc.line(margin,y-3,margin+contentW,y-3);
     });
     y+=12;
   });
+  needPage(24);
+  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(110,110,110);
+  doc.text(pdfSafeText('Last quiz = most recent Teachable quiz date. Overdue due dates = Thursday due dates for unfinished lessons (oldest first). Techs should complete one quiz each week.'),margin,y,{maxWidth:contentW});
   ataPdfFooter(doc,margin,pageW,pageH,'TAB Skills Tracker · ATA Weekly Report');
   return doc;
 }
