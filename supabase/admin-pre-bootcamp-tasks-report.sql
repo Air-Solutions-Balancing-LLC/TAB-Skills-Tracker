@@ -23,9 +23,11 @@ BEGIN
       t.id AS tech_id,
       t.name,
       t.region,
+      t.start_date,
       t.bootcamp_start_date,
       t.required_categories,
       coalesce(t.checklist_completed, '{}'::jsonb) AS checklist_completed,
+      public.app_last_assessment_date(t.id) AS last_assessment_date,
       (t.pre_bootcamp_updated_at AT TIME ZONE 'America/New_York')::date AS last_update_date
     FROM public.technicians t
     JOIN public.app_people p ON p.tech_id = t.id AND p.role = 'technician'

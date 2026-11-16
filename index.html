@@ -823,7 +823,9 @@ button.sb-nav{width:100%;border:none;background:transparent;font-family:inherit;
 .weekly-form-span{width:100%}
 .weekly-form-top{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
 .weekly-form-top .weekly-date-field{flex:0 0 140px}
-.weekly-form-top .weekly-trainer-field{flex:0 1 160px;max-width:180px}
+.weekly-form-top .weekly-trainer-field{flex:0 1 180px;max-width:220px;display:flex;flex-direction:column;gap:6px}
+.weekly-form-top .weekly-trainer-other{display:none;width:100%;padding:8px 10px;border:1.5px solid #d8e0ec;border-radius:9px;font-size:13px;background:#fafbfd;font-family:inherit}
+.weekly-form-top .weekly-trainer-other:focus{outline:none;border-color:#1B3A6B;background:#fff}
 .weekly-form-top .weekly-submit-wrap{flex:0 0 auto;margin-left:auto;display:flex;align-items:flex-end}
 .weekly-form-notes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:900px){
@@ -1165,7 +1167,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-preboot" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('preboot')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Assessment Report</div>
-                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Only techs with the Pre-Bootcamp category selected. Last assessment is the latest skills assessment. Last taken is the Pre-Bootcamp checklist. Untaken = Not Yet. Days in red if never taken or ≥7 days.</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-report-date-label">—</span> · Weeks in field from Employee start. Rating options: Not Yet (0%) · Observed (35%) · Performed/Assisted (90%) · Can Perform Independently (100%). Only techs with Pre-Bootcamp selected. Days in red if never taken or ≥7 days.</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminPreBootReport()">Refresh</button>
@@ -1208,7 +1210,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-prebootTasks" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('prebootTasks')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">Pre-Bootcamp Tasks Report</div>
-                <div class="report-meta">Report date: <span id="admin-preboot-tasks-report-date-label">—</span> · All regions · Techs with Pre-Bootcamp selected · Tasks and mastery level (needed = not yet Can Perform Independently)</div>
+                <div class="report-meta">Report date: <span id="admin-preboot-tasks-report-date-label">—</span> · Weeks in field from Employee start · Rating options: Not Yet (0%) · Observed (35%) · Performed/Assisted (90%) · Can Perform Independently (100%) · Needed = not yet Independently</div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#4A90D9" id="admin-preboot-tasks-filter-btn" onclick="toggleAdminPreBootTasksFilter()">Show All Tasks</button>
@@ -1721,7 +1723,7 @@ body.mobile-nav-open{overflow:hidden}
           <button type="button" class="mobile-menu-btn" onclick="toggleMobileNav('pm')" aria-label="Open menu">☰</button>
           <div class="topbar-grow">
             <div class="topbar-title">🎒 Pre-Bootcamp Report</div>
-            <div class="topbar-sub">Technicians with Pre-Bootcamp selected — tasks and mastery level</div>
+            <div class="topbar-sub">Weeks in field + rating options · Techs with Pre-Bootcamp selected — tasks and mastery level</div>
           </div>
           <button type="button" class="admin-chrome-btn" id="pm-preboot-filter-btn" style="padding:7px 12px;font-size:12px" onclick="togglePmPreBootTaskFilter()">Show All Tasks</button>
           <div class="pm-preboot-dl-wrap">
@@ -7890,19 +7892,44 @@ function adminPreBootProgressLabel(r){
   if(never||pct===0||pct===null||Number.isNaN(pct))return 'Not Yet';
   return pct+'%';
 }
+function weeksInFieldFromRow(r){
+  if(r&&r.days_employed!=null&&r.days_employed!==''){
+    const d=Number(r.days_employed);
+    if(!Number.isNaN(d))return Math.max(0,Math.floor(d/7));
+  }
+  const days=employmentTenureDays({start_date:r&&r.start_date});
+  if(days===null)return null;
+  return Math.max(0,Math.floor(days/7));
+}
+function weeksInFieldLabel(r){
+  const w=weeksInFieldFromRow(r);
+  if(w===null)return '—';
+  return w+' week'+(w===1?'':'s');
+}
+function preBootcampRatingLegendText(){
+  return PRE_BOOTCAMP_RATINGS.map(x=>x.l+' ('+x.pct+'%)').join(' · ');
+}
+function preBootcampRatingLegendHtml(){
+  return `<div class="preboot-rating-legend" style="margin:0 0 10px;padding:10px 12px;border:1px solid #d7ebe3;border-radius:10px;background:#f3faf7;font-size:12px;color:#0F6E56;line-height:1.45">
+    <div style="font-weight:800;margin-bottom:2px">Rating options</div>
+    <div>${adminEsc(preBootcampRatingLegendText())}</div>
+  </div>`;
+}
 function buildAdminPreBootTableHtml(rows){
-  if(!rows.length)return '<div class="admin-empty" style="padding:12px">No technicians with Pre-Bootcamp selected (or none match filters).</div>';
+  if(!rows.length)return preBootcampRatingLegendHtml()+'<div class="admin-empty" style="padding:12px">No technicians with Pre-Bootcamp selected (or none match filters).</div>';
   const body=rows.map(r=>{
     const last=r.last_update_date?fmtDate(r.last_update_date):'Not Yet';
     const days=r.days_since_update;
     const daysText=days===null||days===undefined?'—':String(days);
     const daysCls=reportPreBootDaysClass(days);
     const pct=adminPreBootProgressLabel(r);
+    const weeks=weeksInFieldLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
     const assess=lastAssessmentText(r);
     return `<tr>
       <td>${adminEsc(r.name)}</td>
       <td>${adminEsc(regionLabel(r.region))}</td>
+      <td style="white-space:nowrap">${adminEsc(weeks)}</td>
       <td>${adminEsc(pct)}</td>
       <td>${adminEsc(boot)}</td>
       <td>${adminEsc(assess)}</td>
@@ -7910,9 +7937,9 @@ function buildAdminPreBootTableHtml(rows){
       <td class="${daysCls}">${adminEsc(daysText)}</td>
     </tr>`;
   }).join('');
-  return `<table class="report-table">
+  return preBootcampRatingLegendHtml()+`<table class="report-table">
     <thead><tr>
-      <th>Technician</th><th>Region</th><th>Progress</th><th>Bootcamp start</th><th>Last assessment</th><th>Last taken</th><th>Days since</th>
+      <th>Technician</th><th>Region</th><th>Weeks in field</th><th>Progress</th><th>Bootcamp start</th><th>Last assessment</th><th>Last taken</th><th>Days since</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -7987,13 +8014,14 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
   let y=margin;
   const lh=12;
   const cols=[
-    {key:'name',label:'Technician',w:contentW*0.18},
-    {key:'region',label:'Region',w:contentW*0.11},
-    {key:'pct',label:'Progress',w:contentW*0.10},
-    {key:'boot',label:'Bootcamp start',w:contentW*0.14},
-    {key:'assess',label:'Last assessment',w:contentW*0.16},
-    {key:'last',label:'Last taken',w:contentW*0.16},
-    {key:'days',label:'Days since',w:contentW*0.15}
+    {key:'name',label:'Technician',w:contentW*0.15},
+    {key:'region',label:'Region',w:contentW*0.09},
+    {key:'weeks',label:'Weeks in field',w:contentW*0.11},
+    {key:'pct',label:'Progress',w:contentW*0.09},
+    {key:'boot',label:'Bootcamp start',w:contentW*0.12},
+    {key:'assess',label:'Last assessment',w:contentW*0.15},
+    {key:'last',label:'Last taken',w:contentW*0.15},
+    {key:'days',label:'Days since',w:contentW*0.14}
   ];
   function needPage(h){
     if(y+h>pageH-margin){doc.addPage();y=margin;return true;}
@@ -8003,7 +8031,7 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     needPage(28);
     doc.setFillColor(27,58,107);
     doc.rect(margin,y-10,contentW,22,'F');
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica','bold');
     doc.setTextColor(255,255,255);
     let x=margin+4;
@@ -8022,7 +8050,9 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     'Report date: '+reportDateText,
     adminPreBootSearch.trim()?('Search: '+adminPreBootSearch.trim()):'',
     adminPreBootRegion?('Region: '+regionLabel(adminPreBootRegion)):'',
-    'Only techs with Pre-Bootcamp category selected · Last assessment = skills assessment · Last taken = checklist · Untaken = Not Yet · Days red if never or ≥7',
+    'Weeks in field = weeks since Employee start',
+    'Rating options: '+preBootcampRatingLegendText(),
+    'Only techs with Pre-Bootcamp selected · Days red if never or ≥7',
     'Showing '+rows.length+' technician'+(rows.length===1?'':'s')
   ].filter(Boolean).join('  ·  ');
   doc.splitTextToSize(pdfSafeText(filterNote),contentW).forEach(line=>{doc.text(line,margin,y);y+=lh;});
@@ -8033,11 +8063,13 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     const days=r.days_since_update;
     const daysText=days===null||days===undefined?'—':String(days);
     const pct=adminPreBootProgressLabel(r);
+    const weeks=weeksInFieldLabel(r);
     const boot=r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'—';
     const assess=lastAssessmentText(r);
     const values=[
       pdfSafeText(r.name),
       pdfSafeText(regionLabel(r.region)),
+      pdfSafeText(weeks),
       pdfSafeText(pct),
       pdfSafeText(boot),
       pdfSafeText(assess),
@@ -8052,7 +8084,7 @@ function buildAdminPreBootReportPdfDoc(rows,reportDateText){
     let x=margin+4;
     lineSets.forEach((lines,i)=>{
       doc.setFont('helvetica',i===0?'bold':'normal');
-      if(i===6){
+      if(i===7){
         const n=days===null||days===undefined||days===''?null:Number(days);
         if(n===null||Number.isNaN(n)||n>=7)doc.setTextColor(192,57,43);
         else doc.setTextColor(15,110,86);
@@ -10826,13 +10858,65 @@ function onWeeklyPublicViewerChange(){
   weeklyStoreViewerId(el&&el.value?el.value:null);
   loadPublicWeeklyUpdates();
 }
-function weeklyTechOptionsHtml(techs,selectedId){
+/** Admin / PM weekly screen can pick any trainer; public share-link tech can only pick themselves. */
+function weeklyCanPickAnyTrainer(){
+  if(weeklyPublicMode)return false;
+  return !!(userIsAdmin||currentRole==='admin'||currentRole==='pm');
+}
+function weeklyTechOptionsHtml(techs,selectedId,includeOther){
   const opts=['<option value="">Select…</option>'];
   (techs||[]).forEach(t=>{
     const sel=selectedId!=null&&String(selectedId)===String(t.id)?' selected':'';
     opts.push(`<option value="${t.id}"${sel}>${adminEsc(t.name)}</option>`);
   });
+  if(includeOther)opts.push('<option value="__other__">Other…</option>');
   return opts.join('');
+}
+function weeklyOnTrainerSelect(sel){
+  const wrap=sel&&sel.closest('.weekly-trainer-field');
+  if(!wrap)return;
+  const other=wrap.querySelector('.weekly-trainer-other');
+  if(!other)return;
+  const isOther=sel.value==='__other__';
+  other.style.display=isOther?'block':'none';
+  other.required=isOther;
+  if(!isOther)other.value='';
+  else{try{other.focus();}catch(_){}}
+}
+function weeklyTrainerFieldHtml(label,selectName,otherName,techs,selectedId,required,opts){
+  opts=opts||{};
+  const canAny=opts.canPickAny!==undefined?!!opts.canPickAny:weeklyCanPickAnyTrainer();
+  const lockedId=opts.lockedToId!=null&&opts.lockedToId!==''?opts.lockedToId:null;
+  const allowSecond=opts.allowEmptyOnly?false:true;
+  let list=techs||[];
+  let selId=selectedId;
+  let includeOther=!!canAny;
+  let disabled=false;
+  if(!canAny&&opts.allowEmptyOnly){
+    list=[];
+    selId=null;
+    includeOther=false;
+    disabled=true;
+  }else if(!canAny&&lockedId!=null){
+    list=list.filter(t=>String(t.id)===String(lockedId));
+    selId=lockedId;
+    includeOther=false;
+    if(!list.length)list=[{id:lockedId,name:opts.lockedName||'You'}];
+  }
+  const req=required&&!disabled?' required':'';
+  const dis=disabled?' disabled':'';
+  const note=!canAny&&!opts.allowEmptyOnly
+    ?'<div style="font-size:10px;color:#6b7280;line-height:1.3">Locked to you — only Admin/PM can pick other training techs.</div>'
+    :(!canAny&&opts.allowEmptyOnly
+      ?'<div style="font-size:10px;color:#6b7280;line-height:1.3">Only Admin/PM can set Training Tech 2.</div>'
+      :'');
+  const hidden=disabled?`<input type="hidden" name="${selectName}" value="">`:'';
+  return`<label class="weekly-trainer-field">${adminEsc(label)}
+    <select name="${disabled?selectName+'_disabled':selectName}"${req}${dis} onchange="weeklyOnTrainerSelect(this)">${weeklyTechOptionsHtml(list,selId,includeOther&&allowSecond)}</select>
+    ${hidden}
+    ${includeOther?`<input type="text" class="weekly-trainer-other" name="${otherName}" placeholder="Type name…" maxlength="80" autocomplete="name" aria-label="${adminEsc(label)} other name">`:''}
+    ${note}
+  </label>`;
 }
 function weeklyShareUrl(region,token){
   const u=new URL(window.location.href);
@@ -10918,7 +11002,11 @@ function buildWeeklyRosterHtml(data,opts){
   const openTechIds=opts.openTechIds instanceof Set?opts.openTechIds:new Set(opts.openTechIds||[]);
   const techs=data&&data.techs||[];
   let roster=data&&data.roster||[];
+  const canPickAny=weeklyCanPickAnyTrainer();
   const viewerPrefill=weeklyPublicMode&&weeklyPublicViewerId?weeklyPublicViewerId:null;
+  const viewerName=viewerPrefill
+    ?((techs.find(t=>String(t.id)===String(viewerPrefill))||{}).name||'You')
+    :null;
   if(weeklyPublicMode&&weeklyPublicViewerId){
     roster=roster.filter(r=>String(r.tech_id)!==String(weeklyPublicViewerId));
   }
@@ -10970,8 +11058,8 @@ function buildWeeklyRosterHtml(data,opts){
         <form class="weekly-form" id="${formId}" onsubmit="weeklySubmitUpdate(event,${r.tech_id});return false;">
           <div class="weekly-form-top">
             <label class="weekly-date-field">Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
-            <label class="weekly-trainer-field">Training Tech<select name="trainer" required>${weeklyTechOptionsHtml(techs,viewerPrefill)}</select></label>
-            <label class="weekly-trainer-field">Training Tech 2<select name="trainer2">${weeklyTechOptionsHtml(techs)}</select></label>
+            ${weeklyTrainerFieldHtml('Training Tech','trainer','trainer_other',techs,viewerPrefill,true,{canPickAny,lockedToId:viewerPrefill,lockedName:viewerName})}
+            ${weeklyTrainerFieldHtml('Training Tech 2','trainer2','trainer2_other',techs,null,false,{canPickAny,lockedToId:viewerPrefill,lockedName:viewerName,allowEmptyOnly:!canPickAny})}
             <div class="weekly-submit-wrap"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
           </div>
           ${weeklyRatingsFormHtml(r.tech_id)}
@@ -11068,8 +11156,21 @@ async function weeklySubmitUpdate(ev,techId){
   ev.preventDefault();
   const form=ev.target;
   const date=form.date.value;
-  const trainer=form.trainer.value?Number(form.trainer.value):null;
-  const trainer2=form.trainer2&&form.trainer2.value?Number(form.trainer2.value):null;
+  const trainerSel=form.trainer?form.trainer.value:'';
+  const trainer2Sel=form.trainer2?form.trainer2.value:'';
+  let trainer=null,trainer2=null,trainerOther=null,trainer2Other=null;
+  if(trainerSel==='__other__'){
+    trainerOther=(form.trainer_other&&form.trainer_other.value||'').trim();
+    if(!trainerOther){alert('Enter the Training Tech name for Other.');return;}
+  }else{
+    trainer=trainerSel?Number(trainerSel):null;
+  }
+  if(trainer2Sel==='__other__'){
+    trainer2Other=(form.trainer2_other&&form.trainer2_other.value||'').trim();
+    if(!trainer2Other){alert('Enter the Training Tech 2 name for Other, or choose Select….');return;}
+  }else if(trainer2Sel){
+    trainer2=Number(trainer2Sel);
+  }
   const ratings=weeklyReadRatings(form,techId);
   const comment=form.comment.value||'';
   const plan=form.plan.value||'';
@@ -11081,8 +11182,19 @@ async function weeklySubmitUpdate(ev,techId){
     alert('You cannot view or submit an evaluation for yourself.');
     return;
   }
-  if(!trainer){alert('Select the Training Tech.');return;}
-  if(trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
+  if(!weeklyCanPickAnyTrainer()){
+    // Share-link tech: Training Tech must be themselves; no Other; no Training Tech 2.
+    if(!weeklyPublicViewerId||String(trainer)!==String(weeklyPublicViewerId)||trainerOther||trainer2||trainer2Other){
+      alert('As a training tech on this link, Training Tech is locked to you. Only an Admin or PM can choose other training technicians.');
+      return;
+    }
+  }
+  if(!trainer&&!trainerOther){alert('Select the Training Tech, or choose Other and type a name.');return;}
+  if(trainer&&trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
+  if(trainerOther&&trainer2Other&&trainerOther.toLowerCase()===trainer2Other.toLowerCase()){
+    alert('Training Tech and Training Tech 2 cannot be the same Other name.');
+    return;
+  }
   if(WEEKLY_RATING_FIELDS.some(f=>!ratings[f.key])){
     alert('Rate all five: Punctual, Attitude, Effort Level, Engaged, and Team-work (S or U).');
     return;
@@ -11095,6 +11207,8 @@ async function weeklySubmitUpdate(ev,techId){
       p_update_date:date||null,
       p_trainer_tech_id:trainer,
       p_trainer_tech_id_2:trainer2,
+      p_trainer_other_name:trainerOther,
+      p_trainer_other_name_2:trainer2Other,
       p_comment:comment,
       p_action_plan:plan,
       p_ratings:ratings
@@ -11202,8 +11316,9 @@ function buildPreBootTasksReportHtml(rows,opts){
   const showRegion=!!opts.showRegion;
   const source=opts.source==='admin'?'admin':'pm';
   const emptyMsg=opts.emptyMsg||'No technicians have Pre-Bootcamp selected.';
-  if(!rows.length)return'<div class="admin-empty" style="padding:16px">'+adminEsc(emptyMsg)+'</div>';
-  return rows.map((r)=>{
+  const legend=preBootcampRatingLegendHtml();
+  if(!rows.length)return legend+'<div class="admin-empty" style="padding:16px">'+adminEsc(emptyMsg)+'</div>';
+  const cards=rows.map((r)=>{
     const completed=parseChecklistCompleted(r.checklist_completed);
     const allTasks=pmPreBootSkillRows(completed);
     const needCount=allTasks.filter(t=>isPreBootTaskNeeded(t.level)).length;
@@ -11215,12 +11330,14 @@ function buildPreBootTasksReportHtml(rows,opts){
       <td>${adminEsc(t.name)}</td>
       <td class="pm-preboot-level pm-preboot-level-${t.level}">${adminEsc(t.label)}</td>
     </tr>`).join('');
+    const weeks='Weeks in field: '+weeksInFieldLabel(r);
     const boot=r.bootcamp_start_date?('Bootcamp: '+fmtDate(r.bootcamp_start_date)):'Bootcamp: Not set';
     const assessKnown=r&&Object.prototype.hasOwnProperty.call(r,'last_assessment_date');
     const assess=assessKnown?(r.last_assessment_date?('Last assessment: '+fmtDate(r.last_assessment_date)):'Last assessment: Never'):'';
     const last=r.last_update_date?('Last rated: '+fmtDate(r.last_update_date)):'Not rated yet';
     const metaBits=[];
     if(showRegion)metaBits.push(regionLabel(r.region)||r.region||'—');
+    metaBits.push(weeks);
     metaBits.push(boot);
     if(assess)metaBits.push(assess);
     metaBits.push(last);
@@ -11248,6 +11365,7 @@ function buildPreBootTasksReportHtml(rows,opts){
       </div>
     </div>`;
   }).join('');
+  return legend+cards;
 }
 function togglePmPreBootCard(el){
   const card=el&&el.closest('.pm-preboot-card');
@@ -11312,8 +11430,9 @@ function buildPreBootOpenTasksPdfDoc(r){
     ?(r.last_assessment_date?fmtDate(r.last_assessment_date):'Never')
     :'—';
   const facts=[
-    ['Generated', fmtDateFull(new Date().toISOString().slice(0,10))],
+    ['Generated', fmtDateFull(adminTodayIso())],
     ['Region', r.region?regionLabel(r.region):'—'],
+    ['Weeks in field', weeksInFieldLabel(r)],
     ['Bootcamp', r.bootcamp_start_date?fmtDate(r.bootcamp_start_date):'Not set'],
     ['Last assessment', assessText],
     ['Last rated', r.last_update_date?fmtDate(r.last_update_date):'Not rated yet'],
@@ -11339,7 +11458,17 @@ function buildPreBootOpenTasksPdfDoc(r){
     doc.setTextColor(30,30,30);
     doc.text(pdfSafeText(pair[1]),x,yy+13,{maxWidth:(contentW/2)-20});
   });
-  y+=boxH+16;
+  y+=boxH+10;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(15,110,86);
+  doc.text('RATING OPTIONS',margin,y);
+  y+=11;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(40,40,40);
+  doc.splitTextToSize(pdfSafeText(preBootcampRatingLegendText()),contentW).forEach(line=>{doc.text(line,margin,y);y+=11;});
+  y+=6;
   if(!openTasks.length){
     doc.setFont('helvetica','bold');
     doc.setTextColor(15,110,86);
