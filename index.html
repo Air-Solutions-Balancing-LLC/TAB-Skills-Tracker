@@ -10858,18 +10858,19 @@ function onWeeklyPublicViewerChange(){
   weeklyStoreViewerId(el&&el.value?el.value:null);
   loadPublicWeeklyUpdates();
 }
-/** Admin / PM weekly screen can pick any trainer; public share-link tech can only pick themselves. */
+/** Admin / PM weekly screen can pick any roster trainer; public share-link tech defaults to themselves but can always use Other. */
 function weeklyCanPickAnyTrainer(){
   if(weeklyPublicMode)return false;
   return !!(userIsAdmin||currentRole==='admin'||currentRole==='pm');
 }
 function weeklyTechOptionsHtml(techs,selectedId,includeOther){
   const opts=['<option value="">Select…</option>'];
+  // Keep Other near the top so it is visible without scrolling long tech lists.
+  if(includeOther)opts.push('<option value="__other__">Other…</option>');
   (techs||[]).forEach(t=>{
     const sel=selectedId!=null&&String(selectedId)===String(t.id)?' selected':'';
     opts.push(`<option value="${t.id}"${sel}>${adminEsc(t.name)}</option>`);
   });
-  if(includeOther)opts.push('<option value="__other__">Other…</option>');
   return opts.join('');
 }
 function weeklyOnTrainerSelect(sel){
@@ -10887,34 +10888,23 @@ function weeklyTrainerFieldHtml(label,selectName,otherName,techs,selectedId,requ
   opts=opts||{};
   const canAny=opts.canPickAny!==undefined?!!opts.canPickAny:weeklyCanPickAnyTrainer();
   const lockedId=opts.lockedToId!=null&&opts.lockedToId!==''?opts.lockedToId:null;
-  const allowSecond=opts.allowEmptyOnly?false:true;
   let list=techs||[];
   let selId=selectedId;
-  let includeOther=!!canAny;
-  let disabled=false;
-  if(!canAny&&opts.allowEmptyOnly){
-    list=[];
-    selId=null;
-    includeOther=false;
-    disabled=true;
-  }else if(!canAny&&lockedId!=null){
+  // Every evaluation trainer dropdown supports Other + free-text name.
+  const includeOther=true;
+  if(!canAny&&lockedId!=null){
+    // Share-link tech: roster pick is self only; Other still available for off-list names.
     list=list.filter(t=>String(t.id)===String(lockedId));
-    selId=lockedId;
-    includeOther=false;
+    selId=selectedId!=null?selectedId:lockedId;
     if(!list.length)list=[{id:lockedId,name:opts.lockedName||'You'}];
   }
-  const req=required&&!disabled?' required':'';
-  const dis=disabled?' disabled':'';
-  const note=!canAny&&!opts.allowEmptyOnly
-    ?'<div style="font-size:10px;color:#6b7280;line-height:1.3">Locked to you — only Admin/PM can pick other training techs.</div>'
-    :(!canAny&&opts.allowEmptyOnly
-      ?'<div style="font-size:10px;color:#6b7280;line-height:1.3">Only Admin/PM can set Training Tech 2.</div>'
-      :'');
-  const hidden=disabled?`<input type="hidden" name="${selectName}" value="">`:'';
+  const req=required?' required':'';
+  const note=!canAny
+    ?'<div style="font-size:10px;color:#6b7280;line-height:1.3">Pick yourself from the list, or choose Other… and type a name.</div>'
+    :'<div style="font-size:10px;color:#6b7280;line-height:1.3">Choose a tech, or Other… to type a name.</div>';
   return`<label class="weekly-trainer-field">${adminEsc(label)}
-    <select name="${disabled?selectName+'_disabled':selectName}"${req}${dis} onchange="weeklyOnTrainerSelect(this)">${weeklyTechOptionsHtml(list,selId,includeOther&&allowSecond)}</select>
-    ${hidden}
-    ${includeOther?`<input type="text" class="weekly-trainer-other" name="${otherName}" placeholder="Type name…" maxlength="80" autocomplete="name" aria-label="${adminEsc(label)} other name">`:''}
+    <select name="${selectName}"${req} onchange="weeklyOnTrainerSelect(this)">${weeklyTechOptionsHtml(list,selId,includeOther)}</select>
+    <input type="text" class="weekly-trainer-other" name="${otherName}" placeholder="Type name…" maxlength="80" autocomplete="name" aria-label="${adminEsc(label)} other name">
     ${note}
   </label>`;
 }
@@ -11059,7 +11049,7 @@ function buildWeeklyRosterHtml(data,opts){
           <div class="weekly-form-top">
             <label class="weekly-date-field">Date<input type="date" name="date" value="${weeklyTodayInput()}" required></label>
             ${weeklyTrainerFieldHtml('Training Tech','trainer','trainer_other',techs,viewerPrefill,true,{canPickAny,lockedToId:viewerPrefill,lockedName:viewerName})}
-            ${weeklyTrainerFieldHtml('Training Tech 2','trainer2','trainer2_other',techs,null,false,{canPickAny,lockedToId:viewerPrefill,lockedName:viewerName,allowEmptyOnly:!canPickAny})}
+            ${weeklyTrainerFieldHtml('Training Tech 2','trainer2','trainer2_other',techs,null,false,{canPickAny,lockedToId:canPickAny?null:viewerPrefill,lockedName:viewerName})}
             <div class="weekly-submit-wrap"><button type="submit" class="btn" style="background:#0F6E56;padding:10px 14px;white-space:nowrap">Add Weekly Evaluation</button></div>
           </div>
           ${weeklyRatingsFormHtml(r.tech_id)}
@@ -11183,13 +11173,15 @@ async function weeklySubmitUpdate(ev,techId){
     return;
   }
   if(!weeklyCanPickAnyTrainer()){
-    // Share-link tech: Training Tech must be themselves; no Other; no Training Tech 2.
-    if(!weeklyPublicViewerId||String(trainer)!==String(weeklyPublicViewerId)||trainerOther||trainer2||trainer2Other){
-      alert('As a training tech on this link, Training Tech is locked to you. Only an Admin or PM can choose other training technicians.');
+    // Share-link tech: roster pick must be themselves, but Other free-text names are allowed.
+    const trainerOk=!!trainerOther||(weeklyPublicViewerId&&String(trainer)===String(weeklyPublicViewerId));
+    const trainer2Ok=!trainer2&&!trainer2Other||!!trainer2Other||(weeklyPublicViewerId&&String(trainer2)===String(weeklyPublicViewerId));
+    if(!trainerOk||!trainer2Ok){
+      alert('On this link, pick yourself from the list or choose Other… and type a name. Only Admin/PM can select a different roster tech.');
       return;
     }
   }
-  if(!trainer&&!trainerOther){alert('Select the Training Tech, or choose Other and type a name.');return;}
+  if(!trainer&&!trainerOther){alert('Select the Training Tech, or choose Other… and type a name.');return;}
   if(trainer&&trainer2&&trainer2===trainer){alert('Choose a different person for Training Tech 2, or leave it blank.');return;}
   if(trainerOther&&trainer2Other&&trainerOther.toLowerCase()===trainer2Other.toLowerCase()){
     alert('Training Tech and Training Tech 2 cannot be the same Other name.');
