@@ -1299,7 +1299,7 @@ body.mobile-nav-open{overflow:hidden}
               <button type="button" class="report-toggle" id="report-toggle-nebb" aria-expanded="false" aria-label="Show or hide report table" onclick="toggleReportTable('nebb')"><span class="admin-sec-chevron">▼</span></button>
               <div class="report-head-main">
                 <div class="report-title">NEBB Certified</div>
-                <div class="report-meta">Report date: <span id="admin-nebb-report-date-label">—</span></div>
+                <div class="report-meta">Report date: <span id="admin-nebb-report-date-label">—</span> · <span id="admin-nebb-count-label">NEBB Certified Techs: — · Certified Professionals: —</span></div>
               </div>
               <div class="report-actions">
                 <button type="button" class="btn" style="background:#888" onclick="loadAdminNebbReport()">Refresh</button>
@@ -4174,15 +4174,38 @@ function filteredAdminNebbRows(){
   });
 }
 
+function nebbCertCounts(rows){
+  let ct=0,cp=0;
+  (rows||[]).forEach(r=>{
+    const tier=nebbStatusTier(r&&r.nebb_status);
+    if(tier==='ct')ct++;
+    else if(tier==='cp')cp++;
+  });
+  return{ct,cp,total:ct+cp};
+}
+function nebbCertCountsLabel(rows){
+  const c=nebbCertCounts(rows);
+  return 'NEBB Certified Techs: '+c.ct+' · Certified Professionals: '+c.cp;
+}
 function updateAdminNebbFilterHint(shown,total){
   const hint=document.getElementById('admin-nebb-filter-hint');
+  const countLabel=document.getElementById('admin-nebb-count-label');
+  const filtered=filteredAdminNebbRows();
+  const allCounts=nebbCertCounts(adminNebbRows);
+  const shownCounts=nebbCertCounts(filtered);
+  if(countLabel){
+    countLabel.textContent=nebbCertCountsLabel(adminNebbRows);
+  }
   if(!hint)return;
   if(!total){hint.textContent='';return;}
+  const countBit=nebbCertCountsLabel(filtered);
   if(shown===total&&!adminNebbSearch.trim()&&!adminNebbRegion&&String(adminNebbDeadlineFilter||'all')==='all'){
-    hint.textContent=total+' certified employee'+(total===1?'':'s');
+    hint.textContent=total+' certified employee'+(total===1?'':'s')+' · '+countBit;
     return;
   }
-  hint.textContent='Showing '+shown+' of '+total;
+  hint.textContent='Showing '+shown+' of '+total
+    +' · '+countBit
+    +(shown!==total?(' (filtered) · All: CT '+allCounts.ct+' / CP '+allCounts.cp):'');
 }
 
 function onAdminNebbFilterChange(){
@@ -8190,6 +8213,7 @@ function buildAdminNebbPdfDoc(rows,reportDateText){
   doc.setTextColor(70,70,70);
   const meta=doc.splitTextToSize(pdfSafeText([
     'Report date: '+reportDateText,
+    nebbCertCountsLabel(rows),
     adminNebbSearch.trim()?('Search: '+adminNebbSearch.trim()):'',
     adminNebbRegion?('Region: '+regionLabel(adminNebbRegion)):'',
     String(adminNebbDeadlineFilter||'all')!=='all'?('Cert deadline: '+nebbCertDeadlineLabel(adminNebbDeadlineFilter)):'',
